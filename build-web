@@ -4,9 +4,4 @@ echo -e "\n\nBUILDING FILES"
 emcmake cmake -B build
 cmake --build build -j8
 
-echo -e "\n\nCOPYING FILES"
-cp build/domus.js static/domus.js
-cp build/domus.wasm static/domus.wasm
-cp build/domus.data static/domus.data
-
 echo -e "\n\nCOMPLETE"
