@@ -1,0 +1,129 @@
+#ifndef MY_POLYGON_H
+#define MY_POLYGON_H
+
+#include <iostream>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+class Point2D {
+   public:
+    double x_m, y_m;
+    Point2D(double x, double y);
+    [[nodiscard]] double distance(const Point2D& other) const;
+    Point2D operator+(const Point2D& other) const {
+        return {x_m + other.x_m, y_m + other.y_m};
+    }
+    Point2D operator-(const Point2D& other) const {
+        return {x_m + other.x_m, y_m + other.y_m};
+    }
+    Point2D operator*(const double scalar) const {
+        return {x_m * scalar, y_m * scalar};
+    }
+    Point2D operator/(const double scalar) const {
+        return {x_m / scalar, y_m / scalar};
+    }
+    bool operator==(const Point2D& other) const {
+        return x_m == other.x_m && y_m == other.y_m;
+    }
+    bool operator!=(const Point2D& other) const { return !(*this == other); }
+    // Operatore di confronto lessicografico (prima x, poi y)
+    bool operator<(const Point2D& p) const {
+        return x_m < p.x_m || (x_m == p.x_m && y_m < p.y_m);
+    }
+    friend std::ostream& operator<<(std::ostream& os, const Point2D& p) {
+        os << "(" << p.x_m << ", " << p.y_m << ")";
+        return os;
+    }
+};
+
+class Path2D {
+   public:
+    std::vector<Point2D> points;
+    void addPoint(const Point2D& p) { points.push_back(p); }
+};
+
+class Line2D {
+   public:
+    Point2D p1_m, p2_m;
+    Line2D(const Point2D& p1, const Point2D& p2);
+    [[nodiscard]] bool isPointOnLine(const Point2D& p) const;
+    [[nodiscard]] bool isIntersecting(const Line2D& l) const;
+    bool operator==(const Line2D& other) const {
+        return p1_m == other.p1_m && p2_m == other.p2_m;
+    }
+    bool operator!=(const Line2D& other) const { return !(*this == other); }
+    friend std::ostream& operator<<(std::ostream& os, const Line2D& l) {
+        os << "[" << l.p1_m << " - " << l.p2_m << "]";
+        return os;
+    }
+};
+
+class Polygon2D {
+    std::vector<Point2D> m_points;
+
+   public:
+    explicit Polygon2D(const std::vector<Point2D>& points);
+    std::vector<Point2D>& getPoints();
+    [[nodiscard]] bool isOnBoundary(const Point2D& p) const;
+    [[nodiscard]] bool isInside(const Point2D& p) const;
+    [[nodiscard]] bool isInside(const Line2D& l) const;
+    [[nodiscard]] std::vector<Point2D> computeConvexHull() const;
+};
+
+class Circle2D {
+    Point2D center_m;
+    double radius_m;
+    std::optional<std::string> label_m;
+    std::optional<std::string> color_m;
+
+   public:
+    Circle2D(const Point2D& center, const double radius)
+        : center_m(center), radius_m(radius) {}
+    [[nodiscard]] Point2D getCenter() const { return center_m; }
+    [[nodiscard]] double getRadius() const { return radius_m; }
+    void setLabel(const std::string& label) { this->label_m = label; }
+    [[nodiscard]] bool hasLabel() const { return label_m.has_value(); }
+    [[nodiscard]] std::string getLabel() const {
+        if (!label_m.has_value())
+            throw std::runtime_error("Circle has no label");
+        return *label_m;
+    }
+    void setColor(const std::string& color) { this->color_m = color; }
+    [[nodiscard]] bool hasColor() const { return color_m.has_value(); }
+    [[nodiscard]] std::string getColor() const {
+        if (!color_m.has_value())
+            throw std::runtime_error("Circle has no color");
+        return *color_m;
+    }
+};
+
+class Square2D {
+    Point2D center_m;
+    double side_m;
+    std::optional<std::string> label_m;
+    std::optional<std::string> color_m;
+
+   public:
+    Square2D(const Point2D& center, const double side)
+        : center_m(center), side_m(side) {}
+    [[nodiscard]] Point2D getCenter() const { return center_m; }
+    [[nodiscard]] double getSide() const { return side_m; }
+    void setLabel(const std::string& label) { this->label_m = label; }
+    [[nodiscard]] bool hasLabel() const { return label_m.has_value(); }
+    [[nodiscard]] std::string getLabel() const {
+        if (!label_m.has_value())
+            throw std::runtime_error("Square has no label");
+        return *label_m;
+    }
+    void setColor(const std::string& color) { this->color_m = color; }
+    [[nodiscard]] bool hasColor() const { return color_m.has_value(); }
+    [[nodiscard]] std::string getColor() const {
+        if (!color_m.has_value())
+            throw std::runtime_error("Square has no color");
+        return *color_m;
+    }
+};
+
+#endif

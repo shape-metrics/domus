@@ -1,157 +1,186 @@
-#include "core/graph/graph.hpp"
+#include "domus/core/graph/graph.hpp"
 
 #include <iostream>
+#include <stdexcept>
 
-#include "core/utils.hpp"
+using namespace std;
 
-GraphEdge::GraphEdge(int id, const GraphNode& from, const GraphNode& to,
-                     const Graph& owner)
-    : m_id(id), m_from(from), m_to(to), m_graph_owner(owner) {
-  if (&from.get_owner() != &owner || &to.get_owner() != &owner)
-    throw std::runtime_error(
-        "GraphEdge constructor: nodes do not belong to the same graph");
+bool DirectedGraph::has_node(int node_id) const { return m_nodes_ids.contains(node_id); }
+
+const unordered_set<int>& DirectedGraph::get_nodes_ids() const { return m_nodes_ids; }
+
+const unordered_set<int>& DirectedGraph::get_out_neighbors_of_node(int node_id) const {
+    if (!has_node(node_id))
+        throw runtime_error("Node does not exist");
+    return m_nodeid_to_out_neighbors_ids.at(node_id);
 }
 
-const std::string GraphEdge::to_string() const {
-  return "Edge[" + m_from.to_string() + " -> " + m_to.to_string() + "]";
+const unordered_set<int>& DirectedGraph::get_in_neighbors_of_node(int node_id) const {
+    if (!has_node(node_id))
+        throw runtime_error("Node does not exist");
+    return m_nodeid_to_in_neighbors_ids.at(node_id);
 }
 
-std::string GraphNode::to_string() const {
-  std::string result = "Node " + std::to_string(m_id) + " neighbors:";
-  for (const auto& edge : get_edges())
-    result += " " + std::to_string(edge.get_to().get_id());
-  return result;
+void DirectedGraph::add_node(int id) {
+    if (has_node(id))
+        throw runtime_error("Node already exists");
+    m_nodes_ids.insert(id);
+    m_nodeid_to_out_neighbors_ids[id] = {};
+    m_nodeid_to_in_neighbors_ids[id] = {};
 }
 
-const GraphNode& Graph::add_node(int id) {
-  if (id < 0)
-    throw std::runtime_error("Graph::add_node: id must be non-negative");
-  if (has_node(id))
-    throw std::runtime_error(
-        "Graph::add_node: node with this id already exists");
-  GraphNode* node = new GraphNode(id, *this);
-  m_nodeid_to_node_map[id] = std::unique_ptr<GraphNode>(node);
-  m_nodeid_to_edgesid[id] = std::unordered_set<int>();
-  m_nodeid_to_neighborsid_to_edgesid[id] = std::unordered_map<int, int>();
-  m_nodeid_to_incoming_edgesid_map[id] = std::unordered_set<int>();
-  return *node;
+int DirectedGraph::add_node() {
+    while (has_node(m_next_node_id))
+        m_next_node_id++;
+    add_node(m_next_node_id);
+    return m_next_node_id++;
 }
 
-int Graph::get_number_of_edges() const {
-  int count = 0;
-  for (const auto& node : get_nodes()) count += node.get_degree();
-  return count;
+size_t DirectedGraph::get_out_degree_of_node(int node_id) const {
+    return get_out_neighbors_of_node(node_id).size();
 }
 
-const std::string Graph::to_string() const {
-  std::string result = "Graph:\n";
-  for (const auto& node : get_nodes()) result += node.to_string() + "\n";
-  return result;
+size_t DirectedGraph::get_in_degree_of_node(int node_id) const {
+    return get_in_neighbors_of_node(node_id).size();
 }
 
-const GraphNode& Graph::get_node_by_id(int id) const {
-  if (!has_node(id))
-    throw std::runtime_error("Graph::get_node_by_id: node not found");
-  return *m_nodeid_to_node_map.at(id);
+void DirectedGraph::add_edge(int from_id, int to_id) {
+    if (!has_node(from_id))
+        throw runtime_error("Node does not exist");
+    if (!has_node(to_id))
+        throw runtime_error("Node does not exist");
+    if (has_edge(from_id, to_id))
+        throw runtime_error("Edge already exists");
+    m_nodeid_to_out_neighbors_ids[from_id].insert(to_id);
+    m_nodeid_to_in_neighbors_ids[to_id].insert(from_id);
+    m_total_edges++;
 }
 
-const GraphNode& Graph::add_node() {
-  while (has_node(m_next_node_id)) m_next_node_id++;
-  return add_node(m_next_node_id++);
+bool DirectedGraph::has_edge(int from_id, int to_id) const {
+    if (!has_node(from_id))
+        throw runtime_error("Node does not exist");
+    if (!has_node(to_id))
+        throw runtime_error("Node does not exist");
+    return m_nodeid_to_out_neighbors_ids.at(from_id).contains(to_id);
 }
 
-const GraphEdge& Graph::add_edge(int from_id, int to_id) {
-  if (!has_node(from_id) || !has_node(to_id))
-    throw std::runtime_error("Graph::add_edge: node not found");
-  if (has_edge(from_id, to_id))
-    throw std::runtime_error("Graph::add_edge: edge already exists");
-  // if (from_id == to_id)
-  //   throw std::runtime_error("Graph::add_edge: cannot add self-loop");
-  auto& from_node = m_nodeid_to_node_map.at(from_id);
-  auto& to_node = m_nodeid_to_node_map.at(to_id);
-  GraphEdge* edge =
-      new GraphEdge(m_next_edge_id++, *from_node, *to_node, *this);
-  m_nodeid_to_edgesid[from_id].insert(edge->get_id());
-  m_nodeid_to_neighborsid_to_edgesid[from_id][to_id] = edge->get_id();
-  m_edgeid_to_edge_map[edge->get_id()] = std::unique_ptr<GraphEdge>(edge);
-  m_nodeid_to_incoming_edgesid_map[to_id].insert(edge->get_id());
-  return *edge;
+size_t DirectedGraph::size() const { return m_nodes_ids.size(); }
+size_t DirectedGraph::get_number_of_edges() const { return m_total_edges; }
+
+void DirectedGraph::remove_node(int node_id) {
+    if (!has_node(node_id))
+        throw runtime_error("Node does not exist");
+    m_nodes_ids.erase(node_id);
+    m_total_edges -= get_out_degree_of_node(node_id);
+    m_total_edges -= get_in_degree_of_node(node_id);
+    for (int neighbor_id : get_out_neighbors_of_node(node_id))
+        m_nodeid_to_in_neighbors_ids[neighbor_id].erase(node_id);
+    for (int neighbor_id : get_in_neighbors_of_node(node_id))
+        m_nodeid_to_out_neighbors_ids[neighbor_id].erase(node_id);
+    m_nodeid_to_out_neighbors_ids.erase(node_id);
+    m_nodeid_to_in_neighbors_ids.erase(node_id);
 }
 
-bool Graph::has_edge(int from_id, int to_id) const {
-  if (!has_node(from_id) || !has_node(to_id))
-    throw std::runtime_error("Graph::has_edge: node not found");
-  return m_nodeid_to_neighborsid_to_edgesid.at(from_id).contains(to_id);
+void DirectedGraph::remove_edge(int from_id, int to_id) {
+    if (!has_node(from_id))
+        throw runtime_error("Node does not exist");
+    if (!has_node(to_id))
+        throw runtime_error("Node does not exist");
+    if (!has_edge(from_id, to_id))
+        throw runtime_error("Edge does not exist");
+    m_nodeid_to_out_neighbors_ids[from_id].erase(to_id);
+    m_nodeid_to_in_neighbors_ids[to_id].erase(from_id);
+    m_total_edges--;
+}
+string DirectedGraph::to_string() const {
+    string result = "DirectedGraph:\n";
+    for (int node_id : m_nodes_ids) {
+        result += std::to_string(node_id) + ": ";
+        for (int neighbor_id : get_out_neighbors_of_node(node_id))
+            result += std::to_string(neighbor_id) + " ";
+        result += "\n";
+    }
+    return result;
+}
+void DirectedGraph::print() const { std::cout << to_string(); }
+
+bool UndirectedGraph::has_node(int node_id) const { return m_nodes_ids.contains(node_id); }
+
+const unordered_set<int>& UndirectedGraph::get_nodes_ids() const { return m_nodes_ids; }
+
+const unordered_set<int>& UndirectedGraph::get_neighbors_of_node(int node_id) const {
+    return m_nodeid_to_neighbors_ids.at(node_id);
 }
 
-const GraphEdge& Graph::get_edge(int from_id, int to_id) const {
-  if (!has_node(from_id) || !has_node(to_id))
-    throw std::runtime_error("Graph::get_edge: node not found");
-  if (!has_edge(from_id, to_id))
-    throw std::runtime_error("Graph::get_edge: edge not found");
-  int edge_id = get_edge_id(from_id, to_id);
-  return get_edge_by_id(edge_id);
+void UndirectedGraph::add_node(int id) {
+    if (has_node(id))
+        throw runtime_error("Node already exists");
+    m_nodes_ids.insert(id);
+    m_nodeid_to_neighbors_ids[id] = {};
 }
 
-int Graph::get_edge_id(int from_id, int to_id) const {
-  if (!has_node(from_id) || !has_node(to_id))
-    throw std::runtime_error("Graph::get_edge_id: node not found");
-  if (!has_edge(from_id, to_id))
-    throw std::runtime_error("Graph::get_edge_id: edge not found");
-  return m_nodeid_to_neighborsid_to_edgesid.at(from_id).at(to_id);
+int UndirectedGraph::add_node() {
+    while (has_node(m_next_node_id))
+        m_next_node_id++;
+    add_node(m_next_node_id);
+    return m_next_node_id++;
 }
 
-const GraphEdge& Graph::get_edge_by_id(int edge_id) const {
-  if (!m_edgeid_to_edge_map.contains(edge_id))
-    throw std::runtime_error("Graph::get_edge: edge not found");
-  return *m_edgeid_to_edge_map.at(edge_id);
+size_t UndirectedGraph::get_degree_of_node(int node_id) const {
+    return get_neighbors_of_node(node_id).size();
 }
 
-void Graph::add_undirected_edge(int from_id, int to_id) {
-  add_edge(from_id, to_id);
-  add_edge(to_id, from_id);
+void UndirectedGraph::add_edge(int node_1_id, int node_2_id) {
+    if (!has_node(node_1_id))
+        throw runtime_error("Node does not exist");
+    if (!has_node(node_2_id))
+        throw runtime_error("Node does not exist");
+    if (has_edge(node_1_id, node_2_id))
+        throw runtime_error("Edge already exists");
+    m_nodeid_to_neighbors_ids[node_1_id].insert(node_2_id);
+    m_nodeid_to_neighbors_ids[node_2_id].insert(node_1_id);
+    m_total_edges++;
 }
 
-void Graph::remove_edge(int from_id, int to_id) {
-  if (!has_edge(from_id, to_id))
-    throw std::runtime_error("Graph::remove_edge: edge not found");
-  int edge_id = get_edge_id(from_id, to_id);
-  m_nodeid_to_edgesid[from_id].erase(edge_id);
-  m_nodeid_to_neighborsid_to_edgesid[from_id].erase(to_id);
-  m_edgeid_to_edge_map.erase(edge_id);
-  m_nodeid_to_incoming_edgesid_map[to_id].erase(edge_id);
+bool UndirectedGraph::has_edge(int node_1_id, int node_2_id) const {
+    return get_neighbors_of_node(node_1_id).contains(node_2_id);
 }
 
-void Graph::remove_undirected_edge(int from_id, int to_id) {
-  remove_edge(from_id, to_id);
-  remove_edge(to_id, from_id);
+size_t UndirectedGraph::size() const { return m_nodes_ids.size(); }
+
+size_t UndirectedGraph::get_number_of_edges() const { return m_total_edges; }
+
+void UndirectedGraph::remove_node(int node_id) {
+    if (!has_node(node_id))
+        throw runtime_error("Node does not exist");
+    m_total_edges -= get_degree_of_node(node_id);
+    for (int neighbor_id : get_neighbors_of_node(node_id))
+        m_nodeid_to_neighbors_ids[neighbor_id].erase(node_id);
+    m_nodeid_to_neighbors_ids.erase(node_id);
+    m_nodes_ids.erase(node_id);
 }
 
-void Graph::remove_node(int id) {
-  if (!has_node(id))
-    throw std::runtime_error("Graph::remove_node: node not found");
-  std::vector<int> edges_to_remove;
-  for (const auto& edge : get_edges_of_node(id))
-    edges_to_remove.push_back(edge.get_to().get_id());
-  for (int neighbor_id : edges_to_remove) remove_edge(id, neighbor_id);
-  edges_to_remove.clear();
-  for (int edge_id : m_nodeid_to_incoming_edgesid_map[id])
-    edges_to_remove.push_back(get_edge_by_id(edge_id).get_from().get_id());
-  for (int neighbor_id : edges_to_remove) remove_edge(neighbor_id, id);
-  m_nodeid_to_node_map.erase(id);
-  m_nodeid_to_edgesid.erase(id);
-  m_nodeid_to_neighborsid_to_edgesid.erase(id);
-  m_nodeid_to_incoming_edgesid_map.erase(id);
+void UndirectedGraph::remove_edge(int node_1_id, int node_2_id) {
+    if (!has_node(node_1_id))
+        throw runtime_error("Node does not exist");
+    if (!has_node(node_2_id))
+        throw runtime_error("Node does not exist");
+    if (!has_edge(node_1_id, node_2_id))
+        throw runtime_error("Edge does not exist");
+    m_nodeid_to_neighbors_ids[node_1_id].erase(node_2_id);
+    m_nodeid_to_neighbors_ids[node_2_id].erase(node_1_id);
+    m_total_edges--;
 }
 
-int Graph::get_degree_of_node(int node_id) const {
-  if (!has_node(node_id))
-    throw std::runtime_error("Graph::get_degree_of_node: node not found");
-  return m_nodeid_to_edgesid.at(node_id).size();
+string UndirectedGraph::to_string() const {
+    string result = "UndirectedGraph:\n";
+    for (int node_id : m_nodes_ids) {
+        result += std::to_string(node_id) + ": ";
+        for (int neighbor_id : get_neighbors_of_node(node_id))
+            result += std::to_string(neighbor_id) + " ";
+        result += "\n";
+    }
+    return result;
 }
 
-int Graph::get_in_degree_of_node(int node_id) const {
-  if (!has_node(node_id))
-    throw std::runtime_error("Graph::get_in_degree_of_node: node not found");
-  return m_nodeid_to_incoming_edgesid_map.at(node_id).size();
-}
+void UndirectedGraph::print() const { std::cout << to_string(); }

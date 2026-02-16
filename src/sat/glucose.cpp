@@ -1,78 +1,87 @@
-#include "sat/glucose.hpp"
+#include "domus/sat/sat.hpp"
 
-#include <fstream>
-#include <iostream>
-#include <random>
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sstream>
-#include <stdexcept>
+#include <string>
+#include <vector>
 
-#include "core/utils.hpp"
+#include "domus/core/utils.hpp"
+#include "domus/sat/cnf.hpp"
 
-std::string GlucoseResult::to_string() const {
-  std::string r = result == GlucoseResultType::SAT ? "SAT" : "UNSAT";
-  std::string numbers_str = "Numbers: ";
-  for (int num : numbers) numbers_str += std::to_string(num) + " ";
-  std::string proof_str = "Proof:\n";
-  for (const std::string& line : proof_lines) proof_str += line + "\n";
-  return r + "\n" + numbers_str + "\n" + proof_str;
+#include "glucose/src/SimpSolver.h"
+#include "glucose/src/SolverTypes.h"
+#include "glucose/src/Vec.h"
+
+using namespace Glucose;
+
+void readClause(const CnfRow& row, SimpSolver& S, vec<Lit>& lits) {
+    int var;
+    lits.clear();
+    for (int lit : row.m_clause) {
+        assert(lit != 0);
+        var = abs(lit) - 1;
+        while (var >= S.nVars())
+            S.newVar();
+        lits.push((lit > 0) ? mkLit(var) : ~mkLit(var));
+    }
 }
 
-void GlucoseResult::print() const { std::cout << to_string() << std::endl; }
-
-GlucoseResult get_results(const std::string& output_file,
-                          const std::string& proof_file);
-
-void delete_glucose_temp_files(const std::string& output_file,
-                               const std::string& proof_file) {
-  remove(output_file.c_str());
-  remove(proof_file.c_str());
+void parse_cnf(const Cnf& cnf, SimpSolver& S) {
+    vec<Lit> lits;
+    for (const CnfRow& row : cnf.get_rows()) {
+        readClause(row, S, lits);
+        S.addClause_(lits);
+    }
 }
 
-GlucoseResult launch_glucose(const std::string& conjunctive_normal_form_file,
-                             bool randomize) {
-  const std::string proof_file = get_unique_filename("proof");
-  const std::string output_file = get_unique_filename("output");
-  std::string command;
-  const std::string proof_path = "-certified-output=" + proof_file;
-  if (randomize) {
-    const std::string rnd_seed =
-        "-rnd-seed=" + std::to_string(std::random_device{}());
-    command = "./glucose" + conjunctive_normal_form_file + " " + output_file +
-              " " + proof_path + " -certified " + "-rnd-init " + rnd_seed;
-  } else {
-    command = "./glucose " + conjunctive_normal_form_file + " " + output_file +
-              " -certified " + proof_path;
-  }
-  command += " > /dev/null 2>&1";
-  std::system(command.c_str());
-  GlucoseResult result = get_results(output_file, proof_file);
-  delete_glucose_temp_files(output_file, proof_file);
-  return std::move(result);
+void populate_proof_result(const char* buffer, SatSolverResult& result) {
+    std::istringstream proof(buffer);
+    std::string line;
+    while (std::getline(proof, line))
+        result.proof_lines.push_back(line);
 }
 
-std::vector<std::string> get_proof(const std::string& proof_file) {
-  std::ifstream file(proof_file.c_str());
-  if (!file) throw std::runtime_error("Error: Could not open the file.");
-  std::vector<std::string> proof_lines;
-  std::string line;
-  while (std::getline(file, line)) proof_lines.push_back(line);
-  return proof_lines;
-}
+SatSolverResult launch_glucose(const Cnf& cnf) {
+    SimpSolver S;
 
-GlucoseResult get_results(const std::string& output_file,
-                          const std::string& proof_file) {
-  std::ifstream file(output_file.c_str());
-  if (!file) throw std::runtime_error("Error: Could not open the file.");
-  std::string line;
-  if (std::getline(file, line)) {
-    if (line == "UNSAT")
-      return GlucoseResult{GlucoseResultType::UNSAT, {}, get_proof(proof_file)};
-    std::istringstream iss(line);
-    std::vector<int> numbers;
-    int num;
-    while (iss >> num) numbers.push_back(num);
-    return GlucoseResult{GlucoseResultType::SAT, numbers,
-                         get_proof(proof_file)};
-  }
-  throw std::runtime_error("Error: the file is empty.");
+    S.parsing = 1;
+    S.use_simplification = true;
+    S.verbosity = 0;
+    S.verbEveryConflicts = 10000;
+    S.showModel = false;
+
+    MemoryFile memory_file_proof;
+
+    S.certifiedUNSAT = true;
+    S.vbyte = false;
+    S.certifiedOutput = memory_file_proof.get_file();
+    parse_cnf(cnf, S);
+
+    S.parsing = 0;
+    S.eliminate(true);
+
+    SatSolverResult result;
+    if (!S.okay()) {  // UNSAT
+        fprintf(S.certifiedOutput, "0\n");
+        result.result = SatSolverResultType::UNSAT;
+        populate_proof_result(memory_file_proof.get_buffer(), result);
+        return result;
+    }
+
+    vec<Lit> dummy;
+    lbool ret = S.solveLimited(dummy);
+
+    if (ret == l_True) {
+        result.result = SatSolverResultType::SAT;
+        for (int i = 0; i < S.nVars(); i++)
+            if (S.model[i] != l_Undef)
+                result.numbers.push_back(
+                    (S.model[i] == l_True) ? i + 1 : -(i + 1));
+    } else {
+        result.result = SatSolverResultType::UNSAT;
+        populate_proof_result(memory_file_proof.get_buffer(), result);
+    }
+    return result;
 }
