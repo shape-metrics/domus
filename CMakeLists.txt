@@ -125,7 +125,6 @@ function(apply_warnings target)
         )
     else()
         target_compile_options(${target} PRIVATE
-            Enable when desired
             -Wall -Wextra -Wpedantic
             -Wconversion -Wsign-conversion
             -Wshadow -Wold-style-cast
@@ -182,9 +181,8 @@ if (DOMUS_BUILD_EXECUTABLES)
         )
     else()
         add_executable(domus src/domus.cpp)
-        add_executable(gen src/gen.cpp)
 
-        foreach(target domus gen)
+        foreach(target domus)
             target_link_libraries(${target} PRIVATE DOMUS::core)
             apply_warnings(${target})
         endforeach()
