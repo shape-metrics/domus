@@ -1,10 +1,10 @@
 #include "domus/planarity/auslander_parter.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <deque>
 #include <iostream>
 #include <stddef.h>
-#include <stdexcept>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
@@ -190,7 +190,7 @@ vector<size_t> compute_order(
 ) {
     if (segments_indexes.size() < 2)
         return segments_indexes;
-    optional<size_t> middle_segment = std::nullopt;
+    optional<size_t> middle_segment{};
     vector<size_t> min_segments{};
     vector<size_t> max_segments{};
     for (size_t seg_index : segments_indexes) {
@@ -202,8 +202,7 @@ vector<size_t> compute_order(
             max_segments.push_back(seg_index);
             continue;
         }
-        if (middle_segment.has_value())
-            throw runtime_error("More than one");
+        assert(!middle_segment.has_value());
         middle_segment = seg_index;
     }
     compute_sub_order(max_segments, segments_min_attachment, segments, false);
