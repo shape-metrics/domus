@@ -59,32 +59,29 @@ template <class T> class RegionAllocator {
     uint32_t wasted() const { return wasted_; }
 
     Ref alloc(int size);
-    void free(int size) { wasted_ += static_cast<uint32_t>(size); }
+    void free(int size) { wasted_ += size; }
 
     // Deref, Load Effective Address (LEA), Inverse of LEA (AEL):
     T& operator[](Ref r) {
-        assert(r < sz);
+        assert(r >= 0 && r < sz);
         return memory[r];
     }
     const T& operator[](Ref r) const {
-        assert(r < sz);
+        assert(r >= 0 && r < sz);
         return memory[r];
     }
 
     T* lea(Ref r) {
-        assert(r < sz);
+        assert(r >= 0 && r < sz);
         return &memory[r];
     }
     const T* lea(Ref r) const {
-        assert(r < sz);
+        assert(r >= 0 && r < sz);
         return &memory[r];
     }
     Ref ael(const T* t) {
-        assert(
-            reinterpret_cast<const void*>(t) >= reinterpret_cast<const void*>(&memory[0]) &&
-            reinterpret_cast<const void*>(t) < reinterpret_cast<const void*>(&memory[sz - 1])
-        );
-        return static_cast<Ref>(t - &memory[0]);
+        assert((void*)t >= (void*)&memory[0] && (void*)t < (void*)&memory[sz - 1]);
+        return (Ref)(t - &memory[0]);
     }
 
     void moveTo(RegionAllocator& to) {
@@ -101,7 +98,7 @@ template <class T> class RegionAllocator {
 
     void copyTo(RegionAllocator& to) const {
         //   if (to.memory != NULL) ::free(to.memory);
-        to.memory = reinterpret_cast<T*>(xrealloc(to.memory, sizeof(T) * cap));
+        to.memory = (T*)xrealloc(to.memory, sizeof(T) * cap);
         memcpy(to.memory, memory, sizeof(T) * cap);
         to.sz = sz;
         to.cap = cap;
@@ -119,7 +116,7 @@ template <class T> void RegionAllocator<T>::capacity(uint32_t min_cap) {
         // resulting sequence of capacities is carefully chosen to hit a maximum
         // capacity that is close to the '2^32-1' limit when using 'uint32_t' as
         // indices so that as much as possible of this space can be used.
-        uint32_t delta = ((cap >> 1) + (cap >> 3) + 2) & ~1u;
+        uint32_t delta = ((cap >> 1) + (cap >> 3) + 2) & ~1;
         cap += delta;
 
         if (cap <= prev_cap)
@@ -128,17 +125,17 @@ template <class T> void RegionAllocator<T>::capacity(uint32_t min_cap) {
     // printf(" .. (%p) cap = %u\n", this, cap);
 
     assert(cap > 0);
-    memory = reinterpret_cast<T*>(xrealloc(memory, sizeof(T) * cap));
+    memory = (T*)xrealloc(memory, sizeof(T) * cap);
 }
 
 template <class T> typename RegionAllocator<T>::Ref RegionAllocator<T>::alloc(int size) {
     // printf("ALLOC called (this = %p, size = %d)\n", this, size);
     // fflush(stdout);
     assert(size > 0);
-    capacity(sz + static_cast<uint32_t>(size));
+    capacity(sz + size);
 
     uint32_t prev_sz = sz;
-    sz += static_cast<uint32_t>(size);
+    sz += size;
 
     // Handle overflow:
     if (sz < prev_sz)

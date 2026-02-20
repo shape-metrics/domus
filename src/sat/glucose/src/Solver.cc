@@ -306,11 +306,9 @@ void Solver::setIncrementalMode() {
 #ifdef INCREMENTAL
     incremental = true;
 #else
-    fprintf(
-        stderr,
-        "c Trying to set incremental mode, but not compiled properly "
-        "for this.\n"
-    );
+    fprintf(stderr,
+            "c Trying to set incremental mode, but not compiled properly "
+            "for this.\n");
     exit(1);
 #endif
 }
@@ -624,14 +622,12 @@ level of the |        rest of literals. There may be others from the same level
 though.
 |
 |________________________________________________________________________________________________@*/
-void Solver::analyze(
-    CRef confl,
-    vec<Lit>& out_learnt,
-    vec<Lit>& selectors,
-    int& out_btlevel,
-    unsigned int& lbd,
-    unsigned int& szWithoutSelectors
-) {
+void Solver::analyze(CRef confl,
+                     vec<Lit>& out_learnt,
+                     vec<Lit>& selectors,
+                     int& out_btlevel,
+                     unsigned int& lbd,
+                     unsigned int& szWithoutSelectors) {
     int pathC = 0;
     Lit p = lit_Undef;
 
@@ -1116,8 +1112,7 @@ CRef Solver::propagateUnaryWatches(Lit p) {
             }
             detachClausePurgatory(
                 cr,
-                true
-            ); // TODO: check that the cleanAll is ok (use ",true" otherwise)
+                true); // TODO: check that the cleanAll is ok (use ",true" otherwise)
             assert(index != -1);
             Lit tmp = c[1];
             c[1] = c[index], c[index] = tmp;
@@ -1268,8 +1263,8 @@ bool Solver::simplify() {
 void Solver::adaptSolver() {
     bool adjusted = false;
     bool reinit = false;
-    // printf("c\nc Try to adapt solver strategies\nc \n");
-    // printf("c Adjusting solver for the SAT Race 2015 (alpha feature)\n");
+    printf("c\nc Try to adapt solver strategies\nc \n");
+    printf("c Adjusting solver for the SAT Race 2015 (alpha feature)\n");
     /*printf("c key successive Conflicts       : %"
     PRIu64"\n",stats[noDecisionConflict]); printf("c nb unary clauses learnt : %"
     PRIu64"\n",stats[nbUn]); printf("c key avg dec per conflicts      : %.2f\n",
@@ -1282,7 +1277,7 @@ void Solver::adaptSolver() {
         coLBDBound = 4;
         glureduce = true;
         adjusted = true;
-        // printf("c Adjusting for low decision levels.\n");
+        printf("c Adjusting for low decision levels.\n");
         reinit = true;
         firstReduceDB = 2000;
         nbclausesbeforereduce = firstReduceDB;
@@ -1296,10 +1291,10 @@ void Solver::adaptSolver() {
         var_decay = 0.999;
         max_var_decay = 0.999;
         adjusted = true;
-        // printf("c Adjusting for low successive conflicts.\n");
+        printf("c Adjusting for low successive conflicts.\n");
     }
     if (stats[noDecisionConflict] > 54400) {
-        // printf("c Adjusting for high successive conflicts.\n");
+        printf("c Adjusting for high successive conflicts.\n");
         chanseokStrategy = true;
         glureduce = true;
         coLBDBound = 3;
@@ -1313,15 +1308,13 @@ void Solver::adaptSolver() {
         var_decay = 0.91;
         max_var_decay = 0.91;
         adjusted = true;
-        // printf("c Adjusting for a very large number of true glue clauses found.\n");
+        printf("c Adjusting for a very large number of true glue clauses found.\n");
     }
     if (!adjusted) {
-        // printf(
-        //     "c Nothing extreme in this problem, continue with glucose default "
-        //     "strategies.\n"
-        // );
+        printf("c Nothing extreme in this problem, continue with glucose default "
+               "strategies.\n");
     }
-    // printf("c\n");
+    printf("c\n");
     if (adjusted) { // Let's reinitialize the glucose restart strategy counters
         lbdQueue.fastclear();
         sumLBD = 0;
@@ -1341,11 +1334,9 @@ void Solver::adaptSolver() {
             }
         }
         learnts.shrink(i - j);
-        printf(
-            "c Activating Chanseok Strategy: moved %d clauses to the permanent "
-            "set.\n",
-            moved
-        );
+        printf("c Activating Chanseok Strategy: moved %d clauses to the permanent "
+               "set.\n",
+               moved);
     }
 
     if (reinit) {
@@ -1435,21 +1426,19 @@ lbool Solver::search(int nof_conflicts) {
                 var_decay += 0.01;
 
             if (verbosity >= 1 && starts > 0 && conflicts % verbEveryConflicts == 0) {
-                printf(
-                    "c | %8d   %7d    %5d | %7d %8d %8d | %5d %8d   %6d %8d | %6.3f "
-                    "%% |\n",
-                    (int)starts,
-                    (int)stats[nbstopsrestarts],
-                    (int)(conflicts / starts),
-                    (int)stats[dec_vars] - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]),
-                    nClauses(),
-                    (int)stats[clauses_literals],
-                    (int)stats[nbReduceDB],
-                    nLearnts(),
-                    (int)stats[nbDL2],
-                    (int)stats[nbRemovedClauses],
-                    progressEstimate() * 100
-                );
+                printf("c | %8d   %7d    %5d | %7d %8d %8d | %5d %8d   %6d %8d | %6.3f "
+                       "%% |\n",
+                       (int)starts,
+                       (int)stats[nbstopsrestarts],
+                       (int)(conflicts / starts),
+                       (int)stats[dec_vars] - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]),
+                       nClauses(),
+                       (int)stats[clauses_literals],
+                       (int)stats[nbReduceDB],
+                       nLearnts(),
+                       (int)stats[nbDL2],
+                       (int)stats[nbRemovedClauses],
+                       progressEstimate() * 100);
             }
             if (decisionLevel() == 0) {
                 return l_False;
@@ -1585,11 +1574,9 @@ lbool Solver::search(int nof_conflicts) {
                 next = pickBranchLit();
                 if (next == lit_Undef) {
                     if (verbosity > 0) {
-                        printf(
-                            "c last restart ## conflicts  :  %d %d \n",
-                            conflictC,
-                            decisionLevel()
-                        );
+                        printf("c last restart ## conflicts  :  %d %d \n",
+                               conflictC,
+                               decisionLevel());
                     }
                     // Model found:
                     return l_True;
@@ -1656,11 +1643,9 @@ double Solver::luby(double y, int x) {
 
 // NOTE: assumptions passed in member-variable 'assumptions'.
 
-lbool Solver::solve_(
-    bool do_simp,
-    bool turn_off_simp
-) // Parameters are useless in core but
-  // useful for SimpSolver....
+lbool Solver::solve_(bool do_simp,
+                     bool turn_off_simp) // Parameters are useless in core but
+                                         // useful for SimpSolver....
 {
 
     if (incremental && certifiedUNSAT) {
@@ -1678,132 +1663,87 @@ lbool Solver::solve_(
 
     lbool status = l_Undef;
     if (!incremental && verbosity >= 1) {
-        printf(
-            "c ========================================[ MAGIC CONSTANTS "
-            "]==============================================\n"
-        );
-        printf(
-            "c | Constants are supposed to work well together :-)               "
-            "                                       |\n"
-        );
-        printf(
-            "c | however, if you find better choices, please let us known...    "
-            "                                       |\n"
-        );
-        printf(
-            "c "
-            "|------------------------------------------------------------------"
-            "-------------------------------------|\n"
-        );
+        printf("c ========================================[ MAGIC CONSTANTS "
+               "]==============================================\n");
+        printf("c | Constants are supposed to work well together :-)               "
+               "                                       |\n");
+        printf("c | however, if you find better choices, please let us known...    "
+               "                                       |\n");
+        printf("c "
+               "|------------------------------------------------------------------"
+               "-------------------------------------|\n");
         if (adaptStrategies) {
-            printf(
-                "c | Adapt dynamically the solver after 100000 conflicts "
-                "(restarts, reduction strategies...)               |\n"
-            );
-            printf(
-                "c "
-                "|----------------------------------------------------------------"
-                "---------------------------------------|\n"
-            );
+            printf("c | Adapt dynamically the solver after 100000 conflicts "
+                   "(restarts, reduction strategies...)               |\n");
+            printf("c "
+                   "|----------------------------------------------------------------"
+                   "---------------------------------------|\n");
         }
-        printf(
-            "c |                                |                               "
-            " |                                     |\n"
-        );
-        printf(
-            "c | - Restarts:                    | - Reduce Clause DB:           "
-            " | - Minimize Asserting:               |\n"
-        );
+        printf("c |                                |                               "
+               " |                                     |\n");
+        printf("c | - Restarts:                    | - Reduce Clause DB:           "
+               " | - Minimize Asserting:               |\n");
         if (chanseokStrategy) {
-            printf(
-                "c |   * LBD Queue    : %6d      |     chanseok Strategy          "
-                "|    * size < %3d                     |\n",
-                lbdQueue.maxSize(),
-                lbSizeMinimizingClause
-            );
-            printf(
-                "c |   * Trail  Queue : %6d      |   * learnts size     : %6d  |  "
-                "  * lbd  < %3d                     |\n",
-                trailQueue.maxSize(),
-                firstReduceDB,
-                lbLBDMinimizingClause
-            );
-            printf(
-                "c |   * K            : %6.2f      |   * Bound LBD   : %6d       "
-                "|                                     |\n",
-                K,
-                coLBDBound
-            );
-            printf(
-                "c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d  "
-                "   |                                     |\n",
-                R,
-                lbLBDFrozenClause
-            );
+            printf("c |   * LBD Queue    : %6d      |     chanseok Strategy          "
+                   "|    * size < %3d                     |\n",
+                   lbdQueue.maxSize(),
+                   lbSizeMinimizingClause);
+            printf("c |   * Trail  Queue : %6d      |   * learnts size     : %6d  |  "
+                   "  * lbd  < %3d                     |\n",
+                   trailQueue.maxSize(),
+                   firstReduceDB,
+                   lbLBDMinimizingClause);
+            printf("c |   * K            : %6.2f      |   * Bound LBD   : %6d       "
+                   "|                                     |\n",
+                   K,
+                   coLBDBound);
+            printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d  "
+                   "   |                                     |\n",
+                   R,
+                   lbLBDFrozenClause);
         } else {
-            printf(
-                "c |   * LBD Queue    : %6d      |   * First     : %6d         |  "
-                "  * size < %3d                     |\n",
-                lbdQueue.maxSize(),
-                nbclausesbeforereduce,
-                lbSizeMinimizingClause
-            );
-            printf(
-                "c |   * Trail  Queue : %6d      |   * Inc       : %6d         |  "
-                "  * lbd  < %3d                     |\n",
-                trailQueue.maxSize(),
-                incReduceDB,
-                lbLBDMinimizingClause
-            );
-            printf(
-                "c |   * K            : %6.2f      |   * Special   : %6d         "
-                "|                                     |\n",
-                K,
-                specialIncReduceDB
-            );
-            printf(
-                "c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d  "
-                "   |                                     |\n",
-                R,
-                lbLBDFrozenClause
-            );
+            printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |  "
+                   "  * size < %3d                     |\n",
+                   lbdQueue.maxSize(),
+                   nbclausesbeforereduce,
+                   lbSizeMinimizingClause);
+            printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |  "
+                   "  * lbd  < %3d                     |\n",
+                   trailQueue.maxSize(),
+                   incReduceDB,
+                   lbLBDMinimizingClause);
+            printf("c |   * K            : %6.2f      |   * Special   : %6d         "
+                   "|                                     |\n",
+                   K,
+                   specialIncReduceDB);
+            printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d  "
+                   "   |                                     |\n",
+                   R,
+                   lbLBDFrozenClause);
         }
-        printf(
-            "c |                                |                               "
-            " |                                     |\n"
-        );
-        printf(
-            "c ==================================[ Search Statistics (every %6d "
-            "conflicts) ]=========================\n",
-            verbEveryConflicts
-        );
-        printf(
-            "c |                                                                "
-            "                                       |\n"
-        );
+        printf("c |                                |                               "
+               " |                                     |\n");
+        printf("c ==================================[ Search Statistics (every %6d "
+               "conflicts) ]=========================\n",
+               verbEveryConflicts);
+        printf("c |                                                                "
+               "                                       |\n");
 
-        printf(
-            "c |          RESTARTS           |          ORIGINAL         |      "
-            "        LEARNT              | Progress |\n"
-        );
-        printf(
-            "c |       NB   Blocked  Avg Cfc |    Vars  Clauses Literals |   "
-            "Red   Learnts    LBD2  Removed |          |\n"
-        );
-        printf(
-            "c "
-            "==================================================================="
-            "======================================\n"
-        );
+        printf("c |          RESTARTS           |          ORIGINAL         |      "
+               "        LEARNT              | Progress |\n");
+        printf("c |       NB   Blocked  Avg Cfc |    Vars  Clauses Literals |   "
+               "Red   Learnts    LBD2  Removed |          |\n");
+        printf("c "
+               "==================================================================="
+               "======================================\n");
     }
 
     // Search:
     int curr_restarts = 0;
     while (status == l_Undef) {
-        status = search(
-            luby_restart ? luby(restart_inc, curr_restarts) * luby_restart_factor : 0
-        ); // the parameter is useless in glucose, kept to
-           // allow modifications
+        status = search(luby_restart ? luby(restart_inc, curr_restarts) * luby_restart_factor
+                                     : 0); // the parameter is useless in glucose, kept to
+                                           // allow modifications
 
         if (!withinBudget())
             break;
@@ -1811,11 +1751,9 @@ lbool Solver::solve_(
     }
 
     if (!incremental && verbosity >= 1)
-        printf(
-            "c "
-            "==================================================================="
-            "======================================\n"
-        );
+        printf("c "
+               "==================================================================="
+               "======================================\n");
 
     if (certifiedUNSAT) { // Want certified output
         if (status == l_False) {
@@ -1915,12 +1853,10 @@ void Solver::toDimacs(FILE* f, const vec<Lit>& assumps) {
 
     for (int i = 0; i < assumptions.size(); i++) {
         assert(value(assumptions[i]) != l_False);
-        fprintf(
-            f,
-            "%s%d 0\n",
-            sign(assumptions[i]) ? "-" : "",
-            mapVar(var(assumptions[i]), map, max) + 1
-        );
+        fprintf(f,
+                "%s%d 0\n",
+                sign(assumptions[i]) ? "-" : "",
+                mapVar(var(assumptions[i]), map, max) + 1);
     }
 
     for (int i = 0; i < clauses.size(); i++)
@@ -1990,11 +1926,9 @@ void Solver::garbageCollect() {
     ClauseAllocator to(ca.size() - ca.wasted());
     relocAll(to);
     if (verbosity >= 2)
-        printf(
-            "|  Garbage collection:   %12d bytes => %12d bytes             |\n",
-            ca.size() * ClauseAllocator::Unit_Size,
-            to.size() * ClauseAllocator::Unit_Size
-        );
+        printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n",
+               ca.size() * ClauseAllocator::Unit_Size,
+               to.size() * ClauseAllocator::Unit_Size);
     to.moveTo(ca);
 }
 
