@@ -20,10 +20,10 @@ struct ShapeMetricsDrawing {
 std::expected<ShapeMetricsDrawing, std::string>
 make_orthogonal_drawing(const UndirectedGraph& graph);
 
-void save_shape_metrics_drawing_to_file(
-    const ShapeMetricsDrawing& result, std::filesystem::path path
-);
+std::expected<void, std::string>
+save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, std::filesystem::path path);
 
-ShapeMetricsDrawing load_shape_metrics_drawing_from_file(std::filesystem::path path);
+std::expected<ShapeMetricsDrawing, std::string>
+load_shape_metrics_drawing_from_file(std::filesystem::path path);
 
 #endif
