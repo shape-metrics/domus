@@ -6,7 +6,6 @@
 #include <limits.h>
 #include <optional>
 #include <ranges>
-#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -89,8 +88,7 @@ void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attribu
     for (int node_id : graph.get_nodes_ids()) {
         if (attributes.get_node_color(node_id) == Color::BLACK)
             continue;
-        if (graph.get_degree_of_node(node_id) != 2)
-            throw std::runtime_error("gnoo");
+        assert(graph.get_degree_of_node(node_id) == 2);
         array<int, 2> neighbors;
         size_t i = 0;
         for (int neighbor_id : graph.get_neighbors_of_node(node_id))
@@ -278,8 +276,7 @@ auto find_edges_to_fix(
         optional<int> downest_left, downest_right, leftest_up, leftest_down;
         for (int added_id : graph.get_neighbors_of_node(node_id)) {
             if (shape.is_horizontal(node_id, added_id)) {
-                if (shape.is_left(node_id, added_id))
-                    throw std::runtime_error("wtf 0");
+                assert(!shape.is_left(node_id, added_id));
                 int other_neighbor_id = 0;
                 bool found = false;
                 for (int neighbor_id : graph.get_neighbors_of_node(added_id)) {
@@ -288,8 +285,7 @@ auto find_edges_to_fix(
                     found = true;
                     other_neighbor_id = neighbor_id;
                 }
-                if (!found)
-                    throw std::runtime_error("wtf 1");
+                assert(found);
                 if (shape.is_up(added_id, other_neighbor_id)) {
                     if (!leftest_up.has_value())
                         leftest_up = added_id;
@@ -304,8 +300,7 @@ auto find_edges_to_fix(
                         leftest_down = added_id;
                 }
             } else {
-                if (shape.is_down(node_id, added_id))
-                    throw std::runtime_error("wtf 2");
+                assert(!shape.is_down(node_id, added_id));
                 int other_neighbor_id = 0;
                 bool found = false;
                 for (int neighbor_id : graph.get_neighbors_of_node(added_id)) {
@@ -314,8 +309,7 @@ auto find_edges_to_fix(
                     found = true;
                     other_neighbor_id = neighbor_id;
                 }
-                if (!found)
-                    throw std::runtime_error("wtf 3");
+                assert(found);
                 if (shape.is_left(added_id, other_neighbor_id)) {
                     if (!downest_left.has_value())
                         downest_left = added_id;
@@ -351,7 +345,7 @@ int get_other_neighbor_id(const UndirectedGraph& graph, const int node_id, const
             return other_id;
         }
     }
-    throw std::runtime_error("No other neighbor found for node " + std::to_string(node_id));
+    assert(false); // No other neighbor found for node
 }
 
 void fix_edge(
@@ -471,8 +465,7 @@ void fix_inconsistency(
             continue;
         colored_node = node_id;
     }
-    if (!colored_node.has_value())
-        throw std::runtime_error("fix_inconsistency: no colored node found");
+    assert(colored_node.has_value());
     const int colored_node_id = colored_node.value();
     int neighbors_ids[2];
     int i = 0;

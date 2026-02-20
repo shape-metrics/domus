@@ -119,7 +119,7 @@ optional<Cycle> find_a_cycle_in_graph(const DirectedGraph& graph) {
     return Cycle(cycle);
 }
 
-std::expected<std::vector<Cycle>, std::string> compute_cycle_basis(const UndirectedGraph& graph) {
+expected<vector<Cycle>, string> compute_cycle_basis(const UndirectedGraph& graph) {
     if (!is_graph_connected(graph))
         return std::unexpected("Error in compute_cycle_basis: input graph is not connected");
     const Tree spanning = *build_spanning_tree(graph);

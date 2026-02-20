@@ -1,8 +1,8 @@
 #include "domus/orthogonal/area_compacter.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <limits.h>
-#include <stdexcept>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
@@ -28,8 +28,7 @@ auto build_index_to_nodes_map(const UndirectedGraph& graph, const GraphAttribute
 }
 
 bool can_move_to_prev_index(IntPairHashSet& prev, IntPairHashSet& to_shift) {
-    if (to_shift.size() != 1)
-        throw runtime_error("can_move_left: wtf");
+    assert(to_shift.size() == 1);
     auto [to_shift_min, to_shift_max] = *to_shift.begin();
     for (auto [prev_min, prev_max] : prev)
         if (!(prev_min > to_shift_max || to_shift_min > prev_max))

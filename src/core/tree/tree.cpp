@@ -11,20 +11,28 @@ const unordered_set<int>& Tree::get_nodes() const { return m_node_ids; }
 
 bool Tree::is_root(int node_id) const {
     if (!has_node(node_id))
-        throw runtime_error("Node does not exist");
+        return false;
     return node_id == m_root_id;
 }
 
 bool Tree::has_edge(int node_id_1, int node_id_2) const {
     if (!has_node(node_id_1) || !has_node(node_id_2))
-        throw runtime_error("Node does not exist");
+        return false;
     return get_children(node_id_1).contains(node_id_2) ||
            get_children(node_id_2).contains(node_id_1);
 }
 
-int Tree::get_parent(int node_id) const {
-    if (!has_node(node_id))
-        throw runtime_error("Node does not exist");
+expected<int, string> Tree::get_parent(int node_id) const {
+    if (!has_node(node_id)) {
+        string error_msg =
+            "Error in Tree::get_parent: node " + std::to_string(node_id) + " does not exist";
+        return std::unexpected(error_msg);
+    }
+    if (is_root(node_id)) {
+        string error_msg =
+            "Error in Tree::get_parent: node " + std::to_string(node_id) + " is root";
+        return std::unexpected(error_msg);
+    }
     return m_nodeid_to_parentid.at(node_id);
 }
 
@@ -63,7 +71,7 @@ string Tree::to_string() const {
             str += "Node " + std::to_string(node_id) + " is root\n";
         else
             str += "Node " + std::to_string(node_id) + " has parent " +
-                   std::to_string(get_parent(node_id)) + "\n";
+                   std::to_string(*get_parent(node_id)) + "\n";
         str += "Children of node " + std::to_string(node_id) + ":";
         for (int child_id : get_children(node_id))
             str += "  " + std::to_string(child_id);

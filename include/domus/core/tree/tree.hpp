@@ -1,6 +1,7 @@
 #ifndef MY_TREE_H
 #define MY_TREE_H
 
+#include <expected>
 #include <stddef.h>
 #include <string>
 #include <unordered_map>
@@ -18,7 +19,7 @@ class Tree {
     const std::unordered_set<int>& get_nodes() const;
     bool is_root(int node_id) const;
     bool has_edge(int node_id_1, int node_id_2) const;
-    int get_parent(int node_id) const;
+    std::expected<int, std::string> get_parent(int node_id) const;
     bool has_node(int id) const;
     void add_node(int id, int parent_id);
     int add_node(int parent_id);

@@ -36,7 +36,7 @@ vector<int> get_path_from_root(const Tree& tree, int node_id) {
     vector<int> path;
     path.push_back(node_id);
     while (!tree.is_root(node_id)) { // while the node has a parent
-        node_id = tree.get_parent(node_id);
+        node_id = *tree.get_parent(node_id);
         path.push_back(node_id);
     }
     ranges::reverse(path);

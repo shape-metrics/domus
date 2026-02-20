@@ -5,7 +5,6 @@
 #include <limits.h>
 #include <math.h>
 #include <stddef.h>
-#include <stdexcept>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -17,13 +16,15 @@
 #include "domus/nlohmann/json.hpp"
 
 using json = nlohmann::json;
+
+using namespace std;
 using namespace std::filesystem;
 
-void save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, path path) {
+expected<void, string> save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, path path) {
     json data;
     const UndirectedGraph& graph = result.augmented_graph;
     data["nodes"] = graph.get_nodes_ids();
-    std::vector<std::pair<int, int>> edges;
+    vector<pair<int, int>> edges;
     for (int node_id : graph.get_nodes_ids()) {
         for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
             if (neighbor_id < node_id)
@@ -34,7 +35,7 @@ void save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, path path)
     data["edges"] = edges;
     const GraphAttributes& attributes = result.attributes;
     for (int node_id : graph.get_nodes_ids()) {
-        std::string s_id = std::to_string(node_id);
+        string s_id = std::to_string(node_id);
         data["node_colors"][s_id] = color_to_string(attributes.get_node_color(node_id));
         data["node_positions"][s_id] = {
             attributes.get_position_x(node_id),
@@ -56,14 +57,23 @@ void save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, path path)
     }
     data["shape"] = shape_array;
     std::ofstream file(path);
-    if (file.is_open())
+    if (file.is_open()) {
         file << data.dump(4);
+        return {};
+    } else {
+        string error_msg = "Error in save_orthogonal_drawing_to_file: could not open file ";
+        error_msg += path.string();
+        return std::unexpected(error_msg);
+    }
 }
 
-OrthogonalDrawing load_orthogonal_drawing_from_file(path path) {
+expected<OrthogonalDrawing, string> load_orthogonal_drawing_from_file(path path) {
     std::ifstream file(path);
-    if (!file.is_open())
-        throw std::runtime_error("Could not open file");
+    if (!file.is_open()) {
+        string error_msg = "Error in load_orthogonal_drawing_from_file: could not open file ";
+        error_msg += path.string();
+        return std::unexpected(error_msg);
+    }
     json data;
     file >> data;
     OrthogonalDrawing result;
@@ -82,7 +92,8 @@ OrthogonalDrawing load_orthogonal_drawing_from_file(path path) {
     return result;
 }
 
-void make_svg(const UndirectedGraph& graph, const GraphAttributes& attributes, path path) {
+expected<void, string>
+make_svg(const UndirectedGraph& graph, const GraphAttributes& attributes, path path) {
     int max_x = -INT_MAX;
     int max_y = -INT_MAX;
     for (int node_id : graph.get_nodes_ids()) {
@@ -108,7 +119,7 @@ void make_svg(const UndirectedGraph& graph, const GraphAttributes& attributes, p
     SvgDrawer drawer{width, height};
     auto scale_x = ScaleLinear(min_x - 100, max_x + 100, 0, width);
     auto scale_y = ScaleLinear(min_y - 100, max_y + 100, 0, height);
-    std::unordered_map<int, Point2D> points;
+    unordered_map<int, Point2D> points;
     for (int node_id : graph.get_nodes_ids()) {
         const double x = scale_x.map(attributes.get_position_x(node_id));
         const double y = scale_y.map(attributes.get_position_y(node_id));
@@ -146,10 +157,10 @@ void make_svg(const UndirectedGraph& graph, const GraphAttributes& attributes, p
         square.setLabel(std::to_string(node_id));
         drawer.add(square, 5);
     }
-    drawer.save_to_file(path);
+    return drawer.save_to_file(path);
 }
 
-int min_coordinate(std::unordered_map<int, std::unordered_set<int>> coordinate_to_nodes) {
+int min_coordinate(unordered_map<int, unordered_set<int>> coordinate_to_nodes) {
     int min_c = INT_MAX;
     for (const int coord : coordinate_to_nodes | std::views::keys)
         if (coord < min_c)
@@ -157,21 +168,21 @@ int min_coordinate(std::unordered_map<int, std::unordered_set<int>> coordinate_t
     return min_c;
 }
 
-std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>>
+pair<unordered_map<int, int>, unordered_map<int, int>>
 compute_node_to_index_position(const UndirectedGraph& graph, const GraphAttributes& attributes) {
     constexpr int THRESHOLD = 45;
-    std::unordered_map<int, std::unordered_set<int>> coordinate_y_to_nodes;
+    unordered_map<int, unordered_set<int>> coordinate_y_to_nodes;
     for (const int node_id : graph.get_nodes_ids()) {
         const int y = attributes.get_position_y(node_id);
         coordinate_y_to_nodes[y].insert(node_id);
     }
-    std::unordered_map<int, std::unordered_set<int>> coordinate_x_to_nodes;
+    unordered_map<int, unordered_set<int>> coordinate_x_to_nodes;
     for (const int node_id : graph.get_nodes_ids()) {
         const int x = attributes.get_position_x(node_id);
         coordinate_x_to_nodes[x].insert(node_id);
     }
     int y_index = 0;
-    std::unordered_map<int, int> node_to_coordinate_y;
+    unordered_map<int, int> node_to_coordinate_y;
     int min_y = min_coordinate(coordinate_y_to_nodes);
     while (true) {
         for (const int node_id : coordinate_y_to_nodes[min_y])
@@ -185,7 +196,7 @@ compute_node_to_index_position(const UndirectedGraph& graph, const GraphAttribut
         min_y = next_min_y;
     }
     int x_index = 0;
-    std::unordered_map<int, int> node_to_coordinate_x;
+    unordered_map<int, int> node_to_coordinate_x;
     int min_x = min_coordinate(coordinate_x_to_nodes);
     while (true) {
         for (const int node_id : coordinate_x_to_nodes[min_x])
@@ -198,5 +209,5 @@ compute_node_to_index_position(const UndirectedGraph& graph, const GraphAttribut
             ++x_index;
         min_x = next_min_x;
     }
-    return std::make_pair(node_to_coordinate_x, node_to_coordinate_y);
+    return make_pair(node_to_coordinate_x, node_to_coordinate_y);
 }
