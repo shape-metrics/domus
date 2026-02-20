@@ -13,18 +13,7 @@ using namespace std;
 
 class UndirectedGraph;
 
-void test_graph(const UndirectedGraph& graph) {
-    const optional<Embedding> embedding = embed_graph(graph);
-    if (embedding.has_value()) {
-        cout << "Embedding found\n";
-        embedding->print();
-        cout << "faces: " << compute_number_of_faces_in_embedding(embedding.value()) << "\n"
-             << std::boolalpha << is_embedding_planar(embedding.value());
-    } else
-        cout << "Embedding not found\n";
-}
-
-int main() {
+int main2() {
     string svg_filename = "drawing.svg";
     string input_graph_filename = "graph.txt";
     const UndirectedGraph graph = load_graph_from_txt_file(input_graph_filename);
@@ -35,6 +24,19 @@ int main() {
     cout << "Initial number of cycles: " << result.initial_number_of_cycles << "\n"
          << "Number of added cycles: " << result.number_of_added_cycles << "\n"
          << "Number of useless bends: " << result.number_of_useless_bends << "\n";
-    // test_graph(*graph);
+    return 0;
+}
+
+int main() {
+    const UndirectedGraph graph = load_graph_from_txt_file("graph.txt");
+    const optional<Embedding> embedding = embed_graph(graph);
+    if (embedding.has_value()) {
+        cout << "Embedding found\n";
+        embedding->print();
+        cout << "number of faces: " << compute_number_of_faces_in_embedding(embedding.value())
+             << "\n"
+             << std::boolalpha << is_embedding_planar(embedding.value());
+    } else
+        cout << "Embedding not found\n";
     return 0;
 }

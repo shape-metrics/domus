@@ -20,7 +20,7 @@ SvgDrawer::SvgDrawer(int width, int height)
 void SvgDrawer::add(Square2D& square, int corner_radious) {
     std::string color;
     if (square.hasColor())
-        color = square.getColor();
+        color = square.getColor().value();
     else
         color = "black";
     double side = square.getSide();
@@ -35,8 +35,8 @@ void SvgDrawer::add(Square2D& square, int corner_radious) {
         double centerY = square.getCenter().y_m;
         m_svg << "<text x=\"" << centerX << "\" y=\"" << m_scale_y.map(centerY) << "\" ";
         m_svg << "font-family=\"Verdana\" font-size=\"18\" fill=\"white\" ";
-        m_svg << "text-anchor=\"middle\" dominant-baseline=\"central\">" << square.getLabel()
-              << "</text>" << std::endl;
+        m_svg << "text-anchor=\"middle\" dominant-baseline=\"central\">"
+              << square.getLabel().value() << "</text>" << std::endl;
     }
 }
 
