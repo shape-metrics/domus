@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <optional>
 #include <ranges>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -119,9 +120,14 @@ void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attribu
 ShapeMetricsDrawing
 make_orthogonal_drawing_incremental(const UndirectedGraph& graph, vector<Cycle>& cycles);
 
-ShapeMetricsDrawing make_orthogonal_drawing(const UndirectedGraph& graph) {
-    vector<Cycle> cycles = compute_cycle_basis(graph);
-    return make_orthogonal_drawing_incremental(graph, cycles);
+expected<ShapeMetricsDrawing, string> make_orthogonal_drawing(const UndirectedGraph& graph) {
+    auto cycles = compute_cycle_basis(graph);
+    if (!cycles) {
+        string error = "Error in make_orthogonal_drawing:\n";
+        error += cycles.error();
+        return std::unexpected(error);
+    }
+    return make_orthogonal_drawing_incremental(graph, *cycles);
 }
 
 optional<Cycle> check_if_metrics_exist(Shape& shape, UndirectedGraph& graph) {
@@ -179,8 +185,6 @@ void fix_degree_more_than_4(
 
 ShapeMetricsDrawing
 make_orthogonal_drawing_incremental(const UndirectedGraph& graph, vector<Cycle>& cycles) {
-    if (!is_graph_connected(graph))
-        throw DisconnectedGraphError();
     UndirectedGraph augmented_graph;
     GraphAttributes attributes;
     attributes.add_attribute(Attribute::NODES_COLOR);
@@ -229,8 +233,8 @@ void build_nodes_positions(UndirectedGraph& graph, GraphAttributes& attributes, 
     auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
     auto [ordering_x, ordering_y, ignored_1, ignored_2] =
         equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
-    auto new_classes_x_ordering = make_topological_ordering(ordering_x);
-    auto new_classes_y_ordering = make_topological_ordering(ordering_y);
+    auto new_classes_x_ordering = *make_topological_ordering(ordering_x);
+    auto new_classes_y_ordering = *make_topological_ordering(ordering_y);
     int current_position_x = -100;
     unordered_map<int, int> node_id_to_position_x;
     for (const int class_id : new_classes_x_ordering) {
@@ -426,8 +430,8 @@ void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, S
     auto ordering = equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
     DirectedGraph& ordering_x = std::get<0>(ordering);
     DirectedGraph& ordering_y = std::get<1>(ordering);
-    vector<int> classes_x_ordering = make_topological_ordering(ordering_x);
-    vector<int> classes_y_ordering = make_topological_ordering(ordering_y);
+    vector<int> classes_x_ordering = *make_topological_ordering(ordering_x);
+    vector<int> classes_y_ordering = *make_topological_ordering(ordering_y);
     int current_position_x = 0;
     unordered_map<int, int> node_id_to_position_x;
     for (const int class_id : classes_x_ordering) {

@@ -1,13 +1,13 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <functional>
 #include <iostream>
 #include <list>
+#include <optional>
 #include <queue>
-#include <ranges>
 #include <stack>
-#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -119,8 +119,10 @@ optional<Cycle> find_a_cycle_in_graph(const DirectedGraph& graph) {
     return Cycle(cycle);
 }
 
-vector<Cycle> compute_cycle_basis(const UndirectedGraph& graph) {
-    const Tree spanning = build_spanning_tree(graph);
+std::expected<std::vector<Cycle>, std::string> compute_cycle_basis(const UndirectedGraph& graph) {
+    if (!is_graph_connected(graph))
+        return std::unexpected("Error in compute_cycle_basis: input graph is not connected");
+    const Tree spanning = *build_spanning_tree(graph);
     vector<Cycle> cycles;
     for (int node_id : graph.get_nodes_ids()) {
         for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
@@ -146,7 +148,7 @@ vector<Cycle> compute_cycle_basis(const UndirectedGraph& graph) {
     return cycles;
 }
 
-vector<int> make_topological_ordering(const DirectedGraph& graph) {
+optional<vector<int>> make_topological_ordering(const DirectedGraph& graph) {
     unordered_map<int, int> in_degree;
     for (int node_id : graph.get_nodes_ids()) {
         for (int neighbor_id : graph.get_out_neighbors_of_node(node_id)) {
@@ -172,7 +174,7 @@ vector<int> make_topological_ordering(const DirectedGraph& graph) {
         }
     }
     if (count != graph.size())
-        throw runtime_error("Graph contains cycle");
+        return std::nullopt; // graph contains a cycle
     return topological_order;
 }
 
@@ -285,8 +287,9 @@ BiconnectedComponents compute_biconnected_components(const UndirectedGraph& grap
                 components,
                 cut_vertices
             );
-    if (!stack_of_nodes.empty() || !stack_of_edges.empty())
-        throw runtime_error("Biconnected components algorithm did not finish correctly");
+    assert(
+        stack_of_nodes.empty() && stack_of_edges.empty()
+    ); // assessing algorithm finished correctly
     BiconnectedComponents result{std::move(cut_vertices), std::move(components)};
     return result;
 }

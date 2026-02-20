@@ -1,18 +1,14 @@
 #ifndef MY_DRAWING_BUILDER_H
 #define MY_DRAWING_BUILDER_H
 
+#include <expected>
 #include <filesystem>
 #include <stddef.h>
-#include <stdexcept>
+#include <string>
 
 #include "domus/orthogonal/drawing.hpp"
 
 class UndirectedGraph;
-
-class DisconnectedGraphError : public std::runtime_error {
-  public:
-    DisconnectedGraphError() : std::runtime_error("The graph is not connected.") {}
-};
 
 struct ShapeMetricsDrawing {
     OrthogonalDrawing drawing;
@@ -21,7 +17,8 @@ struct ShapeMetricsDrawing {
     size_t number_of_useless_bends;
 };
 
-ShapeMetricsDrawing make_orthogonal_drawing(const UndirectedGraph& graph);
+std::expected<ShapeMetricsDrawing, std::string>
+make_orthogonal_drawing(const UndirectedGraph& graph);
 
 void save_shape_metrics_drawing_to_file(
     const ShapeMetricsDrawing& result, std::filesystem::path path

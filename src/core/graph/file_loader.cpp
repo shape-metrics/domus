@@ -1,26 +1,22 @@
 #include "domus/core/graph/file_loader.hpp"
 
+#include <expected>
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
 
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/utils.hpp"
 
 using namespace std;
+using namespace std::filesystem;
 
-UndirectedGraph load_graph_from_txt_file(string filename) {
+expected<UndirectedGraph, string> load_graph_from_txt_file(path path) {
     UndirectedGraph graph;
-    load_graph_from_txt_file(filename, graph);
-    return graph;
-}
-
-void load_graph_from_txt_file(string filename, UndirectedGraph& graph) {
-    if (graph.size() > 0)
-        throw runtime_error("Graph is not empty. Please use a new graph.");
-    std::ifstream infile(filename);
-    if (!infile)
-        throw runtime_error("Could not open file: " + filename);
+    std::ifstream infile(path);
+    if (!infile) {
+        string error = "Could not load graph from file.\nCannot open: " + path.string();
+        return std::unexpected(error);
+    }
     string line;
     enum Section { NONE, NODES, EDGES } section = NONE;
     while (std::getline(infile, line)) {
@@ -41,22 +37,25 @@ void load_graph_from_txt_file(string filename, UndirectedGraph& graph) {
             }
         }
     }
+    return graph;
 }
 
-void save_graph_to_file(const UndirectedGraph& graph, string filename) {
-    std::ofstream outfile(filename);
-    if (!outfile)
-        throw runtime_error("Could not write to file: " + filename);
+std::expected<void, std::string> save_graph_to_file(const UndirectedGraph& graph, path path) {
+    std::ofstream outfile(path);
+    if (!outfile) {
+        string error = "Could not save graph to file.\n";
+        error += "could not write to file: " + path.string();
+        return std::unexpected(error);
+    }
     outfile << "nodes:\n";
     for (const int node_id : graph.get_nodes_ids())
         outfile << node_id << '\n';
     outfile << "edges:\n";
-    for (int node_id : graph.get_nodes_ids()) {
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
+    for (int node_id : graph.get_nodes_ids())
+        for (int neighbor_id : graph.get_neighbors_of_node(node_id))
             if (neighbor_id > node_id)
                 outfile << node_id << ' ' << neighbor_id << '\n';
-        }
-    }
+    return {};
 }
 
 void write_data_tag(std::ostream& os, string key_id, string value) {
@@ -110,11 +109,15 @@ void save_to_graphml(
     os << "</graphml>\n";
 }
 
-void save_graph_to_graphml_file(
-    const UndirectedGraph& graph, const GraphAttributes& attributes, string filename
+std::expected<void, std::string> save_graph_to_graphml_file(
+    const UndirectedGraph& graph, const GraphAttributes& attributes, path path
 ) {
-    std::ofstream outfile(filename);
-    if (!outfile)
-        throw runtime_error("Could not write to file: " + filename);
+    std::ofstream outfile(path);
+    if (!outfile) {
+        string error = "Could not save graph to file.\n";
+        error += "could not write to file: " + path.string();
+        return std::unexpected(error);
+    }
     save_to_graphml(outfile, graph, attributes);
+    return {};
 }

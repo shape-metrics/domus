@@ -1,20 +1,21 @@
 #ifndef MY_GRAPH_FILE_LOADER_H
 #define MY_GRAPH_FILE_LOADER_H
 
+#include <expected>
+#include <filesystem>
 #include <string>
 
 #include "domus/core/graph/graph.hpp"
 
 class GraphAttributes;
 
-UndirectedGraph load_graph_from_txt_file(std::string filename);
+std::expected<UndirectedGraph, std::string> load_graph_from_txt_file(std::filesystem::path path);
 
-void load_graph_from_txt_file(std::string filename, UndirectedGraph& graph);
+std::expected<void, std::string>
+save_graph_to_file(const UndirectedGraph& graph, std::filesystem::path path);
 
-void save_graph_to_file(const UndirectedGraph& graph, std::string filename);
-
-void save_graph_to_graphml_file(
-    const UndirectedGraph& graph, const GraphAttributes& attributes, std::string filename
+std::expected<void, std::string> save_graph_to_graphml_file(
+    const UndirectedGraph& graph, const GraphAttributes& attributes, std::filesystem::path path
 );
 
 #endif
