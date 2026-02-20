@@ -85,7 +85,6 @@ set(COMMON_SRCS
     src/drawing/svg_drawer.cpp
     src/orthogonal/drawing_builder.cpp
     src/orthogonal/drawing_stats.cpp
-    src/config/config.cpp
     src/core/graph/generators.cpp
     src/core/utils.cpp
     src/core/csv.cpp
