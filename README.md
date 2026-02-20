@@ -52,3 +52,4 @@ The two sets of experiments are:
   - **in vitro**: dataset of unformily at random generated connected graphs with max degree 4;
   - **in the wild**: rome graphs dataset (without disconnected graphs).
 
+Please refer to the [experiments repository](https://github.com/shape-metrics/experiments) for the code used to run the experiments.
