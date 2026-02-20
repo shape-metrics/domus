@@ -1,8 +1,8 @@
 #ifndef MY_CYCLE_H
 #define MY_CYCLE_H
 
+#include <deque>
 #include <stddef.h>
-#include <list>
 #include <string>
 #include <vector>
 
@@ -13,19 +13,16 @@ class Cycle {
     size_t next_index(size_t index) const;
     void reverse();
 
-   public:
+  public:
     explicit Cycle(const std::vector<int>& nodes_ids);
-    explicit Cycle(const std::list<int>& nodes_ids);
+    explicit Cycle(const std::deque<int>& nodes_ids);
     void clear();
     [[nodiscard]] bool empty() const;
     [[nodiscard]] size_t size() const;
     void insert(size_t index, int node_id);
     void append(int node_id);
     void remove_if_exists(int node_id);
-    void add_in_between_if_exists(
-        int node_id_1,
-        int node_id_2,
-        int in_between_node_id);
+    void add_in_between_if_exists(int node_id_1, int node_id_2, int in_between_node_id);
     [[nodiscard]] int prev_of_node(int node_id) const;
     [[nodiscard]] int next_of_node(int node_id) const;
     [[nodiscard]] bool has_node(int node_id) const;

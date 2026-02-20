@@ -1,42 +1,34 @@
 #include "domus/core/graph/segment.hpp"
 
-#include <format>
 #include <initializer_list>
 #include <iostream>
-#include <ranges>
 #include <unordered_map>
 #include <utility>
 
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
 
+using namespace std;
+
 Segment::Segment() {
     this->segment = {};
     this->attachments = {};
 }
 
-UndirectedGraph& Segment::get_segment() {
-    return segment;
-}
+UndirectedGraph& Segment::get_segment() { return segment; }
 
-const UndirectedGraph& Segment::get_segment() const {
-    return segment;
-}
+const UndirectedGraph& Segment::get_segment() const { return segment; }
 
-const std::unordered_set<int>& Segment::get_attachments() const {
-    return attachments;
-}
+const unordered_set<int>& Segment::get_attachments() const { return attachments; }
 
 bool Segment::has_attachment(const int attachment_id) const {
     return attachments.contains(attachment_id);
 }
 
-void Segment::add_attachment(const int attachment_id) {
-    attachments.insert(attachment_id);
-}
+void Segment::add_attachment(const int attachment_id) { attachments.insert(attachment_id); }
 
-std::string Segment::to_string() const {
-    std::string result = "Segment:\n";
+string Segment::to_string() const {
+    string result = "Segment:\n";
     result += segment.to_string();
     result += "Attachments: ";
     for (const int attachment_id : attachments)
@@ -45,9 +37,7 @@ std::string Segment::to_string() const {
     return result;
 }
 
-void Segment::print() const {
-    std::cout << to_string();
-}
+void Segment::print() const { std::cout << to_string(); }
 
 bool is_segment_a_path(const Segment& segment) {
     for (int node_id : segment.get_segment().get_nodes_ids()) {
@@ -59,18 +49,16 @@ bool is_segment_a_path(const Segment& segment) {
     return true;
 }
 
-std::list<int> compute_path_between_attachments(
-    const Segment& segment,
-    const int attachment_1,
-    const int attachment_2) {
-    std::unordered_map<int, int> prev_of_node;
-    std::list<int> queue{};
+deque<int> compute_path_between_attachments(
+    const Segment& segment, const int attachment_1, const int attachment_2
+) {
+    unordered_map<int, int> prev_of_node;
+    deque<int> queue{};
     queue.push_back(attachment_1);
     while (!queue.empty()) {
         const int node_id = queue.front();
         queue.pop_front();
-        for (int neighbor_id :
-             segment.get_segment().get_neighbors_of_node(node_id)) {
+        for (int neighbor_id : segment.get_segment().get_neighbors_of_node(node_id)) {
             if (neighbor_id == attachment_2) {
                 if (node_id == attachment_1)
                     continue;
@@ -87,7 +75,7 @@ std::list<int> compute_path_between_attachments(
         if (prev_of_node.contains(attachment_2))
             break;
     }
-    std::list<int> path;
+    deque<int> path;
     int crawl = attachment_2;
     while (crawl != attachment_1) {
         path.push_front(crawl);
@@ -100,10 +88,11 @@ std::list<int> compute_path_between_attachments(
 void dfs_find_segments(
     const UndirectedGraph& graph,
     const int node_id,
-    std::unordered_set<int>& is_node_visited,
-    std::vector<int>& nodes_in_segment,
+    unordered_set<int>& is_node_visited,
+    vector<int>& nodes_in_segment,
     const Cycle& cycle,
-    std::vector<std::pair<int, int>>& edges_in_segment) {
+    vector<pair<int, int>>& edges_in_segment
+) {
     nodes_in_segment.push_back(node_id);
     is_node_visited.insert(node_id);
     for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
@@ -120,7 +109,8 @@ void dfs_find_segments(
                 is_node_visited,
                 nodes_in_segment,
                 cycle,
-                edges_in_segment);
+                edges_in_segment
+            );
     }
 }
 
@@ -131,10 +121,7 @@ void add_cycle_edges(const Cycle& cycle, Segment& segment) {
     }
 }
 
-Segment build_segment(
-    const std::vector<int>& nodes,
-    std::vector<std::pair<int, int>>& edges,
-    const Cycle& cycle) {
+Segment build_segment(const vector<int>& nodes, vector<pair<int, int>>& edges, const Cycle& cycle) {
     Segment segment;
     for (const int node_id : cycle)
         segment.get_segment().add_node(node_id);
@@ -154,29 +141,22 @@ Segment build_segment(
     return segment;
 }
 
-void find_segments(
-    const UndirectedGraph& graph,
-    const Cycle& cycle,
-    std::vector<Segment>& segments) {
-    std::unordered_set<int> visited;
+void find_segments(const UndirectedGraph& graph, const Cycle& cycle, vector<Segment>& segments) {
+    unordered_set<int> visited;
     for (const int node_id : graph.get_nodes_ids())
         if (cycle.has_node(node_id))
             visited.insert(node_id);
     for (const int node_id : graph.get_nodes_ids()) {
         if (!visited.contains(node_id)) {
-            std::vector<int> nodes;  // does NOT contain cycle nodes
-            std::vector<std::pair<int, int>>
-                edges;  // does NOT contain edges of the cycle
+            vector<int> nodes;            // does NOT contain cycle nodes
+            vector<pair<int, int>> edges; // does NOT contain edges of the cycle
             dfs_find_segments(graph, node_id, visited, nodes, cycle, edges);
             segments.push_back(build_segment(nodes, edges, cycle));
         }
     }
 }
 
-Segment build_chord(
-    const int attachment_1,
-    const int attachment_2,
-    const Cycle& cycle) {
+Segment build_chord(const int attachment_1, const int attachment_2, const Cycle& cycle) {
     Segment chord;
     for (const int node_id : cycle)
         chord.get_segment().add_node(node_id);
@@ -188,10 +168,7 @@ Segment build_chord(
     return chord;
 }
 
-void find_chords(
-    const UndirectedGraph& graph,
-    const Cycle& cycle,
-    std::vector<Segment>& segments) {
+void find_chords(const UndirectedGraph& graph, const Cycle& cycle, vector<Segment>& segments) {
     for (const int node_id : cycle) {
         for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
             if (node_id < neighbor_id)
@@ -199,17 +176,14 @@ void find_chords(
             if (cycle.has_node(neighbor_id))
                 if (neighbor_id != cycle.prev_of_node(node_id) &&
                     neighbor_id != cycle.next_of_node(node_id)) {
-                    segments.push_back(
-                        build_chord(node_id, neighbor_id, cycle));
+                    segments.push_back(build_chord(node_id, neighbor_id, cycle));
                 }
         }
     }
 }
 
-std::vector<Segment> compute_segments(
-    const UndirectedGraph& graph,
-    const Cycle& cycle) {
-    std::vector<Segment> segments;
+vector<Segment> compute_segments(const UndirectedGraph& graph, const Cycle& cycle) {
+    vector<Segment> segments;
     find_segments(graph, cycle, segments);
     find_chords(graph, cycle, segments);
     return segments;
