@@ -7,7 +7,6 @@
 #include <iostream>
 #include <mutex>
 #include <sstream>
-#include <stdexcept>
 #include <utility>
 
 using namespace std;
@@ -31,22 +30,25 @@ int Cnf::get_number_of_variables() const { return m_num_vars; }
 
 int Cnf::get_number_of_clauses() const { return m_num_clauses; }
 
-void Cnf::save_to_file(const string& file_path) const {
+expected<void, string> Cnf::save_to_file(const string& file_path) const {
     std::ofstream file(file_path);
     if (!file) {
-        std::cerr << "Error: Could not open file " << file_path << " for writing.\n";
-        return;
+        string error_msg = "Error in Cnf::save_to_file: could not open file ";
+        error_msg += file_path;
+        return std::unexpected(error_msg);
     }
     file << to_string();
     std::lock_guard lock(cnf_logs_mutex);
     std::ofstream log_file(cnf_logs_file, std::ios_base::app);
-    if (log_file) {
-        log_file << "v " << get_number_of_variables();
-        log_file << " c " << get_number_of_clauses() << "\n";
-        log_file.close();
-    } else {
-        throw runtime_error("Error: Could not open log file for writing: " + cnf_logs_file);
+    if (!log_file) {
+        string error_msg = "Error in Cnf::save_to_file: could not open file ";
+        error_msg += cnf_logs_file;
+        return std::unexpected(error_msg);
     }
+    log_file << "v " << get_number_of_variables();
+    log_file << " c " << get_number_of_clauses() << "\n";
+    log_file.close();
+    return {};
 }
 
 const string Cnf::to_string() const {

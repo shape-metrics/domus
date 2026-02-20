@@ -1,6 +1,7 @@
 #ifndef MY_CNF_H
 #define MY_CNF_H
 
+#include <expected>
 #include <string>
 #include <vector>
 
@@ -25,7 +26,7 @@ class Cnf {
     void add_comment(const std::string& comment);
     [[nodiscard]] int get_number_of_variables() const;
     [[nodiscard]] int get_number_of_clauses() const;
-    void save_to_file(const std::string& file_path) const;
+    std::expected<void, std::string> save_to_file(const std::string& file_path) const;
     const std::string to_string() const;
     [[nodiscard]] const std::vector<CnfRow>& get_rows() const;
     void print() const;

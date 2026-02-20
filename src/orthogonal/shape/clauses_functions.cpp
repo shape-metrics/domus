@@ -1,12 +1,13 @@
 #include "domus/orthogonal/shape/clauses_functions.hpp"
 
+#include <cassert>
+#include <stddef.h>
+
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/orthogonal/shape/shape.hpp"
 #include "domus/orthogonal/shape/variables_handler.hpp"
 #include "domus/sat/cnf.hpp"
-#include <stddef.h>
-#include <stdexcept>
 
 using namespace std;
 
@@ -84,7 +85,7 @@ void add_one_edge_per_direction_clauses(
         // at most one is true (at least 1 is false)
         cnf_builder.add_clause(clause);
     } else if (degree != 1) {
-        throw runtime_error("degree of node is not valid");
+        assert(false); // degree of node is not valid
     }
 }
 

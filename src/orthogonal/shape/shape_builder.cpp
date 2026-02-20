@@ -1,6 +1,7 @@
 #include "domus/orthogonal/shape/shape_builder.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <cstdlib>
 #include <fstream>
 #include <mutex>
@@ -120,8 +121,7 @@ void add_corner_inside_edge(
     GraphAttributes& attributes,
     vector<Cycle>& cycles
 ) {
-    if (!graph.has_edge(from_id, to_id))
-        throw runtime_error("Error: The edge is not in the graph");
+    assert(graph.has_edge(from_id, to_id));
     const int new_node_id = graph.add_node();
     attributes.set_node_color(new_node_id, Color::RED);
     graph.remove_edge(from_id, to_id);
