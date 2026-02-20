@@ -3,11 +3,8 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
-#include <fstream>
-#include <mutex>
 #include <optional>
 #include <random>
-#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -21,9 +18,6 @@
 #include "domus/sat/sat.hpp"
 
 using namespace std;
-
-const string unit_clauses_logs_file = "unit_clauses_logs.txt";
-std::mutex unit_clauses_logs_mutex;
 
 Shape result_to_shape(
     const UndirectedGraph& graph, const vector<int>& numbers, VariablesHandler& handler
@@ -70,29 +64,17 @@ pair<int, int> find_edges_to_split(
             } else
                 token += c;
         }
-        if (token != "0")
-            throw runtime_error("Invalid proof line");
+        assert(token == "0");
         if (tokens.size() == 1) {
             int unit_clause = tokens[0];
             if (std::abs(unit_clause) <= number_of_variables)
                 unit_clauses.push_back(unit_clause);
         }
     }
-    if (unit_clauses.empty())
-        throw runtime_error("Could not find the edge to remove");
+    assert(!unit_clauses.empty()); // Could not find the edge to remove
     // pick one of the first two unit clauses
     size_t random_index = random_engine() % min(unit_clauses.size(), static_cast<size_t>(2));
     const int variable = std::abs(unit_clauses[random_index]);
-    std::lock_guard lock(unit_clauses_logs_mutex);
-    std::ofstream log_file(unit_clauses_logs_file, std::ios_base::app);
-    if (log_file) {
-        log_file << "units " << unit_clauses.size() << "\n";
-        log_file.close();
-    } else {
-        throw runtime_error(
-            "Error: Could not open log file for writing: " + unit_clauses_logs_file
-        );
-    }
     return handler.get_edge_of_variable(variable);
 }
 
