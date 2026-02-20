@@ -68,6 +68,8 @@ Color string_to_color(const std::string& color) {
 
 std::vector<std::string> collect_txt_files(const std::string& folder_path) {
     std::vector<std::string> txt_files;
+    if (!std::filesystem::exists(folder_path))
+        throw std::runtime_error("Folder does not exist: " + folder_path);
     for (const auto& entry : std::filesystem::recursive_directory_iterator(folder_path))
         if (entry.is_regular_file() && entry.path().extension() == ".txt")
             txt_files.push_back(entry.path().string());

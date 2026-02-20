@@ -1,6 +1,7 @@
 #ifndef MY_SVG_DRAWER_H
 #define MY_SVG_DRAWER_H
 
+#include <filesystem>
 #include <sstream>
 #include <string>
 
@@ -23,9 +24,9 @@ class SvgDrawer {
     void add(Circle2D& circle);
     void add(Line2D& line, std::string color = "black");
     void add(Polygon2D& polygon, std::string color = "black");
-    void add(const Path2D& path, const std::string& color);
+    void add(const Path2D& path, std::string color);
     void add_and_smooth(Path2D& path, std::string color = "black");
-    void save_to_file(const std::string& filename);
+    void save_to_file(std::filesystem::path path);
 };
 
 #endif

@@ -6,6 +6,7 @@
 #include <limits.h>
 #include <optional>
 #include <ranges>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
@@ -24,6 +25,7 @@
 #include "domus/orthogonal/shape/shape_builder.hpp"
 
 using namespace std;
+using namespace std::filesystem;
 
 vector<int> path_in_class(
     const UndirectedGraph& graph, int from, int to, const Shape& shape, bool go_horizontal
@@ -89,7 +91,7 @@ void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attribu
         if (graph.get_degree_of_node(node_id) != 2)
             throw std::runtime_error("gnoo");
         array<int, 2> neighbors;
-        int i = 0;
+        size_t i = 0;
         for (int neighbor_id : graph.get_neighbors_of_node(node_id))
             neighbors[i++] = neighbor_id;
         // if the added corner is flat, remove it
@@ -99,7 +101,7 @@ void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attribu
     }
     for (int node_id : nodes_to_remove) {
         array<int, 2> neighbors;
-        int i = 0;
+        size_t i = 0;
         for (int neighbor_id : graph.get_neighbors_of_node(node_id))
             neighbors[i++] = neighbor_id;
         Direction direction = shape.get_direction(neighbors[0], node_id);
@@ -739,7 +741,7 @@ void fix_negative_positions(const UndirectedGraph& graph, GraphAttributes& attri
 
 using json = nlohmann::json;
 
-void save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, const string& path) {
+void save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, path path) {
     save_orthogonal_drawing_to_file(result.drawing, path);
     json data;
     data["initial_number_of_cycles"] = result.initial_number_of_cycles;
@@ -749,7 +751,7 @@ void save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, const
     file << data;
 }
 
-ShapeMetricsDrawing load_shape_metrics_drawing_from_file(const string& path) {
+ShapeMetricsDrawing load_shape_metrics_drawing_from_file(path path) {
     OrthogonalDrawing drawing = load_orthogonal_drawing_from_file(path);
     std::ifstream file(path);
     json data;

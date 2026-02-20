@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stddef.h>
 #include <stdexcept>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
@@ -16,8 +17,9 @@
 #include "domus/nlohmann/json.hpp"
 
 using json = nlohmann::json;
+using namespace std::filesystem;
 
-void save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, const std::string& path) {
+void save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, path path) {
     json data;
     const UndirectedGraph& graph = result.augmented_graph;
     data["nodes"] = graph.get_nodes_ids();
@@ -58,7 +60,7 @@ void save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, const std:
         file << data.dump(4);
 }
 
-OrthogonalDrawing load_orthogonal_drawing_from_file(const std::string& path) {
+OrthogonalDrawing load_orthogonal_drawing_from_file(path path) {
     std::ifstream file(path);
     if (!file.is_open())
         throw std::runtime_error("Could not open file");
@@ -80,9 +82,7 @@ OrthogonalDrawing load_orthogonal_drawing_from_file(const std::string& path) {
     return result;
 }
 
-void make_svg(
-    const UndirectedGraph& graph, const GraphAttributes& attributes, const std::string& filename
-) {
+void make_svg(const UndirectedGraph& graph, const GraphAttributes& attributes, path path) {
     int max_x = -INT_MAX;
     int max_y = -INT_MAX;
     for (int node_id : graph.get_nodes_ids()) {
@@ -95,7 +95,7 @@ void make_svg(
         min_x = std::min(min_x, attributes.get_position_x(node_id));
         min_y = std::min(min_y, attributes.get_position_y(node_id));
     }
-    int nodes_size = 25;
+    size_t nodes_size = 25;
     for (int node_id : graph.get_nodes_ids()) {
         if (graph.get_degree_of_node(node_id) <= 4)
             continue;
@@ -146,7 +146,7 @@ void make_svg(
         square.setLabel(std::to_string(node_id));
         drawer.add(square, 5);
     }
-    drawer.save_to_file(filename);
+    drawer.save_to_file(path);
 }
 
 int min_coordinate(std::unordered_map<int, std::unordered_set<int>> coordinate_to_nodes) {

@@ -255,10 +255,10 @@ int compute_total_crossings(const OrthogonalDrawing& result) {
                 continue;
             edges.emplace_back(node_id, neighbor_id);
         }
-    for (int i = 0; i < edges.size(); ++i) {
+    for (size_t i = 0; i < edges.size(); ++i) {
         int node_1_id = edges[i].first;
         int node_2_id = edges[i].second;
-        for (int j = i + 1; j < edges.size(); ++j) {
+        for (size_t j = i + 1; j < edges.size(); ++j) {
             int node_3_id = edges[j].first;
             int node_4_id = edges[j].second;
             if (node_1_id == node_3_id || node_1_id == node_4_id || node_2_id == node_3_id ||
@@ -285,7 +285,7 @@ OrthogonalStats compute_all_orthogonal_stats(const OrthogonalDrawing& result) {
 }
 
 string orthogonal_stats_to_string(const OrthogonalStats& stats) {
-    std::stringstream ss;
+    stringstream ss;
     ss << "Area: " << stats.area << "\n"
        << "Crossings: " << stats.crossings << "\n"
        << "Bends: " << stats.bends << "\n"

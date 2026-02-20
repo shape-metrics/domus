@@ -1,9 +1,9 @@
 #ifndef MY_DRAWING_BUILDER_H
 #define MY_DRAWING_BUILDER_H
 
+#include <filesystem>
 #include <stddef.h>
 #include <stdexcept>
-#include <string>
 
 #include "domus/orthogonal/drawing.hpp"
 
@@ -23,8 +23,10 @@ struct ShapeMetricsDrawing {
 
 ShapeMetricsDrawing make_orthogonal_drawing(const UndirectedGraph& graph);
 
-void save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, const std::string& path);
+void save_shape_metrics_drawing_to_file(
+    const ShapeMetricsDrawing& result, std::filesystem::path path
+);
 
-ShapeMetricsDrawing load_shape_metrics_drawing_from_file(const std::string& path);
+ShapeMetricsDrawing load_shape_metrics_drawing_from_file(std::filesystem::path path);
 
 #endif

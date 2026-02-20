@@ -4,12 +4,13 @@
 #include <sstream>
 #include <stdexcept>
 
-std::vector<std::string> parse_csv_line(
-    const std::string& line,
-    char delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream token_stream(line);
+using namespace std;
+using namespace std::filesystem;
+
+vector<string> parse_csv_line(const string& line, char delimiter) {
+    vector<string> tokens;
+    string token;
+    istringstream token_stream(line);
     bool in_quotes = false;
     while (std::getline(token_stream, token, delimiter)) {
         // Handle quoted fields that might contain delimiters
@@ -21,9 +22,8 @@ std::vector<std::string> parse_csv_line(
                 // Multi-part quoted token
                 in_quotes = true;
                 token = token.substr(1);
-                std::string rest;
-                while (in_quotes &&
-                       std::getline(token_stream, rest, delimiter)) {
+                string rest;
+                while (in_quotes && std::getline(token_stream, rest, delimiter)) {
                     token += delimiter + rest;
                     if (!rest.empty() && rest.back() == '"') {
                         token = token.substr(0, token.size() - 1);
@@ -37,13 +37,13 @@ std::vector<std::string> parse_csv_line(
     return tokens;
 }
 
-CSVData parse_csv(const std::string& filename) {
+CSVData parse_csv(path path) {
     char delimiter = ',';
     CSVData data;
-    std::ifstream file(filename);
+    ifstream file(path);
     if (!file.is_open())
-        throw std::runtime_error("Could not open file: " + filename);
-    std::string line;
+        throw runtime_error("Could not open file: " + path.string());
+    string line;
     if (std::getline(file, line))
         data.headers = parse_csv_line(line, delimiter);
     while (std::getline(file, line))

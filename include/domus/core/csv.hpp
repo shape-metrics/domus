@@ -1,6 +1,7 @@
 #ifndef CSV_HANDLER_H
 #define CSV_HANDLER_H
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -9,6 +10,6 @@ struct CSVData {
     std::vector<std::vector<std::string>> rows;
 };
 
-CSVData parse_csv(const std::string& filename);
+CSVData parse_csv(std::filesystem::path path);
 
 #endif

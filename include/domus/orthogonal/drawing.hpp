@@ -1,7 +1,7 @@
 #ifndef MY_DRAWING_HPP
 #define MY_DRAWING_HPP
 
-#include <string>
+#include <filesystem>
 #include <unordered_map>
 #include <utility>
 
@@ -16,12 +16,12 @@ struct OrthogonalDrawing {
 };
 
 void make_svg(
-    const UndirectedGraph& graph, const GraphAttributes& attributes, const std::string& filename
+    const UndirectedGraph& graph, const GraphAttributes& attributes, std::filesystem::path path
 );
 
-void save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, const std::string& path);
+void save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, std::filesystem::path path);
 
-OrthogonalDrawing load_orthogonal_drawing_from_file(const std::string& path);
+OrthogonalDrawing load_orthogonal_drawing_from_file(std::filesystem::path path);
 
 std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>>
 compute_node_to_index_position(const UndirectedGraph& graph, const GraphAttributes& attributes);
