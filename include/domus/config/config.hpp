@@ -10,7 +10,7 @@
 
 class Config {
     std::unordered_map<std::string, std::string> m_config_map;
-    Config();
+    Config() = default;
     void add_key_value(std::string key, std::string value) { m_config_map[key] = value; }
 
   public:
