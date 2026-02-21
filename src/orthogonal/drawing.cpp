@@ -48,10 +48,18 @@ expected<void, string> save_orthogonal_drawing_to_file(const OrthogonalDrawing& 
         for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
             if (neighbor_id < node_id)
                 continue;
+            const auto direction = result.shape.get_direction(node_id, neighbor_id);
+            if (!direction) {
+                string error_msg = "Error in save_orthogonal_drawing_to_file: ";
+                error_msg += "direction not set for edge (";
+                error_msg += std::to_string(node_id);
+                error_msg += ", ";
+                error_msg += std::to_string(neighbor_id);
+                error_msg += ")";
+                return std::unexpected(error_msg);
+            }
             shape_array.push_back(
-                {{"u", node_id},
-                 {"v", neighbor_id},
-                 {"dir", direction_to_string(result.shape.get_direction(node_id, neighbor_id))}}
+                {{"u", node_id}, {"v", neighbor_id}, {"dir", direction_to_string(*direction)}}
             );
         }
     }
@@ -87,8 +95,20 @@ expected<OrthogonalDrawing, string> load_orthogonal_drawing_from_file(path path)
     result.attributes.add_attribute(Attribute::NODES_POSITION);
     for (auto& [id_str, pos_arr] : data.at("node_positions").items())
         result.attributes.set_position(std::stoi(id_str), pos_arr[0], pos_arr[1]);
-    for (const auto& item : data.at("shape"))
-        result.shape.set_direction(item.at("u"), item.at("v"), string_to_direction(item.at("dir")));
+    for (const auto& item : data.at("shape")) {
+        auto direction = string_to_direction(item.at("dir"));
+        if (!direction) {
+            string error_msg = "Error in load_orthogonal_drawing_from_file: ";
+            error_msg += direction.error();
+            return std::unexpected(error_msg);
+        }
+        auto res = result.shape.set_direction(item.at("u"), item.at("v"), *direction);
+        if (!res) {
+            string error_msg = "Error in load_orthogonal_drawing_from_file: ";
+            error_msg += res.error();
+            return std::unexpected(error_msg);
+        }
+    }
     return result;
 }
 

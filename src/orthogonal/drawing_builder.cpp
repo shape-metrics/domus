@@ -89,7 +89,7 @@ void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attribu
         if (attributes.get_node_color(node_id) == Color::BLACK)
             continue;
         assert(graph.get_degree_of_node(node_id) == 2);
-        array<int, 2> neighbors;
+        array<int, 2> neighbors{-1, -1};
         size_t i = 0;
         for (int neighbor_id : graph.get_neighbors_of_node(node_id))
             neighbors[i++] = neighbor_id;
@@ -99,19 +99,19 @@ void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attribu
             nodes_to_remove.push_back(node_id);
     }
     for (int node_id : nodes_to_remove) {
-        array<int, 2> neighbors;
+        array<int, 2> neighbors{-1, -1};
         size_t i = 0;
         for (int neighbor_id : graph.get_neighbors_of_node(node_id))
             neighbors[i++] = neighbor_id;
-        Direction direction = shape.get_direction(neighbors[0], node_id);
+        auto direction = shape.get_direction(neighbors[0], node_id);
         graph.remove_node(node_id);
         graph.add_edge(neighbors[0], neighbors[1]);
-        shape.remove_direction(node_id, neighbors[0]);
-        shape.remove_direction(node_id, neighbors[1]);
-        shape.remove_direction(neighbors[0], node_id);
-        shape.remove_direction(neighbors[1], node_id);
-        shape.set_direction(neighbors[0], neighbors[1], direction);
-        shape.set_direction(neighbors[1], neighbors[0], opposite_direction(direction));
+        shape.remove_direction(node_id, neighbors[0]).value();
+        shape.remove_direction(node_id, neighbors[1]).value();
+        shape.remove_direction(neighbors[0], node_id).value();
+        shape.remove_direction(neighbors[1], node_id).value();
+        shape.set_direction(neighbors[0], neighbors[1], *direction).value();
+        shape.set_direction(neighbors[1], neighbors[0], opposite_direction(*direction)).value();
     }
 }
 
@@ -278,14 +278,11 @@ auto find_edges_to_fix(
             if (shape.is_horizontal(node_id, added_id)) {
                 assert(!shape.is_left(node_id, added_id));
                 int other_neighbor_id = 0;
-                bool found = false;
                 for (int neighbor_id : graph.get_neighbors_of_node(added_id)) {
                     if (neighbor_id == node_id)
                         continue;
-                    found = true;
                     other_neighbor_id = neighbor_id;
                 }
-                assert(found);
                 if (shape.is_up(added_id, other_neighbor_id)) {
                     if (!leftest_up.has_value())
                         leftest_up = added_id;
@@ -302,14 +299,11 @@ auto find_edges_to_fix(
             } else {
                 assert(!shape.is_down(node_id, added_id));
                 int other_neighbor_id = 0;
-                bool found = false;
                 for (int neighbor_id : graph.get_neighbors_of_node(added_id)) {
                     if (neighbor_id == node_id)
                         continue;
-                    found = true;
                     other_neighbor_id = neighbor_id;
                 }
-                assert(found);
                 if (shape.is_left(added_id, other_neighbor_id)) {
                     if (!downest_left.has_value())
                         downest_left = added_id;
@@ -340,12 +334,11 @@ auto find_edges_to_fix(
 }
 
 int get_other_neighbor_id(const UndirectedGraph& graph, const int node_id, const int neighbor_id) {
-    for (int other_id : graph.get_neighbors_of_node(node_id)) {
-        if (other_id != neighbor_id) {
+    for (int other_id : graph.get_neighbors_of_node(node_id))
+        if (other_id != neighbor_id)
             return other_id;
-        }
-    }
     assert(false); // No other neighbor found for node
+    return -1;
 }
 
 void fix_edge(
@@ -361,12 +354,12 @@ void fix_edge(
     attributes.remove_position(other_node_id);
     attributes.remove_nodes_attribute(other_node_id);
     graph.add_edge(node_id, other_neighbor_id);
-    shape.remove_direction(node_id, other_node_id);
-    shape.remove_direction(other_node_id, node_id);
-    shape.remove_direction(other_node_id, other_neighbor_id);
-    shape.remove_direction(other_neighbor_id, other_node_id);
-    shape.set_direction(node_id, other_neighbor_id, direction);
-    shape.set_direction(other_neighbor_id, node_id, opposite_direction(direction));
+    shape.remove_direction(node_id, other_node_id).value();
+    shape.remove_direction(other_node_id, node_id).value();
+    shape.remove_direction(other_node_id, other_neighbor_id).value();
+    shape.remove_direction(other_neighbor_id, other_node_id).value();
+    shape.set_direction(node_id, other_neighbor_id, direction).value();
+    shape.set_direction(other_neighbor_id, node_id, opposite_direction(direction)).value();
 }
 
 // at the moment, a node with degree > 4 doesn't have all its "ports" used,
@@ -400,19 +393,21 @@ void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, S
             added_nodes_ids.insert(added_id);
             edges_to_add.emplace_back(added_id, node_id);
             edges_to_add.emplace_back(added_id, neighbor_id);
-            shape.set_direction(added_id, neighbor_id, shape.get_direction(node_id, neighbor_id));
-            shape.set_direction(neighbor_id, added_id, shape.get_direction(neighbor_id, node_id));
+            shape.set_direction(added_id, neighbor_id, *shape.get_direction(node_id, neighbor_id))
+                .value();
+            shape.set_direction(neighbor_id, added_id, *shape.get_direction(neighbor_id, node_id))
+                .value();
             if (shape.is_horizontal(node_id, neighbor_id)) {
                 attributes.set_node_color(added_id, Color::GREEN);
-                shape.set_direction(node_id, added_id, Direction::UP);
-                shape.set_direction(added_id, node_id, Direction::DOWN);
+                shape.set_direction(node_id, added_id, Direction::UP).value();
+                shape.set_direction(added_id, node_id, Direction::DOWN).value();
             } else {
                 attributes.set_node_color(added_id, Color::BLUE);
-                shape.set_direction(node_id, added_id, Direction::RIGHT);
-                shape.set_direction(added_id, node_id, Direction::LEFT);
+                shape.set_direction(node_id, added_id, Direction::RIGHT).value();
+                shape.set_direction(added_id, node_id, Direction::LEFT).value();
             }
-            shape.remove_direction(node_id, neighbor_id);
-            shape.remove_direction(neighbor_id, node_id);
+            shape.remove_direction(node_id, neighbor_id).value();
+            shape.remove_direction(neighbor_id, node_id).value();
             edges_to_remove.emplace_back(node_id, neighbor_id);
         }
         for (auto [from_id, to_id] : edges_to_add)
@@ -467,22 +462,24 @@ void fix_inconsistency(
     }
     assert(colored_node.has_value());
     const int colored_node_id = colored_node.value();
-    int neighbors_ids[2];
+    int neighbors_ids[2] = {-1, -1};
     int i = 0;
     for (int neighbor_id : graph.get_neighbors_of_node(colored_node_id)) {
         neighbors_ids[i] = neighbor_id;
         ++i;
     }
     if (shape.is_up(neighbors_ids[0], colored_node_id)) {
-        shape.remove_direction(colored_node_id, neighbors_ids[0]);
-        shape.remove_direction(neighbors_ids[0], colored_node_id);
-        shape.set_direction(colored_node_id, neighbors_ids[0], direction);
-        shape.set_direction(neighbors_ids[0], colored_node_id, opposite_direction(direction));
+        shape.remove_direction(colored_node_id, neighbors_ids[0]).value();
+        shape.remove_direction(neighbors_ids[0], colored_node_id).value();
+        shape.set_direction(colored_node_id, neighbors_ids[0], direction).value();
+        shape.set_direction(neighbors_ids[0], colored_node_id, opposite_direction(direction))
+            .value();
     } else {
-        shape.remove_direction(colored_node_id, neighbors_ids[1]);
-        shape.remove_direction(neighbors_ids[1], colored_node_id);
-        shape.set_direction(colored_node_id, neighbors_ids[1], direction);
-        shape.set_direction(neighbors_ids[1], colored_node_id, opposite_direction(direction));
+        shape.remove_direction(colored_node_id, neighbors_ids[1]).value();
+        shape.remove_direction(neighbors_ids[1], colored_node_id).value();
+        shape.set_direction(colored_node_id, neighbors_ids[1], direction).value();
+        shape.set_direction(neighbors_ids[1], colored_node_id, opposite_direction(direction))
+            .value();
     }
     attributes.change_node_color(colored_node_id, dark_color);
 }
@@ -624,15 +621,15 @@ void make_shifts(
         const int node_to_shift_neighbor_id =
             get_other_neighbor_id(graph, node_to_shift_id, node_id);
         const Direction direction =
-            shape.get_direction(node_to_shift_id, node_to_shift_neighbor_id);
+            *shape.get_direction(node_to_shift_id, node_to_shift_neighbor_id);
         const int added_node_id = graph.add_node();
         attributes.set_node_color(added_node_id, color);
-        shape.set_direction(node_id, added_node_id, direction);
-        shape.set_direction(added_node_id, node_id, opposite_direction(direction));
-        shape.set_direction(added_node_id, node_to_shift_id, direction);
-        shape.set_direction(node_to_shift_id, added_node_id, opposite_direction(direction));
-        shape.remove_direction(node_id, node_to_shift_id);
-        shape.remove_direction(node_to_shift_id, node_id);
+        shape.set_direction(node_id, added_node_id, direction).value();
+        shape.set_direction(added_node_id, node_id, opposite_direction(direction)).value();
+        shape.set_direction(added_node_id, node_to_shift_id, direction).value();
+        shape.set_direction(node_to_shift_id, added_node_id, opposite_direction(direction)).value();
+        shape.remove_direction(node_id, node_to_shift_id).value();
+        shape.remove_direction(node_to_shift_id, node_id).value();
         graph.remove_edge(node_id, node_to_shift_id);
         graph.add_edge(node_id, added_node_id);
         graph.add_edge(added_node_id, node_to_shift_id);
@@ -659,7 +656,7 @@ void make_shifts(
 auto neighbors_at_each_direction(const UndirectedGraph& graph, int node_id, const Shape& shape) {
     unordered_map<Direction, vector<int>> nodes_at_direction;
     for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
-        const Direction dir = shape.get_direction(node_id, neighbor_id);
+        const Direction dir = *shape.get_direction(node_id, neighbor_id);
         nodes_at_direction[dir].push_back(neighbor_id);
     }
     return nodes_at_direction;
