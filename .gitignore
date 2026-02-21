@@ -6,6 +6,6 @@
 
 *.svg
 cnf_logs.txt
-unit_clauses_logs.txt
+/domus
 
 todo.txt
