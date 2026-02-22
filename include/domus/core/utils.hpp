@@ -72,8 +72,8 @@ template <typename T> class CircularSequence {
         m_elements.clear();
         m_element_position.clear();
     }
-    [[nodiscard]] bool empty() const { return m_elements.empty(); }
-    [[nodiscard]] size_t size() const { return m_elements.size(); }
+    bool empty() const { return m_elements.empty(); }
+    size_t size() const { return m_elements.size(); }
     void append(T element) {
         m_elements.push_back(element);
         m_element_position[element] = size() - 1;
@@ -122,10 +122,8 @@ template <typename T> class CircularSequence {
     }
     T operator[](const size_t index) const { return m_elements[index]; }
     T at(const size_t index) const { return m_elements.at(index); }
-    [[nodiscard]] typename std::vector<T>::const_iterator begin() const {
-        return m_elements.begin();
-    }
-    [[nodiscard]] typename std::vector<T>::const_iterator end() const { return m_elements.end(); }
+    typename std::vector<T>::const_iterator begin() const { return m_elements.begin(); }
+    typename std::vector<T>::const_iterator end() const { return m_elements.end(); }
 };
 
 class MemoryFile {

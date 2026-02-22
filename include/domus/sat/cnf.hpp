@@ -24,11 +24,11 @@ class Cnf {
   public:
     void add_clause(std::vector<int> clause);
     void add_comment(const std::string& comment);
-    [[nodiscard]] int get_number_of_variables() const;
-    [[nodiscard]] int get_number_of_clauses() const;
+    int get_number_of_variables() const;
+    int get_number_of_clauses() const;
     std::expected<void, std::string> save_to_file(const std::string& file_path) const;
     const std::string to_string() const;
-    [[nodiscard]] const std::vector<CnfRow>& get_rows() const;
+    const std::vector<CnfRow>& get_rows() const;
     void print() const;
 };
 

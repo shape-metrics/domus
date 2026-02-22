@@ -12,7 +12,7 @@ struct SatSolverResult {
     SatSolverResultType result;
     std::vector<int> numbers;
     std::vector<std::string> proof_lines;
-    [[nodiscard]] std::string to_string() const;
+    std::string to_string() const;
     void print() const;
 };
 

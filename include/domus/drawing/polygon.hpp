@@ -10,7 +10,7 @@ class Point2D {
   public:
     double x_m, y_m;
     Point2D(double x, double y);
-    [[nodiscard]] double distance(const Point2D& other) const;
+    double distance(const Point2D& other) const;
     Point2D operator+(const Point2D& other) const { return {x_m + other.x_m, y_m + other.y_m}; }
     Point2D operator-(const Point2D& other) const { return {x_m + other.x_m, y_m + other.y_m}; }
     Point2D operator*(const double scalar) const { return {x_m * scalar, y_m * scalar}; }
@@ -35,8 +35,8 @@ class Line2D {
   public:
     Point2D p1_m, p2_m;
     Line2D(const Point2D& p1, const Point2D& p2);
-    [[nodiscard]] bool isPointOnLine(const Point2D& p) const;
-    [[nodiscard]] bool isIntersecting(const Line2D& l) const;
+    bool isPointOnLine(const Point2D& p) const;
+    bool isIntersecting(const Line2D& l) const;
     bool operator==(const Line2D& other) const { return p1_m == other.p1_m && p2_m == other.p2_m; }
     bool operator!=(const Line2D& other) const { return !(*this == other); }
     friend std::ostream& operator<<(std::ostream& os, const Line2D& l) {
@@ -51,10 +51,10 @@ class Polygon2D {
   public:
     explicit Polygon2D(const std::vector<Point2D>& points);
     std::vector<Point2D>& getPoints();
-    [[nodiscard]] bool isOnBoundary(const Point2D& p) const;
-    [[nodiscard]] bool isInside(const Point2D& p) const;
-    [[nodiscard]] bool isInside(const Line2D& l) const;
-    [[nodiscard]] std::vector<Point2D> computeConvexHull() const;
+    bool isOnBoundary(const Point2D& p) const;
+    bool isInside(const Point2D& p) const;
+    bool isInside(const Line2D& l) const;
+    std::vector<Point2D> computeConvexHull() const;
 };
 
 class Circle2D {
@@ -65,14 +65,14 @@ class Circle2D {
 
   public:
     Circle2D(const Point2D& center, const double radius) : center_m(center), radius_m(radius) {}
-    [[nodiscard]] Point2D getCenter() const { return center_m; }
-    [[nodiscard]] double getRadius() const { return radius_m; }
+    Point2D getCenter() const { return center_m; }
+    double getRadius() const { return radius_m; }
     void setLabel(const std::string& label) { this->label_m = label; }
-    [[nodiscard]] bool hasLabel() const { return label_m.has_value(); }
-    [[nodiscard]] std::optional<std::string> getLabel() const { return label_m; }
+    bool hasLabel() const { return label_m.has_value(); }
+    std::optional<std::string> getLabel() const { return label_m; }
     void setColor(const std::string& color) { this->color_m = color; }
-    [[nodiscard]] bool hasColor() const { return color_m.has_value(); }
-    [[nodiscard]] std::optional<std::string> getColor() const { return color_m; }
+    bool hasColor() const { return color_m.has_value(); }
+    std::optional<std::string> getColor() const { return color_m; }
 };
 
 class Square2D {
@@ -83,14 +83,14 @@ class Square2D {
 
   public:
     Square2D(const Point2D& center, const double side) : center_m(center), side_m(side) {}
-    [[nodiscard]] Point2D getCenter() const { return center_m; }
-    [[nodiscard]] double getSide() const { return side_m; }
+    Point2D getCenter() const { return center_m; }
+    double getSide() const { return side_m; }
     void setLabel(const std::string& label) { this->label_m = label; }
-    [[nodiscard]] bool hasLabel() const { return label_m.has_value(); }
-    [[nodiscard]] std::optional<std::string> getLabel() const { return label_m; }
+    bool hasLabel() const { return label_m.has_value(); }
+    std::optional<std::string> getLabel() const { return label_m; }
     void setColor(const std::string& color) { this->color_m = color; }
-    [[nodiscard]] bool hasColor() const { return color_m.has_value(); }
-    [[nodiscard]] std::optional<std::string> getColor() const { return color_m; }
+    bool hasColor() const { return color_m.has_value(); }
+    std::optional<std::string> getColor() const { return color_m; }
 };
 
 #endif

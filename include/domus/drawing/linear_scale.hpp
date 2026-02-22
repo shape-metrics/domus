@@ -12,20 +12,19 @@ class ScaleLinear {
 
   public:
     ScaleLinear(
-        double domainMin, double domainMax, double rangeMin, double rangeMax, bool clamp = false)
+        double domainMin, double domainMax, double rangeMin, double rangeMax, bool clamp = false
+    )
         : m_domainMin(domainMin), m_domainMax(domainMax), m_rangeMin(rangeMin),
           m_rangeMax(rangeMax), m_clampEnabled(clamp) {
         m_scaleFactor = (rangeMax - rangeMin) / (domainMax - domainMin);
     }
-    [[nodiscard]] double map(double x) const {
+    double map(double x) const {
         double y = m_rangeMin + m_scaleFactor * (x - m_domainMin);
         if (m_clampEnabled)
             y = std::max(m_rangeMin, std::min(y, m_rangeMax));
         return y;
     }
-    [[nodiscard]] double invert(double y) const {
-        return m_domainMin + (y - m_rangeMin) / m_scaleFactor;
-    }
+    double invert(double y) const { return m_domainMin + (y - m_rangeMin) / m_scaleFactor; }
 };
 
 #endif
