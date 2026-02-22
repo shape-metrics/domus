@@ -1,9 +1,9 @@
 #include "domus/sat/sat.hpp"
 
 #include <assert.h>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -52,7 +52,7 @@ SatSolverResult launch_glucose(const Cnf& cnf) {
     S.verbEveryConflicts = 10000;
     S.showModel = false;
 
-    MemoryFile memory_file_proof;
+    MemoryFile memory_file_proof = MemoryFile::create().value();
 
     S.certifiedUNSAT = true;
     S.vbyte = false;
@@ -63,7 +63,7 @@ SatSolverResult launch_glucose(const Cnf& cnf) {
     S.eliminate(true);
 
     SatSolverResult result;
-    if (!S.okay()) {  // UNSAT
+    if (!S.okay()) { // UNSAT
         fprintf(S.certifiedOutput, "0\n");
         result.result = SatSolverResultType::UNSAT;
         populate_proof_result(memory_file_proof.get_buffer(), result);
@@ -77,8 +77,7 @@ SatSolverResult launch_glucose(const Cnf& cnf) {
         result.result = SatSolverResultType::SAT;
         for (int i = 0; i < S.nVars(); i++)
             if (S.model[i] != l_Undef)
-                result.numbers.push_back(
-                    (S.model[i] == l_True) ? i + 1 : -(i + 1));
+                result.numbers.push_back((S.model[i] == l_True) ? i + 1 : -(i + 1));
     } else {
         result.result = SatSolverResultType::UNSAT;
         populate_proof_result(memory_file_proof.get_buffer(), result);

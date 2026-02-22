@@ -19,7 +19,9 @@ bool Cycle::empty() const { return m_nodes_ids.empty(); }
 
 size_t Cycle::size() const { return m_nodes_ids.size(); }
 
-void Cycle::insert(const size_t index, const int node_id) { m_nodes_ids.insert(index, node_id); }
+void Cycle::insert(const size_t index, const int node_id) {
+    m_nodes_ids.insert(index, node_id).value();
+}
 
 void Cycle::append(const int node_id) { m_nodes_ids.append(node_id); }
 
@@ -59,16 +61,12 @@ void Cycle::print() const { std::cout << to_string() << std::endl; }
 
 int Cycle::prev_of_node(const int node_id) const { return m_nodes_ids.prev_element(node_id); }
 
-[[nodiscard]] int Cycle::next_of_node(const int node_id) const {
-    return m_nodes_ids.next_element(node_id);
-}
+int Cycle::next_of_node(const int node_id) const { return m_nodes_ids.next_element(node_id); }
 
-[[nodiscard]] bool Cycle::has_node(const int node_id) const {
-    return m_nodes_ids.has_element(node_id);
-}
+bool Cycle::has_node(const int node_id) const { return m_nodes_ids.has_element(node_id); }
 
-[[nodiscard]] size_t Cycle::node_position(const int node_id) const {
-    return m_nodes_ids.element_position(node_id);
+size_t Cycle::node_position(const int node_id) const {
+    return *m_nodes_ids.element_position(node_id);
 }
 
 void Cycle::reverse() { m_nodes_ids.reverse(); }

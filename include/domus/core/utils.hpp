@@ -2,8 +2,8 @@
 #define MY_UTILS_H
 
 #include <algorithm>
+#include <expected>
 #include <functional>
-#include <stdexcept>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -78,43 +78,50 @@ template <typename T> class CircularSequence {
         m_elements.push_back(element);
         m_element_position[element] = size() - 1;
     }
-    void insert(size_t index, T element) {
-        if (has_element(element))
-            throw std::runtime_error("Element already exists");
+    std::expected<void, std::string> insert(size_t index, T element) {
+        if (has_element(element)) {
+            std::string error_msg = "Error in CircularSequence::insert: ";
+            error_msg += "Element already exists";
+            return std::unexpected(error_msg);
+        }
         auto it = m_elements.begin() + static_cast<typename std::vector<T>::difference_type>(index);
         m_elements.insert(it, element);
         recompute_positions();
+        return {};
     }
-    [[nodiscard]] size_t next_index(const size_t index) const { return (index + 1) % size(); }
+    size_t next_index(const size_t index) const { return (index + 1) % size(); }
     void remove_if_exists(T element) {
         if (!has_element(element))
             return;
-        const size_t position = element_position(element);
+        const size_t position = *element_position(element);
         const auto erase_position =
             m_elements.begin() + static_cast<std::vector<int>::difference_type>(position);
         m_elements.erase(erase_position);
         recompute_positions();
     }
-    [[nodiscard]] T prev_element(T element) const {
-        const size_t pos = element_position(element);
+    T prev_element(T element) const {
+        const size_t pos = *element_position(element);
         if (pos == 0)
             return at(size() - 1);
         return at(pos - 1);
     }
-    [[nodiscard]] T next_element(T element) const {
-        const size_t pos = element_position(element);
+    T next_element(T element) const {
+        const size_t pos = *element_position(element);
         if (pos == size() - 1)
             return at(0);
         return at(pos + 1);
     }
-    [[nodiscard]] bool has_element(T element) const { return m_element_position.contains(element); }
-    [[nodiscard]] size_t element_position(T element) const {
-        if (!has_element(element))
-            throw std::runtime_error("Element not found");
+    bool has_element(T element) const { return m_element_position.contains(element); }
+    std::expected<size_t, std::string> element_position(T element) const {
+        if (!has_element(element)) {
+            std::string error_msg = "Error in CircularSequence::element_position: ";
+            error_msg += "Element not found";
+            return std::unexpected(error_msg);
+        }
         return m_element_position.at(element);
     }
     T operator[](const size_t index) const { return m_elements[index]; }
-    [[nodiscard]] T at(const size_t index) const { return m_elements.at(index); }
+    T at(const size_t index) const { return m_elements.at(index); }
     [[nodiscard]] typename std::vector<T>::const_iterator begin() const {
         return m_elements.begin();
     }
@@ -122,26 +129,61 @@ template <typename T> class CircularSequence {
 };
 
 class MemoryFile {
-    char* buffer = NULL;
-    size_t size = 0;
-    FILE* mem = NULL;
+    char* buffer_m = nullptr;
+    size_t size_m = 0;
+    FILE* mem_m = nullptr;
+
+    MemoryFile() = default;
 
   public:
-    MemoryFile() {
-        mem = open_memstream(&buffer, &size);
-        if (!mem) {
-            perror("open_memstream");
-            throw std::runtime_error("Failed to initialize MemoryFile");
+    MemoryFile(const MemoryFile&) = delete;
+    MemoryFile& operator=(const MemoryFile&) = delete;
+    MemoryFile(MemoryFile&& other) noexcept
+        : buffer_m(other.buffer_m), size_m(other.size_m), mem_m(other.mem_m) {
+        other.buffer_m = nullptr;
+        other.mem_m = nullptr;
+        other.size_m = 0;
+    }
+    MemoryFile& operator=(MemoryFile&& other) noexcept {
+        if (this != &other) {
+            cleanup();
+            buffer_m = other.buffer_m;
+            size_m = other.size_m;
+            mem_m = other.mem_m;
+            other.buffer_m = nullptr;
+            other.mem_m = nullptr;
+            other.size_m = 0;
+        }
+        return *this;
+    }
+    static std::expected<MemoryFile, std::string> create() {
+        MemoryFile mf;
+        mf.mem_m = open_memstream(&mf.buffer_m, &mf.size_m);
+        if (!mf.mem_m)
+            return std::unexpected("MemoryFile: Failed to open_memstream");
+        return mf;
+    }
+    ~MemoryFile() { cleanup(); }
+    void cleanup() {
+        if (mem_m) {
+            fclose(mem_m);
+            mem_m = nullptr;
+        }
+        if (buffer_m) {
+            free(buffer_m);
+            buffer_m = nullptr;
         }
     }
-    ~MemoryFile() {
-        fclose(mem);
-        free(buffer);
+    FILE* get_file() { return mem_m; }
+    const char* get_buffer() {
+        if (mem_m)
+            fflush(mem_m);
+        return buffer_m;
     }
-    FILE* get_file() { return mem; }
-    const char* get_buffer() const {
-        fflush(mem);
-        return buffer;
+    size_t get_size() {
+        if (mem_m)
+            fflush(mem_m);
+        return size_m;
     }
 };
 

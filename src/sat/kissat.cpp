@@ -1,8 +1,8 @@
 #include "domus/sat/sat.hpp"
 
-#include <stdio.h>
 #include <sstream>
 #include <stdexcept>
+#include <stdio.h>
 #include <string>
 #include <vector>
 
@@ -16,11 +16,11 @@ extern "C" {
 #include "domus/sat/cnf.hpp"
 
 class KissatSolver {
-   private:
+  private:
     kissat* solver = nullptr;
     std::string proof{};
 
-   public:
+  public:
     KissatSolver() {
         solver = kissat_init();
         if (!solver)
@@ -35,12 +35,12 @@ class KissatSolver {
     void add_clause(const std::vector<int>& clause) {
         for (int lit : clause)
             kissat_add(solver, lit);
-        kissat_add(solver, 0);  // terminate clause
+        kissat_add(solver, 0); // terminate clause
     }
 
     bool solve() {
         file proof_file;
-        MemoryFile memory_file;
+        MemoryFile memory_file = MemoryFile::create().value();
         proof_file.file = memory_file.get_file();
         proof_file.close = true;
         proof_file.reading = false;

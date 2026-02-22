@@ -2,28 +2,27 @@
 
 #include <iostream>
 #include <stdexcept>
-#include <vector>
 
 void VariablesHandler::add_variable(int i, int j, const Direction direction) {
     variable_to_edge[m_next_var] = std::make_pair(i, j);
     variable_to_direction[m_next_var] = direction;
     switch (direction) {
-        case Direction::UP:
-            m_edge_up_variable[{i, j}] = m_next_var;
-            m_edge_down_variable[{j, i}] = m_next_var;
-            break;
-        case Direction::DOWN:
-            m_edge_down_variable[{i, j}] = m_next_var;
-            m_edge_up_variable[{j, i}] = m_next_var;
-            break;
-        case Direction::LEFT:
-            m_edge_left_variable[{i, j}] = m_next_var;
-            m_edge_right_variable[{j, i}] = m_next_var;
-            break;
-        case Direction::RIGHT:
-            m_edge_right_variable[{i, j}] = m_next_var;
-            m_edge_left_variable[{j, i}] = m_next_var;
-            break;
+    case Direction::UP:
+        m_edge_up_variable[{i, j}] = m_next_var;
+        m_edge_down_variable[{j, i}] = m_next_var;
+        break;
+    case Direction::DOWN:
+        m_edge_down_variable[{i, j}] = m_next_var;
+        m_edge_up_variable[{j, i}] = m_next_var;
+        break;
+    case Direction::LEFT:
+        m_edge_left_variable[{i, j}] = m_next_var;
+        m_edge_right_variable[{j, i}] = m_next_var;
+        break;
+    case Direction::RIGHT:
+        m_edge_right_variable[{i, j}] = m_next_var;
+        m_edge_left_variable[{j, i}] = m_next_var;
+        break;
     }
     m_next_var++;
 }
@@ -45,9 +44,7 @@ VariablesHandler::VariablesHandler(const UndirectedGraph& graph) {
     }
 }
 
-int VariablesHandler::get_up_variable(int i, int j) const {
-    return m_edge_up_variable.at({i, j});
-}
+int VariablesHandler::get_up_variable(int i, int j) const { return m_edge_up_variable.at({i, j}); }
 
 int VariablesHandler::get_down_variable(int i, int j) const {
     return m_edge_down_variable.at({i, j});
@@ -73,8 +70,7 @@ int VariablesHandler::get_variable(int i, int j, Direction direction) const {
     throw std::invalid_argument("Invalid direction");
 }
 
-const std::pair<int, int>& VariablesHandler::get_edge_of_variable(
-    const int variable) const {
+const std::pair<int, int>& VariablesHandler::get_edge_of_variable(const int variable) const {
     return variable_to_edge.at(variable);
 }
 
@@ -106,14 +102,11 @@ std::string VariablesHandler::to_string() const {
     std::string result = "VariablesHandler:\n";
     for (const auto& [variable, edge] : variable_to_edge) {
         result +=
-            ("(" + std::to_string(edge.first) + " -> " +
-             std::to_string(edge.second) + "): " + std::to_string(variable) +
-             ", " + direction_to_string(variable_to_direction.at(variable)) +
-             "\n");
+            ("(" + std::to_string(edge.first) + " -> " + std::to_string(edge.second) +
+             "): " + std::to_string(variable) + ", " +
+             direction_to_string(variable_to_direction.at(variable)) + "\n");
     }
     return result;
 }
 
-void VariablesHandler::print() const {
-    std::cout << to_string() << std::endl;
-}
+void VariablesHandler::print() const { std::cout << to_string() << std::endl; }
