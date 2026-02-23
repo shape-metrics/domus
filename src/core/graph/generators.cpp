@@ -1,28 +1,25 @@
 #include "domus/core/graph/generators.hpp"
 
+#include <cassert>
 #include <stdlib.h>
 
 #include "domus/core/graph/graphs_algorithms.hpp"
 
 using namespace std;
 
-expected<UndirectedGraph, string> generate_connected_random_graph_degree_max_4(
+UndirectedGraph generate_connected_random_graph_degree_max_4(
     const size_t number_of_nodes, const size_t number_of_edges
 ) {
-    if (number_of_edges > 2 * number_of_nodes) {
-        string error = "Error in generate_connected_random_graph_degree_max_4: "
-                       "Number of edges is too large.\n";
-        error += "Number of nodes: " + to_string(number_of_nodes);
-        error += "\nNumber of edges: " + to_string(number_of_edges);
-        return std::unexpected(error);
-    }
-    if (number_of_edges + 1 < number_of_nodes) {
-        string error = "Error in generate_connected_random_graph_degree_max_4: "
-                       "Number of edges is too small.\n";
-        error += "Number of nodes: " + to_string(number_of_nodes);
-        error += "\nNumber of edges: " + to_string(number_of_edges);
-        return std::unexpected(error);
-    }
+    assert(
+        number_of_edges <= 2 * number_of_nodes &&
+        "Error in generate_connected_random_graph_degree_max_4: "
+        "Number of edges is too large.\n"
+    );
+    assert(
+        number_of_edges + 1 >= number_of_nodes &&
+        "Error in generate_connected_random_graph_degree_max_4: "
+        "Number of edges is too small.\n"
+    );
     UndirectedGraph graph;
     for (size_t i = 0; i < number_of_nodes; ++i)
         graph.add_node(static_cast<int>(i));
@@ -44,15 +41,12 @@ expected<UndirectedGraph, string> generate_connected_random_graph_degree_max_4(
     return graph;
 }
 
-expected<UndirectedGraph, string>
+UndirectedGraph
 generate_connected_random_graph(const size_t number_of_nodes, const size_t number_of_edges) {
-    if (number_of_edges + 1 < number_of_nodes) {
-        string error = "Error in generate_connected_random_graph: "
-                       "Number of edges is too small.\n";
-        error += "Number of nodes: " + to_string(number_of_nodes);
-        error += "\nNumber of edges: " + to_string(number_of_edges);
-        return std::unexpected(error);
-    }
+    assert(
+        number_of_edges + 1 >= number_of_nodes && "Error in generate_connected_random_graph: "
+                                                  "Number of edges is too small.\n"
+    );
     UndirectedGraph graph;
     for (int i = 0; i < static_cast<int>(number_of_nodes); ++i)
         graph.add_node(i);

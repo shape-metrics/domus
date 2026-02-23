@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <expected>
+#include <filesystem>
 #include <functional>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +13,8 @@
 #include <utility>
 #include <vector>
 
-void save_string_to_file(const std::string& filename, const std::string& content);
+std::expected<void, std::string>
+save_string_to_file(const std::string& filename, const std::string& content);
 
 enum class Color {
     RED,
@@ -31,10 +33,6 @@ std::string color_to_string(Color color);
 
 Color string_to_color(const std::string& color);
 
-std::string get_unique_filename(const std::string& base_filename, const std::string& folder);
-
-std::string get_unique_filename(const std::string& base_filename);
-
 struct int_pair_hash {
     int operator()(const std::pair<int, int>& p) const {
         const int h1 = static_cast<int>(std::hash<int>{}(p.first));
@@ -44,7 +42,8 @@ struct int_pair_hash {
     }
 };
 
-std::vector<std::string> collect_txt_files(const std::string& folder_path);
+std::expected<std::vector<std::string>, std::string>
+collect_txt_files(std::filesystem::path folder_path);
 
 double compute_stddev(const std::vector<int>& values);
 
@@ -127,61 +126,49 @@ template <typename T> class CircularSequence {
 };
 
 class MemoryFile {
-    char* buffer_m = nullptr;
-    size_t size_m = 0;
-    FILE* mem_m = nullptr;
+    struct State {
+        char* buffer = nullptr;
+        size_t size = 0;
+        FILE* mem = nullptr;
 
-    MemoryFile() = default;
+        ~State() {
+            if (mem)
+                fclose(mem);
+            if (buffer)
+                free(buffer);
+        }
+    };
+    std::unique_ptr<State> state;
+    MemoryFile() : state(std::make_unique<State>()) {}
 
   public:
+    MemoryFile(MemoryFile&&) noexcept = default;
+    MemoryFile& operator=(MemoryFile&&) noexcept = default;
+
     MemoryFile(const MemoryFile&) = delete;
     MemoryFile& operator=(const MemoryFile&) = delete;
-    MemoryFile(MemoryFile&& other) noexcept
-        : buffer_m(other.buffer_m), size_m(other.size_m), mem_m(other.mem_m) {
-        other.buffer_m = nullptr;
-        other.mem_m = nullptr;
-        other.size_m = 0;
-    }
-    MemoryFile& operator=(MemoryFile&& other) noexcept {
-        if (this != &other) {
-            cleanup();
-            buffer_m = other.buffer_m;
-            size_m = other.size_m;
-            mem_m = other.mem_m;
-            other.buffer_m = nullptr;
-            other.mem_m = nullptr;
-            other.size_m = 0;
-        }
-        return *this;
-    }
+
     static std::expected<MemoryFile, std::string> create() {
         MemoryFile mf;
-        mf.mem_m = open_memstream(&mf.buffer_m, &mf.size_m);
-        if (!mf.mem_m)
+        mf.state->mem = open_memstream(&mf.state->buffer, &mf.state->size);
+
+        if (!mf.state->mem)
             return std::unexpected("MemoryFile: Failed to open_memstream");
         return mf;
     }
-    ~MemoryFile() { cleanup(); }
-    void cleanup() {
-        if (mem_m) {
-            fclose(mem_m);
-            mem_m = nullptr;
-        }
-        if (buffer_m) {
-            free(buffer_m);
-            buffer_m = nullptr;
-        }
-    }
-    FILE* get_file() { return mem_m; }
+
+    FILE* get_file() { return state->mem; }
+
     const char* get_buffer() {
-        if (mem_m)
-            fflush(mem_m);
-        return buffer_m;
+        if (state->mem)
+            fflush(state->mem);
+        return state->buffer;
     }
+
     size_t get_size() {
-        if (mem_m)
-            fflush(mem_m);
-        return size_m;
+        if (state->mem)
+            fflush(state->mem);
+        return state->size;
     }
 };
 

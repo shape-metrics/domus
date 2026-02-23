@@ -96,18 +96,8 @@ expected<OrthogonalDrawing, string> load_orthogonal_drawing_from_file(path path)
     for (auto& [id_str, pos_arr] : data.at("node_positions").items())
         result.attributes.set_position(std::stoi(id_str), pos_arr[0], pos_arr[1]);
     for (const auto& item : data.at("shape")) {
-        auto direction = string_to_direction(item.at("dir"));
-        if (!direction) {
-            string error_msg = "Error in load_orthogonal_drawing_from_file: ";
-            error_msg += direction.error();
-            return std::unexpected(error_msg);
-        }
-        auto res = result.shape.set_direction(item.at("u"), item.at("v"), *direction);
-        if (!res) {
-            string error_msg = "Error in load_orthogonal_drawing_from_file: ";
-            error_msg += res.error();
-            return std::unexpected(error_msg);
-        }
+        Direction direction = string_to_direction(item.at("dir"));
+        result.shape.set_direction(item.at("u"), item.at("v"), direction);
     }
     return result;
 }

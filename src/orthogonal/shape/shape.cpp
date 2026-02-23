@@ -1,8 +1,7 @@
 #include "domus/orthogonal/shape/shape.hpp"
 
-#include <expected>
+#include <cassert>
 #include <iostream>
-#include <stdexcept>
 
 using namespace std;
 
@@ -17,11 +16,12 @@ std::string direction_to_string(const Direction direction) {
     case Direction::DOWN:
         return "down";
     default:
-        throw std::invalid_argument("Invalid direction");
+        assert(false && "Invalid direction");
+        return "Invalid direction";
     }
 }
 
-expected<Direction, string> string_to_direction(const std::string& direction) {
+Direction string_to_direction(const std::string& direction) {
     if (direction == "left")
         return Direction::LEFT;
     if (direction == "right")
@@ -30,10 +30,8 @@ expected<Direction, string> string_to_direction(const std::string& direction) {
         return Direction::UP;
     if (direction == "down")
         return Direction::DOWN;
-    string error_msg = "Error in string_to_direction: invalid direction string";
-    error_msg += direction;
-    error_msg += "\n";
-    return std::unexpected(error_msg);
+    assert(false && "Error in string_to_direction: invalid direction string");
+    return Direction::INVALID;
 }
 
 Direction opposite_direction(const Direction direction) {
@@ -47,7 +45,8 @@ Direction opposite_direction(const Direction direction) {
     case Direction::DOWN:
         return Direction::UP;
     default:
-        throw std::invalid_argument("Invalid direction");
+        assert(false && "Invalid direction");
+        return Direction::INVALID;
     }
 }
 
@@ -62,7 +61,8 @@ Direction rotate_90_degrees(const Direction direction) {
     case Direction::DOWN:
         return Direction::LEFT;
     default:
-        throw std::invalid_argument("Invalid direction");
+        assert(false && "Invalid direction");
+        return Direction::INVALID;
     }
 }
 
@@ -72,18 +72,12 @@ bool is_horizontal(Direction direction) {
 
 bool is_vertical(Direction direction) { return !is_horizontal(direction); }
 
-expected<void, string>
-Shape::set_direction(const int node_id_1, const int node_id_2, const Direction direction) {
-    if (m_shape.contains(std::make_pair(node_id_1, node_id_2))) {
-        const std::string error_msg =
-            "Error in Shape::set_direction: direction already set for this pair: (" +
-            std::to_string(node_id_1) + ", " + std::to_string(node_id_2) + ") -> " +
-            direction_to_string(m_shape.at(std::make_pair(node_id_1, node_id_2))) + " vs " +
-            direction_to_string(direction);
-        return std::unexpected(error_msg);
-    }
+void Shape::set_direction(const int node_id_1, const int node_id_2, const Direction direction) {
+    assert(
+        !m_shape.contains(std::make_pair(node_id_1, node_id_2)) &&
+        "Error in Shape::set_direction: direction already set for this pair"
+    );
     m_shape[std::make_pair(node_id_1, node_id_2)] = direction;
-    return {};
 }
 
 optional<Direction> Shape::get_direction(const int node_id_1, const int node_id_2) const {
@@ -120,16 +114,12 @@ bool Shape::is_vertical(const int node_id_1, const int node_id_2) const {
     return is_up(node_id_1, node_id_2) || is_down(node_id_1, node_id_2);
 }
 
-expected<void, string> Shape::remove_direction(const int node_id_1, const int node_id_2) {
-    if (!contains(node_id_1, node_id_2)) {
-        string error_msg =
-            "Error in Shape::remove_direction: direction does not exist for this pair";
-        error_msg += "(" + std::to_string(node_id_1) + ", " + std::to_string(node_id_2) + ")";
-        error_msg += "\n";
-        return std::unexpected(error_msg);
-    }
+void Shape::remove_direction(const int node_id_1, const int node_id_2) {
+    assert(
+        contains(node_id_1, node_id_2) &&
+        "Error in Shape::remove_direction: direction does not exist for this pair"
+    );
     m_shape.erase(std::make_pair(node_id_1, node_id_2));
-    return {};
 }
 
 std::string Shape::to_string() const {

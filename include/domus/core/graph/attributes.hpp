@@ -21,11 +21,10 @@ enum class Attribute {
 std::string attribute_to_string(Attribute attribute);
 
 class GraphAttributes {
-    std::unordered_map<Attribute, std::unordered_map<int, std::any>>
-        mattribute_to_node;
+    std::unordered_map<Attribute, std::unordered_map<int, std::any>> mattribute_to_node;
     bool has_attribute_by_id(Attribute attribute, int id) const;
 
-   public:
+  public:
     bool has_attribute(Attribute attribute) const;
     void add_attribute(Attribute attribute);
     void remove_attribute(Attribute attribute);

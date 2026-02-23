@@ -1,5 +1,6 @@
 #include "domus/core/tree/tree.hpp"
 
+#include <cassert>
 #include <initializer_list>
 #include <iostream>
 
@@ -39,10 +40,8 @@ expected<int, string> Tree::get_parent(int node_id) const {
 bool Tree::has_node(int id) const { return m_node_ids.contains(id); }
 
 void Tree::add_node(int id, int parent_id) {
-    if (has_node(id))
-        throw runtime_error("Node already exists");
-    if (!has_node(parent_id))
-        throw runtime_error("Parent node does not exist");
+    assert(!has_node(id) && "Node already exists");
+    assert(has_node(parent_id) && "Parent node does not exist");
     m_node_ids.insert(id);
     m_nodeid_to_parentid[id] = parent_id;
     m_nodeid_to_childrenid[parent_id].insert(id);
@@ -57,8 +56,7 @@ int Tree::add_node(int parent_id) {
 }
 
 const unordered_set<int>& Tree::get_children(int node_id) const {
-    if (!has_node(node_id))
-        throw runtime_error("Node does not exist");
+    assert(has_node(node_id) && "Node does not exist");
     return m_nodeid_to_childrenid.at(node_id);
 }
 

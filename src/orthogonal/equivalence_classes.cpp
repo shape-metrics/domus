@@ -1,9 +1,9 @@
 #include "domus/orthogonal/equivalence_classes.hpp"
 
+#include <cassert>
 #include <functional>
 #include <iostream>
 #include <map>
-#include <stdexcept>
 #include <utility>
 
 #include "domus/orthogonal/shape/shape.hpp"
@@ -15,8 +15,10 @@ bool EquivalenceClasses::has_class(int class_id) const {
 }
 
 void EquivalenceClasses::set_class(int elem, int class_id) {
-    if (has_elem_a_class(elem))
-        throw runtime_error("EquivalenceClasses::set_class elem already has an assigned class");
+    assert(
+        !has_elem_a_class(elem) &&
+        "EquivalenceClasses::set_class elem already has an assigned class"
+    );
     m_elem_to_class[elem] = class_id;
     m_class_to_elems[class_id].insert(elem);
 }
@@ -24,14 +26,12 @@ void EquivalenceClasses::set_class(int elem, int class_id) {
 bool EquivalenceClasses::has_elem_a_class(int elem) const { return m_elem_to_class.contains(elem); }
 
 int EquivalenceClasses::get_class_of_elem(int elem) const {
-    if (!has_elem_a_class(elem))
-        throw runtime_error("EquivalenceClasses::get_class elem does not have a class");
+    assert(has_elem_a_class(elem) && "EquivalenceClasses::get_class elem does not have a class");
     return m_elem_to_class.at(elem);
 }
 
 const unordered_set<int>& EquivalenceClasses::get_elems_of_class(int class_id) const {
-    if (!has_class(class_id))
-        throw runtime_error("EquivalenceClasses::get_elems class does not exist");
+    assert(has_class(class_id) && "EquivalenceClasses::get_elems class does not exist");
     return m_class_to_elems.at(class_id);
 }
 

@@ -1,6 +1,7 @@
 #ifndef MY_SAT_H
 #define MY_SAT_H
 
+#include <expected>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,6 @@ struct SatSolverResult {
 
 SatSolverResult launch_glucose(const Cnf& cnf);
 
-SatSolverResult launch_kissat(const Cnf& cnf);
+std::expected<SatSolverResult, std::string> launch_kissat(const Cnf& cnf);
 
 #endif

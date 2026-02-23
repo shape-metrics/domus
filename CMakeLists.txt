@@ -74,6 +74,7 @@ set(COMMON_SRCS
     src/orthogonal/equivalence_classes.cpp
     src/orthogonal/drawing.cpp
     src/drawing/polygon.cpp
+    src/core/config.cpp
     src/core/graph/graphs_algorithms.cpp
     src/core/graph/graph.cpp
     src/core/graph/cycle.cpp

@@ -1,43 +1,26 @@
 #include "domus/core/utils.hpp"
 
-#include <unistd.h> // For close
-
+#include <cassert>
 #include <cmath>
 #include <filesystem>
-#include <fstream> // To read the file later
+#include <fstream>
+#include <unistd.h>
 
-#ifdef __linux__
-constexpr char TEMPORARY_FOLDER[] = "/dev/shm/";
-#elif __APPLE__
-const char TEMPORARY_FOLDER[] = "/tmp/";
-#endif
+using namespace std;
 
-std::string get_unique_filename(const std::string& base_filename, const std::string& folder) {
-    // Create a unique temporary file
-    std::string filename_template = folder + base_filename + "_XXXXXX";
-    const int fd = mkstemp(filename_template.data());
-    if (fd == -1)
-        throw std::runtime_error("Failed to create unique temporary file");
-    close(fd); // Close the file descriptor
-    return filename_template;
-}
-
-#if defined(__linux__) || defined(__APPLE__)
-std::string get_unique_filename(const std::string& base_filename) {
-    return get_unique_filename(base_filename, TEMPORARY_FOLDER);
-}
-#endif
-
-void save_string_to_file(const std::string& filename, const std::string& content) {
+expected<void, string> save_string_to_file(const string& filename, const string& content) {
     std::ofstream outfile(filename);
     if (outfile.is_open()) {
         outfile << content;
         outfile.close();
-    } else
-        throw std::runtime_error("Failed to open file for writing: " + filename);
+        return {};
+    }
+    string error_msg = "Error in save_string_to_file: ";
+    error_msg += "Failed to open file for writing: " + filename;
+    return std::unexpected(error_msg);
 }
 
-std::string color_to_string(const Color color) {
+string color_to_string(const Color color) {
     switch (color) {
     case Color::RED:
         return "red";
@@ -50,11 +33,12 @@ std::string color_to_string(const Color color) {
     case Color::RED_SPECIAL:
         return "darkred";
     default:
-        throw std::invalid_argument("Invalid color");
+        assert(false && "Invalid color");
+        return "Invalid color";
     }
 }
 
-Color string_to_color(const std::string& color) {
+Color string_to_color(const string& color) {
     if (color == "red")
         return Color::RED;
     if (color == "blue")
@@ -63,20 +47,24 @@ Color string_to_color(const std::string& color) {
         return Color::GREEN;
     if (color == "black")
         return Color::BLACK;
-    throw std::invalid_argument("Invalid color string");
+    assert(false && "Invalid color string");
+    return Color::BLACK;
 }
 
-std::vector<std::string> collect_txt_files(const std::string& folder_path) {
-    std::vector<std::string> txt_files;
-    if (!std::filesystem::exists(folder_path))
-        throw std::runtime_error("Folder does not exist: " + folder_path);
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(folder_path))
+expected<vector<string>, string> collect_txt_files(std::filesystem::path folder_path) {
+    vector<string> txt_files;
+    if (!filesystem::exists(folder_path)) {
+        string error_msg = "Error in collect_txt_files: ";
+        error_msg += "Folder does not exist: " + folder_path.string();
+        return std::unexpected(error_msg);
+    }
+    for (const auto& entry : filesystem::recursive_directory_iterator(folder_path))
         if (entry.is_regular_file() && entry.path().extension() == ".txt")
             txt_files.push_back(entry.path().string());
     return txt_files;
 }
 
-double compute_stddev(const std::vector<int>& values) {
+double compute_stddev(const vector<int>& values) {
     if (values.size() <= 1)
         return 0.0;
     double mean = 0;

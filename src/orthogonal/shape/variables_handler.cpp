@@ -1,7 +1,8 @@
 #include "domus/orthogonal/shape/variables_handler.hpp"
+#include "domus/orthogonal/shape/shape.hpp"
 
+#include <cassert>
 #include <iostream>
-#include <stdexcept>
 
 void VariablesHandler::add_variable(int i, int j, const Direction direction) {
     variable_to_edge[m_next_var] = std::make_pair(i, j);
@@ -22,6 +23,9 @@ void VariablesHandler::add_variable(int i, int j, const Direction direction) {
     case Direction::RIGHT:
         m_edge_right_variable[{i, j}] = m_next_var;
         m_edge_left_variable[{j, i}] = m_next_var;
+        break;
+    case Direction::INVALID:
+        assert(false && "Invalid direction");
         break;
     }
     m_next_var++;
@@ -67,7 +71,8 @@ int VariablesHandler::get_variable(int i, int j, Direction direction) const {
         return get_left_variable(i, j);
     if (direction == Direction::RIGHT)
         return get_right_variable(i, j);
-    throw std::invalid_argument("Invalid direction");
+    assert(false && "Invalid direction");
+    return -1;
 }
 
 const std::pair<int, int>& VariablesHandler::get_edge_of_variable(const int variable) const {
@@ -83,18 +88,17 @@ Direction VariablesHandler::get_direction_of_edge(int i, int j) const {
         return Direction::LEFT;
     if (get_variable_value(get_right_variable(i, j)))
         return Direction::RIGHT;
-    throw std::runtime_error("No direction found for standard edge");
+    assert(false && "No direction found for standard edge");
+    return Direction::UP;
 }
 
 void VariablesHandler::set_variable_value(int variable, bool value) {
-    if (variable_to_value.contains(variable))
-        throw std::runtime_error("variable value is already set");
+    assert(!variable_to_value.contains(variable) && "variable value is already set");
     variable_to_value[variable] = value;
 }
 
 bool VariablesHandler::get_variable_value(int variable) const {
-    if (!variable_to_value.contains(variable))
-        throw std::runtime_error("variable does not have a set value");
+    assert(variable_to_value.contains(variable) && "variable does not have a set value");
     return variable_to_value.at(variable);
 }
 

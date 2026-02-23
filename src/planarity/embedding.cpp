@@ -1,9 +1,9 @@
 #include "domus/planarity/embedding.hpp"
 
+#include <cassert>
 #include <functional>
 #include <iostream>
 #include <stack>
-#include <stdexcept>
 #include <unordered_set>
 #include <utility>
 
@@ -15,8 +15,7 @@ Embedding::Embedding(const UndirectedGraph& graph) {
 }
 
 void Embedding::add_edge(const int from_id, const int to_id) {
-    if (m_edges.contains({from_id, to_id}))
-        throw runtime_error("Edge already exists");
+    assert(!m_edges.contains({from_id, to_id}) && "Edge already exists");
     m_edges.insert({from_id, to_id});
     if (m_edges_to_add.contains({from_id, to_id})) {
         m_edges_to_add.erase({from_id, to_id});
@@ -83,8 +82,7 @@ bool is_embedding_planar(const Embedding& embedding) {
 }
 
 size_t compute_number_of_connected_components(const Embedding& embedding) {
-    if (!embedding.is_consistent())
-        throw runtime_error("Embedding is not fully undirected");
+    assert(embedding.is_consistent() && "Embedding is not fully undirected");
     unordered_set<int> visited;
     size_t components = 0;
     const function<void(int)> explore_component = [&](const int start_node_id) {
@@ -125,8 +123,7 @@ int compute_embedding_genus(
 }
 
 int compute_embedding_genus(const Embedding& embedding) {
-    if (!embedding.is_consistent())
-        throw runtime_error("Embedding is not fully undirected");
+    assert(embedding.is_consistent() && "Embedding is not fully undirected");
     const size_t number_of_nodes = embedding.size();
     const size_t number_of_edges = embedding.total_number_of_edges() / 2;
     const size_t number_of_faces = compute_number_of_faces_in_embedding(embedding);

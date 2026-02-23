@@ -2,7 +2,6 @@
 #define MY_SHAPE_HPP
 
 #include <array>
-#include <expected>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -10,11 +9,11 @@
 
 #include "domus/core/utils.hpp"
 
-enum class Direction { LEFT, RIGHT, UP, DOWN };
+enum class Direction { LEFT, RIGHT, UP, DOWN, INVALID };
 
 std::string direction_to_string(Direction direction);
 
-std::expected<Direction, std::string> string_to_direction(const std::string& direction);
+Direction string_to_direction(const std::string& direction);
 
 Direction opposite_direction(Direction direction);
 
@@ -32,8 +31,7 @@ class Shape {
     std::unordered_map<std::pair<int, int>, Direction, int_pair_hash> m_shape;
 
   public:
-    std::expected<void, std::string>
-    set_direction(int node_id_1, int node_id_2, Direction direction);
+    void set_direction(int node_id_1, int node_id_2, Direction direction);
     std::optional<Direction> get_direction(int node_id_1, int node_id_2) const;
     bool contains(int node_id_1, int node_id_2) const;
     bool is_up(int node_id_1, int node_id_2) const;
@@ -42,7 +40,7 @@ class Shape {
     bool is_left(int i, int j) const;
     bool is_horizontal(int node_id_1, int node_id_2) const;
     bool is_vertical(int node_id_1, int node_id_2) const;
-    std::expected<void, std::string> remove_direction(int node_id_1, int node_id_2);
+    void remove_direction(int node_id_1, int node_id_2);
     std::string to_string() const;
     void print() const;
 };
