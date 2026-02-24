@@ -16,6 +16,8 @@ class UndirectedGraph;
 
 using namespace std;
 
+using IntPairHashSet = std::unordered_set<std::pair<int, int>, int_pair_hash>;
+
 auto build_index_to_nodes_map(const UndirectedGraph& graph, const GraphAttributes& attributes) {
     auto [node_to_index_x, node_to_index_y] = compute_node_to_index_position(graph, attributes);
     unordered_map<int, unordered_set<int>> index_x_to_nodes;

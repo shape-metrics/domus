@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <unistd.h>
+#include <unordered_map>
 
 using namespace std;
 
@@ -77,4 +78,22 @@ double compute_stddev(const vector<int>& values) {
         variance += (value - mean) * (value - mean);
     variance /= size - 1.0;
     return std::sqrt(variance);
+}
+
+class SequenceIndexImpl : public ISequenceIndex {
+    std::unordered_map<size_t, size_t> m_map;
+
+  public:
+    void clear() override { m_map.clear(); }
+    void insert(size_t hash, size_t pos) override { m_map[hash] = pos; }
+    bool contains(size_t hash) const override { return m_map.contains(hash); }
+    std::optional<size_t> get_position(size_t hash) const override {
+        if (auto it = m_map.find(hash); it != m_map.end())
+            return it->second;
+        return std::nullopt;
+    }
+};
+
+std::unique_ptr<ISequenceIndex> createSequenceIndex() {
+    return std::make_unique<SequenceIndexImpl>();
 }

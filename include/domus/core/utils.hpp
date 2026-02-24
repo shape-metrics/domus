@@ -2,15 +2,11 @@
 #define MY_UTILS_H
 
 #include <algorithm>
+#include <cassert>
 #include <expected>
 #include <filesystem>
-#include <functional>
-#include <stdio.h>
-#include <stdlib.h>
+#include <memory>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
 #include <vector>
 
 std::expected<void, std::string>
@@ -47,46 +43,55 @@ collect_txt_files(std::filesystem::path folder_path);
 
 double compute_stddev(const std::vector<int>& values);
 
-using IntPairHashSet = std::unordered_set<std::pair<int, int>, int_pair_hash>;
+class ISequenceIndex {
+  public:
+    virtual ~ISequenceIndex() = default;
+    virtual void clear() = 0;
+    virtual void insert(size_t hash, size_t pos) = 0;
+    virtual bool contains(size_t hash) const = 0;
+    virtual std::optional<size_t> get_position(size_t hash) const = 0;
+};
+
+std::unique_ptr<ISequenceIndex> createSequenceIndex();
 
 template <typename T> class CircularSequence {
-    std::vector<T> m_elements;
-    std::unordered_map<T, size_t> m_element_position;
+    std::vector<T> m_elements{};
+    std::unique_ptr<ISequenceIndex> m_index = createSequenceIndex();
+    void recompute_positions() {
+        m_index->clear();
+        for (size_t i = 0; i < m_elements.size(); i++)
+            m_index->insert(get_hash(m_elements[i]), i);
+    }
+    size_t get_hash(const T& val) const { return std::hash<T>{}(val); }
 
   public:
-    CircularSequence() = default;
-    explicit CircularSequence(const std::vector<T>& elements) : m_elements(elements) {
+    CircularSequence() {}
+    explicit CircularSequence(std::ranges::input_range auto&& elements)
+        : m_elements(std::begin(elements), std::end(elements)) {
         recompute_positions();
     }
+    const std::vector<T>& get_elements() const { return m_elements; }
     void reverse() {
         std::ranges::reverse(m_elements);
         recompute_positions();
     }
-    void recompute_positions() {
-        m_element_position.clear();
-        for (size_t i = 0; i < size(); i++)
-            m_element_position[at(i)] = i;
-    }
     void clear() {
         m_elements.clear();
-        m_element_position.clear();
+        m_index->clear();
     }
     bool empty() const { return m_elements.empty(); }
     size_t size() const { return m_elements.size(); }
     void append(T element) {
         m_elements.push_back(element);
-        m_element_position[element] = size() - 1;
+        m_index->insert(get_hash(element), m_elements.size() - 1);
     }
-    std::expected<void, std::string> insert(size_t index, T element) {
-        if (has_element(element)) {
-            std::string error_msg = "Error in CircularSequence::insert: ";
-            error_msg += "Element already exists";
-            return std::unexpected(error_msg);
-        }
+    void insert(size_t index, T element) {
+        assert(
+            !has_element(element) && "Error in CircularSequence::insert: element already exists"
+        );
         auto it = m_elements.begin() + static_cast<typename std::vector<T>::difference_type>(index);
         m_elements.insert(it, element);
         recompute_positions();
-        return {};
     }
     size_t next_index(const size_t index) const { return (index + 1) % size(); }
     void remove_if_exists(T element) {
@@ -110,14 +115,12 @@ template <typename T> class CircularSequence {
             return at(0);
         return at(pos + 1);
     }
-    bool has_element(T element) const { return m_element_position.contains(element); }
-    std::expected<size_t, std::string> element_position(T element) const {
-        if (!has_element(element)) {
-            std::string error_msg = "Error in CircularSequence::element_position: ";
-            error_msg += "Element not found";
-            return std::unexpected(error_msg);
-        }
-        return m_element_position.at(element);
+    bool has_element(const T& element) const { return m_index->contains(get_hash(element)); }
+    std::optional<size_t> element_position(T element) const {
+        assert(
+            has_element(element) && "Error in CircularSequence::element_position: element not found"
+        );
+        return m_index->get_position(get_hash(element));
     }
     T operator[](const size_t index) const { return m_elements[index]; }
     T at(const size_t index) const { return m_elements.at(index); }

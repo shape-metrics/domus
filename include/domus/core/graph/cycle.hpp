@@ -1,8 +1,6 @@
 #ifndef MY_CYCLE_H
 #define MY_CYCLE_H
 
-#include <deque>
-#include <stddef.h>
 #include <string>
 #include <vector>
 
@@ -14,8 +12,8 @@ class Cycle {
     void reverse();
 
   public:
-    explicit Cycle(const std::vector<int>& nodes_ids);
-    explicit Cycle(const std::deque<int>& nodes_ids);
+    explicit Cycle(std::ranges::input_range auto&& nodes_ids) : m_nodes_ids(nodes_ids) {}
+    const auto& get_nodes_ids() const { return m_nodes_ids.get_elements(); }
     void clear();
     bool empty() const;
     size_t size() const;

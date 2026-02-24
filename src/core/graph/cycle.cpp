@@ -8,22 +8,13 @@
 
 using namespace std;
 
-Cycle::Cycle(const vector<int>& nodes_ids) : m_nodes_ids(nodes_ids) {}
-
-Cycle::Cycle(const deque<int>& nodes_ids) {
-    for (const int id : nodes_ids)
-        m_nodes_ids.append(id);
-}
-
 void Cycle::clear() { m_nodes_ids.clear(); }
 
 bool Cycle::empty() const { return m_nodes_ids.empty(); }
 
 size_t Cycle::size() const { return m_nodes_ids.size(); }
 
-void Cycle::insert(const size_t index, const int node_id) {
-    m_nodes_ids.insert(index, node_id).value();
-}
+void Cycle::insert(const size_t index, const int node_id) { m_nodes_ids.insert(index, node_id); }
 
 void Cycle::append(const int node_id) { m_nodes_ids.append(node_id); }
 
