@@ -115,8 +115,10 @@ class Solver : public Clone {
 
     // Problem specification:
     //
-    virtual Var newVar(bool polarity = true,
-                       bool dvar = true);  // Add a new variable with parameters
+    virtual Var newVar(
+        bool polarity = true,
+        bool dvar = true
+    );                                     // Add a new variable with parameters
                                            // specifying variable mode.
     bool addClause(const vec<Lit>& ps);    // Add a clause to the solver.
     bool addEmptyClause();                 // Add the empty clause, making the solver contradictory.
@@ -156,12 +158,16 @@ class Solver : public Clone {
 
     // Variable mode:
     //
-    void setPolarity(Var v,
-                     bool b); // Declare which polarity the decision heuristic should
-                              // use for a variable. Requires mode 'polarity_user'.
-    void setDecisionVar(Var v,
-                        bool b); // Declare if a variable should be eligible for
-                                 // selection in the decision heuristic.
+    void setPolarity(
+        Var v,
+        bool b
+    ); // Declare which polarity the decision heuristic should
+       // use for a variable. Requires mode 'polarity_user'.
+    void setDecisionVar(
+        Var v,
+        bool b
+    ); // Declare if a variable should be eligible for
+       // selection in the decision heuristic.
 
     // Read state:
     //
@@ -440,31 +446,40 @@ class Solver : public Clone {
     void insertVarOrder(Var x); // Insert a variable in the decision order priority queue.
     Lit pickBranchLit();        // Return the next decision variable.
     void newDecisionLevel();    // Begins a new decision level.
-    void uncheckedEnqueue(Lit p,
-                          CRef from = CRef_Undef); // Enqueue a literal. Assumes value
-                                                   // of literal is undefined.
-    bool enqueue(Lit p,
-                 CRef from = CRef_Undef); // Test if fact 'p' contradicts current
-                                          // state, enqueue otherwise.
+    void uncheckedEnqueue(
+        Lit p,
+        CRef from = CRef_Undef
+    ); // Enqueue a literal. Assumes value
+       // of literal is undefined.
+    bool enqueue(
+        Lit p,
+        CRef from = CRef_Undef
+    );                // Test if fact 'p' contradicts current
+                      // state, enqueue otherwise.
     CRef propagate(); // Perform unit propagation. Returns possibly conflicting clause.
     CRef propagateUnaryWatches(Lit p); // Perform propagation on unary watches of
                                        // p, can find only conflicts
     void cancelUntil(int level);       // Backtrack until a certain level.
-    void analyze(CRef confl,
-                 vec<Lit>& out_learnt,
-                 vec<Lit>& selectors,
-                 int& out_btlevel,
-                 unsigned int& nblevels,
-                 unsigned int& szWithoutSelectors); // (bt = backtrack)
-    void analyzeFinal(Lit p,
-                      vec<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY
-                                               // "analyze" BY SOME REASONABLE GENERALIZATION?
+    void analyze(
+        CRef confl,
+        vec<Lit>& out_learnt,
+        vec<Lit>& selectors,
+        int& out_btlevel,
+        unsigned int& nblevels,
+        unsigned int& szWithoutSelectors
+    ); // (bt = backtrack)
+    void analyzeFinal(
+        Lit p,
+        vec<Lit>& out_conflict
+    ); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY
+       // "analyze" BY SOME REASONABLE GENERALIZATION?
     bool litRedundant(Lit p,
                       uint32_t abstract_levels); // (helper method for 'analyze()')
     lbool search(int nof_conflicts);             // Search for a given number of conflicts.
-    virtual lbool
-    solve_(bool do_simp = true,
-           bool turn_off_simp = false);  // Main solve method (assumptions given in 'assumptions').
+    virtual lbool solve_(
+        bool do_simp = true,
+        bool turn_off_simp = false
+    );                                   // Main solve method (assumptions given in 'assumptions').
     virtual void reduceDB();             // Reduce the set of learnt clauses.
     void removeSatisfied(vec<CRef>& cs); // Shrink 'cs' to contain only non-satisfied clauses.
     void rebuildOrderHeap();
@@ -517,13 +532,13 @@ class Solver : public Clone {
     // Returns a random float 0 <= x < 1. Seed must never be 0.
     static inline double drand(double& seed) {
         seed *= 1389796;
-        int q = (int)(seed / 2147483647);
-        seed -= (double)q * 2147483647;
+        int q = static_cast<int>(seed / 2147483647);
+        seed -= static_cast<double>(q) * 2147483647;
         return seed / 2147483647;
     }
 
     // Returns a random integer 0 <= x < size. Seed must never be 0.
-    static inline int irand(double& seed, int size) { return (int)(drand(seed) * size); }
+    static inline int irand(double& seed, int size) { return static_cast<int>(drand(seed) * size); }
 
     // simplify
     //
@@ -647,7 +662,7 @@ inline int Solver::nLearnts() const { return learnts.size(); }
 inline int Solver::nVars() const { return vardata.size(); }
 inline int Solver::nFreeVars() {
     int a = stats[dec_vars];
-    return (int)(a) - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]);
+    return static_cast<int>(a) - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]);
 }
 inline void Solver::setPolarity(Var v, bool b) { polarity[v] = b; }
 inline void Solver::setDecisionVar(Var v, bool b) {
@@ -777,10 +792,12 @@ template <typename T> inline unsigned int Solver::computeLBD(const T& lits, int 
 // Debug etc:
 
 inline void Solver::printLit(Lit l) {
-    printf("%s%d:%c",
-           sign(l) ? "-" : "",
-           var(l) + 1,
-           value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X'));
+    printf(
+        "%s%d:%c",
+        sign(l) ? "-" : "",
+        var(l) + 1,
+        value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X')
+    );
 }
 
 inline void Solver::printClause(CRef cr) {

@@ -52,19 +52,20 @@ template <class K> struct DeepEqual {
 };
 
 static inline uint32_t hash(uint32_t x) { return x; }
-static inline uint32_t hash(uint64_t x) { return (uint32_t)x; }
-static inline uint32_t hash(int32_t x) { return (uint32_t)x; }
-static inline uint32_t hash(int64_t x) { return (uint32_t)x; }
+static inline uint32_t hash(uint64_t x) { return static_cast<uint32_t>(x); }
+static inline uint32_t hash(int32_t x) { return static_cast<uint32_t>(x); }
+static inline uint32_t hash(int64_t x) { return static_cast<uint32_t>(x); }
 
 //=================================================================================================
 // Some primes
 //
 
 static const int nprimes = 25;
-static const int primes[nprimes] = {
-    31,       73,       151,      313,      643,       1291,      2593,     5233,    10501,
-    21013,    42073,    84181,    168451,   337219,    674701,    1349473,  2699299, 5398891,
-    10798093, 21596719, 43193641, 86387383, 172775299, 345550609, 691101253};
+static const int primes[nprimes] = {31,       73,       151,       313,       643,
+                                    1291,     2593,     5233,      10501,     21013,
+                                    42073,    84181,    168451,    337219,    674701,
+                                    1349473,  2699299,  5398891,   10798093,  21596719,
+                                    43193641, 86387383, 172775299, 345550609, 691101253};
 
 //=================================================================================================
 // Hash table implementation of Maps
