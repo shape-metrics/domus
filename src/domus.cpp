@@ -1,5 +1,5 @@
-#include <iostream>
 #include <optional>
+#include <print>
 #include <string>
 
 #include "domus/core/graph/file_loader.hpp"
@@ -16,18 +16,17 @@ class UndirectedGraph;
 int planarity() {
     const auto graph = load_graph_from_txt_file("graph.txt");
     if (!graph) {
-        cout << graph.error() << "\n";
+        println("{}", graph.error());
         return 1;
     }
     const optional<Embedding> embedding = embed_graph(*graph);
     if (embedding.has_value()) {
-        cout << "Embedding found\n";
+        println("Embedding found");
         embedding->print();
-        cout << "number of faces: " << compute_number_of_faces_in_embedding(embedding.value())
-             << "\n"
-             << std::boolalpha << is_embedding_planar(embedding.value()) << "\n";
+        println("number of faces: {}", compute_number_of_faces_in_embedding(embedding.value()));
+        println("{}", is_embedding_planar(embedding.value()));
     } else
-        cout << "Embedding not found\n";
+        println("Embedding not found");
     return 0;
 }
 
@@ -36,20 +35,20 @@ int main() {
     string input_graph_filename = "graph.txt";
     const auto graph = load_graph_from_txt_file(input_graph_filename);
     if (!graph) {
-        cout << graph.error() << "\n";
+        println("{}", graph.error());
         return 1;
     }
     const auto result = make_orthogonal_drawing(*graph);
     if (!result) {
-        cout << result.error() << "\n";
+        println("{}", result.error());
         return 1;
     }
     make_svg(result->drawing.augmented_graph, result->drawing.attributes, svg_filename).value();
     const OrthogonalStats stats = compute_all_orthogonal_stats(result->drawing);
     print_orthogonal_stats(stats);
-    cout << "Initial number of cycles: " << result->initial_number_of_cycles << "\n"
-         << "Number of added cycles: " << result->number_of_added_cycles << "\n"
-         << "Number of useless bends: " << result->number_of_useless_bends << "\n";
+    println("Initial number of cycles: {}", result->initial_number_of_cycles);
+    println("Number of added cycles: {}", result->number_of_added_cycles);
+    println("Number of useless bends: {}", result->number_of_useless_bends);
     planarity();
     return 0;
 }
