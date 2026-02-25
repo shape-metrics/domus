@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "domus/core/containers.hpp"
+
 std::expected<void, std::string>
 save_string_to_file(const std::string& filename, const std::string& content);
 
@@ -52,17 +54,14 @@ class ISequenceIndex {
     virtual std::optional<size_t> get_position(size_t hash) const = 0;
 };
 
-std::unique_ptr<ISequenceIndex> createSequenceIndex();
-
 template <typename T> class CircularSequence {
     std::vector<T> m_elements{};
-    std::unique_ptr<ISequenceIndex> m_index = createSequenceIndex();
+    Int_ToInt_HashMap m_index;
     void recompute_positions() {
-        m_index->clear();
+        m_index.clear();
         for (size_t i = 0; i < m_elements.size(); i++)
-            m_index->insert(get_hash(m_elements[i]), i);
+            m_index.add(m_elements[i], static_cast<int>(i));
     }
-    size_t get_hash(const T& val) const { return std::hash<T>{}(val); }
 
   public:
     CircularSequence() {}
@@ -77,13 +76,13 @@ template <typename T> class CircularSequence {
     }
     void clear() {
         m_elements.clear();
-        m_index->clear();
+        m_index.clear();
     }
     bool empty() const { return m_elements.empty(); }
     size_t size() const { return m_elements.size(); }
     void append(T element) {
         m_elements.push_back(element);
-        m_index->insert(get_hash(element), m_elements.size() - 1);
+        m_index.add(element, static_cast<int>(m_elements.size()) - 1);
     }
     void insert(size_t index, T element) {
         assert(
@@ -115,12 +114,12 @@ template <typename T> class CircularSequence {
             return at(0);
         return at(pos + 1);
     }
-    bool has_element(const T& element) const { return m_index->contains(get_hash(element)); }
+    bool has_element(const T& element) const { return m_index.has(element); }
     std::optional<size_t> element_position(T element) const {
         assert(
             has_element(element) && "Error in CircularSequence::element_position: element not found"
         );
-        return m_index->get_position(get_hash(element));
+        return m_index.get(element);
     }
     T operator[](const size_t index) const { return m_elements[index]; }
     T at(const size_t index) const { return m_elements.at(index); }

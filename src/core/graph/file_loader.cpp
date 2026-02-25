@@ -48,13 +48,14 @@ std::expected<void, std::string> save_graph_to_file(const UndirectedGraph& graph
         return std::unexpected(error);
     }
     outfile << "nodes:\n";
-    for (const int node_id : graph.get_nodes_ids())
-        outfile << node_id << '\n';
+    graph.get_nodes_ids().for_each([&outfile](int node_id) { outfile << node_id << '\n'; });
     outfile << "edges:\n";
-    for (int node_id : graph.get_nodes_ids())
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id))
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (neighbor_id > node_id)
                 outfile << node_id << ' ' << neighbor_id << '\n';
+        });
+    });
     return {};
 }
 
@@ -84,7 +85,7 @@ void save_to_graphml(
     }
     os << "\n";
     os << "  <graph id=\"G\" edgedefault=\"undirected\">\n";
-    for (int node_id : graph.get_nodes_ids()) {
+    graph.get_nodes_ids().for_each([&](int node_id) {
         os << "    <node id=\"n" << node_id << "\">\n";
         if (attributes.has_attribute(Attribute::NODES_COLOR)) {
             const Color color = attributes.get_node_color(node_id);
@@ -95,15 +96,15 @@ void save_to_graphml(
             write_data_tag(os, "d2", std::to_string(attributes.get_position_y(node_id)));
         }
         os << "    </node>\n";
-    }
-    for (int node_id : graph.get_nodes_ids()) {
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
+    });
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        graph.get_neighbors_of_node(node_id).for_each([node_id, &os](int neighbor_id) {
             if (neighbor_id > node_id)
-                continue;
+                return;
             os << "    <source=\"n" << node_id << "\" target=\"n" << neighbor_id << "\">\n";
             os << "    </edge>\n";
-        }
-    }
+        });
+    });
     os << "\n";
     os << "  </graph>\n";
     os << "</graphml>\n";

@@ -4,8 +4,8 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <mutex>
+#include <print>
 #include <sstream>
 #include <utility>
 
@@ -69,6 +69,6 @@ const string Cnf::to_string() const {
     return ss.str();
 }
 
-void Cnf::print() const { std::cout << to_string() << std::endl; }
+void Cnf::print() const { println("{}", to_string()); }
 
 const vector<CnfRow>& Cnf::get_rows() const { return m_rows; }

@@ -76,7 +76,9 @@ set(COMMON_SRCS
     src/drawing/polygon.cpp
     src/core/config.cpp
     src/core/graph/graphs_algorithms.cpp
+    src/core/containers.cpp
     src/core/graph/graph.cpp
+    src/core/graph/graph_utilities.cpp
     src/core/graph/cycle.cpp
     src/core/graph/attributes.cpp
     src/core/graph/file_loader.cpp

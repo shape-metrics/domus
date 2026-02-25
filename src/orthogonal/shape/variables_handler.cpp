@@ -2,27 +2,27 @@
 #include "domus/orthogonal/shape/shape.hpp"
 
 #include <cassert>
-#include <iostream>
+#include <print>
 
 void VariablesHandler::add_variable(int i, int j, const Direction direction) {
     variable_to_edge[m_next_var] = std::make_pair(i, j);
     variable_to_direction[m_next_var] = direction;
     switch (direction) {
     case Direction::UP:
-        m_edge_up_variable[{i, j}] = m_next_var;
-        m_edge_down_variable[{j, i}] = m_next_var;
+        m_edge_up_variable.add(i, j, m_next_var);
+        m_edge_down_variable.add(j, i, m_next_var);
         break;
     case Direction::DOWN:
-        m_edge_down_variable[{i, j}] = m_next_var;
-        m_edge_up_variable[{j, i}] = m_next_var;
+        m_edge_down_variable.add(i, j, m_next_var);
+        m_edge_up_variable.add(j, i, m_next_var);
         break;
     case Direction::LEFT:
-        m_edge_left_variable[{i, j}] = m_next_var;
-        m_edge_right_variable[{j, i}] = m_next_var;
+        m_edge_left_variable.add(i, j, m_next_var);
+        m_edge_right_variable.add(j, i, m_next_var);
         break;
     case Direction::RIGHT:
-        m_edge_right_variable[{i, j}] = m_next_var;
-        m_edge_left_variable[{j, i}] = m_next_var;
+        m_edge_right_variable.add(i, j, m_next_var);
+        m_edge_left_variable.add(j, i, m_next_var);
         break;
     case Direction::INVALID:
         assert(false && "Invalid direction");
@@ -39,27 +39,27 @@ void VariablesHandler::add_edge_variables(const int i, const int j) {
 }
 
 VariablesHandler::VariablesHandler(const UndirectedGraph& graph) {
-    for (int node_id : graph.get_nodes_ids()) {
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (node_id > neighbor_id)
-                continue;
+                return;
             add_edge_variables(node_id, neighbor_id);
-        }
-    }
+        });
+    });
 }
 
-int VariablesHandler::get_up_variable(int i, int j) const { return m_edge_up_variable.at({i, j}); }
+int VariablesHandler::get_up_variable(int i, int j) const { return m_edge_up_variable.get(i, j); }
 
 int VariablesHandler::get_down_variable(int i, int j) const {
-    return m_edge_down_variable.at({i, j});
+    return m_edge_down_variable.get(i, j);
 }
 
 int VariablesHandler::get_left_variable(int i, int j) const {
-    return m_edge_left_variable.at({i, j});
+    return m_edge_left_variable.get(i, j);
 }
 
 int VariablesHandler::get_right_variable(int i, int j) const {
-    return m_edge_right_variable.at({i, j});
+    return m_edge_right_variable.get(i, j);
 }
 
 int VariablesHandler::get_variable(int i, int j, Direction direction) const {
@@ -113,4 +113,4 @@ std::string VariablesHandler::to_string() const {
     return result;
 }
 
-void VariablesHandler::print() const { std::cout << to_string() << std::endl; }
+void VariablesHandler::print() const { println("{}", to_string()); }

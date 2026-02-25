@@ -1,8 +1,6 @@
 #ifndef MY_LINEAR_SCALE_H
 #define MY_LINEAR_SCALE_H
 
-#include <algorithm>
-
 class ScaleLinear {
   private:
     double m_domainMin, m_domainMax;

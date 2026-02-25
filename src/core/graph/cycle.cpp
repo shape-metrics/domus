@@ -4,7 +4,6 @@
 #include <cassert>
 #include <format>
 #include <print>
-#include <ranges>
 
 using namespace std;
 
@@ -41,14 +40,7 @@ vector<int>::const_iterator Cycle::begin() const { return m_nodes_ids.begin(); }
 
 vector<int>::const_iterator Cycle::end() const { return m_nodes_ids.end(); }
 
-string Cycle::to_string() const {
-    return std::format(
-        "Cycle: {}",
-        std::views::all(m_nodes_ids) | std::views::transform([](int id) {
-            return std::to_string(id);
-        }) | std::views::join_with(' ')
-    );
-}
+std::string Cycle::to_string() const { return std::format("Cycle: {}", m_nodes_ids); }
 
 void Cycle::print() const { std::println("{}", to_string()); }
 

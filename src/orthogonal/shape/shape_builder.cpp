@@ -29,15 +29,15 @@ Shape result_to_shape(
             handler.set_variable_value(-var, false);
     }
     Shape shape;
-    for (int node_id : graph.get_nodes_ids()) {
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             shape.set_direction(
                 node_id,
                 neighbor_id,
                 handler.get_direction_of_edge(node_id, neighbor_id)
             );
-        }
-    }
+        });
+    });
     return shape;
 }
 

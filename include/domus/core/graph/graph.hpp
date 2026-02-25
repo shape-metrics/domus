@@ -3,29 +3,21 @@
 
 #include <stddef.h>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
 
-#include "domus/core/utils.hpp"
-
-using GraphEdgeHashSet = std::unordered_set<std::pair<int, int>, int_pair_hash>;
-
-template <typename T>
-using GraphEdgeHashMap = std::unordered_map<std::pair<int, int>, T, int_pair_hash>;
+#include "domus/core/graph/graph_utilities.hpp"
 
 class DirectedGraph {
     int m_next_node_id = 0;
     size_t m_total_edges = 0;
-    std::unordered_set<int> m_nodes_ids;
-    std::unordered_map<int, std::unordered_set<int>> m_nodeid_to_out_neighbors_ids;
-    std::unordered_map<int, std::unordered_set<int>> m_nodeid_to_in_neighbors_ids;
+    NodesContainer m_nodes_ids;
+    AdjacencyList m_out_adjacency_list;
+    AdjacencyList m_in_adjacency_list;
 
   public:
     bool has_node(int node_id) const;
-    const std::unordered_set<int>& get_nodes_ids() const;
-    const std::unordered_set<int>& get_out_neighbors_of_node(int node_id) const;
-    const std::unordered_set<int>& get_in_neighbors_of_node(int node_id) const;
+    const NodesContainer& get_nodes_ids() const;
+    const NodesContainer& get_out_neighbors_of_node(int node_id) const;
+    const NodesContainer& get_in_neighbors_of_node(int node_id) const;
     void add_node(int id);
     int add_node();
     size_t get_out_degree_of_node(int node_id) const;
@@ -43,13 +35,13 @@ class DirectedGraph {
 class UndirectedGraph {
     int m_next_node_id = 0;
     size_t m_total_edges = 0;
-    std::unordered_set<int> m_nodes_ids;
-    std::unordered_map<int, std::unordered_set<int>> m_nodeid_to_neighbors_ids;
+    NodesContainer m_nodes_ids;
+    AdjacencyList m_adjacency_list;
 
   public:
     bool has_node(int node_id) const;
-    const std::unordered_set<int>& get_nodes_ids() const;
-    const std::unordered_set<int>& get_neighbors_of_node(int node_id) const;
+    const NodesContainer& get_nodes_ids() const;
+    const NodesContainer& get_neighbors_of_node(int node_id) const;
     void add_node(int id);
     int add_node();
     size_t get_degree_of_node(int node_id) const;

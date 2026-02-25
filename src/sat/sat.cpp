@@ -1,6 +1,6 @@
 #include "domus/sat/sat.hpp"
 
-#include <iostream>
+#include <print>
 
 std::string SatSolverResult::to_string() const {
     std::string r = result == SatSolverResultType::SAT ? "SAT" : "UNSAT";
@@ -13,4 +13,4 @@ std::string SatSolverResult::to_string() const {
     return r + "\n" + numbers_str + "\n" + proof_str;
 }
 
-void SatSolverResult::print() const { std::cout << to_string() << std::endl; }
+void SatSolverResult::print() const { std::print("{}", to_string()); }

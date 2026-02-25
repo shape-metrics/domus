@@ -1,8 +1,6 @@
 #ifndef MY_GRAPH_GENERATORS_H
 #define MY_GRAPH_GENERATORS_H
 
-#include <stddef.h>
-
 #include "domus/core/graph/graph.hpp"
 
 UndirectedGraph

@@ -5,17 +5,16 @@
 #include <functional>
 #include <limits.h>
 #include <optional>
-#include <ranges>
 #include <string>
 #include <tuple>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/utils.hpp"
 #include "domus/nlohmann/json.hpp"
@@ -31,24 +30,27 @@ vector<int> path_in_class(
     const UndirectedGraph& graph, int from, int to, const Shape& shape, bool go_horizontal
 ) {
     vector<int> path;
-    unordered_set<int> visited;
+    NodesContainer visited;
     function<void(int)> dfs = [&](const int current) {
         if (current == to) {
             path.push_back(current);
             return;
         }
-        visited.insert(current);
-        for (int neighbor_id : graph.get_neighbors_of_node(current)) {
-            if (visited.contains(neighbor_id))
-                continue;
+        bool stop = false;
+        visited.add_node(current);
+        graph.get_neighbors_of_node(current).for_each([&](int neighbor_id) {
+            if (stop)
+                return;
+            if (visited.has_node(neighbor_id))
+                return;
             if (go_horizontal == shape.is_horizontal(current, neighbor_id)) {
                 dfs(neighbor_id);
                 if (!path.empty()) {
                     path.push_back(current);
-                    return;
+                    stop = true;
                 }
             }
-        }
+        });
         visited.erase(current);
     };
     dfs(from);
@@ -85,24 +87,26 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
 // useless bends are red nodes with two horizontal or vertical edges
 void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attributes, Shape& shape) {
     vector<int> nodes_to_remove;
-    for (int node_id : graph.get_nodes_ids()) {
+    graph.get_nodes_ids().for_each([&](int node_id) {
         if (attributes.get_node_color(node_id) == Color::BLACK)
-            continue;
+            return;
         assert(graph.get_degree_of_node(node_id) == 2);
         array<int, 2> neighbors{-1, -1};
         size_t i = 0;
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id))
+        graph.get_neighbors_of_node(node_id).for_each([&neighbors, &i](int neighbor_id) {
             neighbors[i++] = neighbor_id;
+        });
         // if the added corner is flat, remove it
         if (shape.is_horizontal(node_id, neighbors[0]) ==
             shape.is_horizontal(node_id, neighbors[1]))
             nodes_to_remove.push_back(node_id);
-    }
+    });
     for (int node_id : nodes_to_remove) {
         array<int, 2> neighbors{-1, -1};
         size_t i = 0;
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id))
+        graph.get_neighbors_of_node(node_id).for_each([&neighbors, &i](int neighbor_id) {
             neighbors[i++] = neighbor_id;
+        });
         auto direction = shape.get_direction(neighbors[0], node_id);
         graph.remove_node(node_id);
         graph.add_edge(neighbors[0], neighbors[1]);
@@ -120,12 +124,7 @@ make_orthogonal_drawing_incremental(const UndirectedGraph& graph, vector<Cycle>&
 
 expected<ShapeMetricsDrawing, string> make_orthogonal_drawing(const UndirectedGraph& graph) {
     auto cycles = compute_cycle_basis(graph);
-    if (!cycles) {
-        string error = "Error in make_orthogonal_drawing:\n";
-        error += cycles.error();
-        return std::unexpected(error);
-    }
-    return make_orthogonal_drawing_incremental(graph, *cycles);
+    return make_orthogonal_drawing_incremental(graph, cycles);
 }
 
 optional<Cycle> check_if_metrics_exist(Shape& shape, UndirectedGraph& graph) {
@@ -158,10 +157,12 @@ optional<Cycle> check_if_metrics_exist(Shape& shape, UndirectedGraph& graph) {
 void build_nodes_positions(UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape);
 
 bool has_graph_degree_more_than_4(const UndirectedGraph& graph) {
-    for (int node_id : graph.get_nodes_ids())
+    bool has_degree_more_than_4 = false;
+    graph.get_nodes_ids().for_each([&](int node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
-            return true;
-    return false;
+            has_degree_more_than_4 = true;
+    });
+    return has_degree_more_than_4;
 }
 
 void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape);
@@ -186,14 +187,16 @@ make_orthogonal_drawing_incremental(const UndirectedGraph& graph, vector<Cycle>&
     UndirectedGraph augmented_graph;
     GraphAttributes attributes;
     attributes.add_attribute(Attribute::NODES_COLOR);
-    for (const int node_id : graph.get_nodes_ids()) {
+    graph.get_nodes_ids().for_each([&](int node_id) {
         augmented_graph.add_node(node_id);
         attributes.set_node_color(node_id, Color::BLACK);
-    }
-    for (int node_id : graph.get_nodes_ids())
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id))
+    });
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (node_id < neighbor_id)
                 augmented_graph.add_edge(node_id, neighbor_id);
+        });
+    });
     Shape shape = build_shape(augmented_graph, attributes, cycles);
     optional<Cycle> cycle_to_add = check_if_metrics_exist(shape, augmented_graph);
     size_t number_of_added_cycles = 0;
@@ -237,30 +240,35 @@ void build_nodes_positions(UndirectedGraph& graph, GraphAttributes& attributes, 
     unordered_map<int, int> node_id_to_position_x;
     for (const int class_id : new_classes_x_ordering) {
         int next_position_x = current_position_x + 100;
-        for (const int node_id : classes_x.get_elems_of_class(class_id))
+
+        classes_x.get_elems_of_class(class_id).for_each([&](int node_id) {
             if (attributes.get_node_color(node_id) == Color::BLUE)
                 next_position_x = current_position_x + 100;
-        for (const int node_id : classes_x.get_elems_of_class(class_id))
+        });
+        classes_x.get_elems_of_class(class_id).for_each([&](int node_id) {
             node_id_to_position_x[node_id] = next_position_x;
+        });
         current_position_x = next_position_x;
     }
     int current_position_y = -100;
     unordered_map<int, int> node_id_to_position_y;
     for (const int class_id : new_classes_y_ordering) {
         int next_position_y = current_position_y + 100;
-        for (const int node_id : classes_y.get_elems_of_class(class_id))
+        classes_y.get_elems_of_class(class_id).for_each([&](int node_id) {
             if (attributes.get_node_color(node_id) == Color::GREEN)
                 next_position_y = current_position_y + 100;
-        for (const int node_id : classes_y.get_elems_of_class(class_id))
+        });
+        classes_y.get_elems_of_class(class_id).for_each([&](int node_id) {
             node_id_to_position_y[node_id] = next_position_y;
+        });
         current_position_y = next_position_y;
     }
     attributes.add_attribute(Attribute::NODES_POSITION);
-    for (int node_id : graph.get_nodes_ids()) {
+    graph.get_nodes_ids().for_each([&](int node_id) {
         const int x = node_id_to_position_x[node_id];
         const int y = node_id_to_position_y[node_id];
         attributes.set_position(node_id, x, y);
-    }
+    });
 }
 
 auto find_edges_to_fix(
@@ -270,19 +278,19 @@ auto find_edges_to_fix(
     unordered_map<int, int> node_to_leftest_down;
     unordered_map<int, int> node_to_downest_left;
     unordered_map<int, int> node_to_downest_right;
-    for (int node_id : graph.get_nodes_ids()) {
+    graph.get_nodes_ids().for_each([&](int node_id) {
         if (graph.get_degree_of_node(node_id) <= 4)
-            continue;
+            return;
         optional<int> downest_left, downest_right, leftest_up, leftest_down;
-        for (int added_id : graph.get_neighbors_of_node(node_id)) {
+        graph.get_neighbors_of_node(node_id).for_each([&](int added_id) {
             if (shape.is_horizontal(node_id, added_id)) {
                 assert(!shape.is_left(node_id, added_id));
                 int other_neighbor_id = 0;
-                for (int neighbor_id : graph.get_neighbors_of_node(added_id)) {
+                graph.get_neighbors_of_node(added_id).for_each([&](int neighbor_id) {
                     if (neighbor_id == node_id)
-                        continue;
+                        return;
                     other_neighbor_id = neighbor_id;
-                }
+                });
                 if (shape.is_up(added_id, other_neighbor_id)) {
                     if (!leftest_up.has_value())
                         leftest_up = added_id;
@@ -299,11 +307,11 @@ auto find_edges_to_fix(
             } else {
                 assert(!shape.is_down(node_id, added_id));
                 int other_neighbor_id = 0;
-                for (int neighbor_id : graph.get_neighbors_of_node(added_id)) {
+                graph.get_neighbors_of_node(added_id).for_each([&](int neighbor_id) {
                     if (neighbor_id == node_id)
-                        continue;
+                        return;
                     other_neighbor_id = neighbor_id;
-                }
+                });
                 if (shape.is_left(added_id, other_neighbor_id)) {
                     if (!downest_left.has_value())
                         downest_left = added_id;
@@ -319,12 +327,12 @@ auto find_edges_to_fix(
                     }
                 }
             }
-        }
+        });
         node_to_leftest_up[node_id] = leftest_up.value();
         node_to_leftest_down[node_id] = leftest_down.value();
         node_to_downest_left[node_id] = downest_left.value();
         node_to_downest_right[node_id] = downest_right.value();
-    }
+    });
     return std::make_tuple(
         std::move(node_to_leftest_up),
         std::move(node_to_leftest_down),
@@ -334,11 +342,15 @@ auto find_edges_to_fix(
 }
 
 int get_other_neighbor_id(const UndirectedGraph& graph, const int node_id, const int neighbor_id) {
-    for (int other_id : graph.get_neighbors_of_node(node_id))
+    optional<int> other;
+    graph.get_neighbors_of_node(node_id).for_each([&](int other_id) {
+        if (other.has_value())
+            return;
         if (other_id != neighbor_id)
-            return other_id;
-    assert(false); // No other neighbor found for node
-    return -1;
+            other = other_id;
+    });
+    assert(other.has_value()); // No other neighbor found for node
+    return other.value();
 }
 
 void fix_edge(
@@ -381,16 +393,16 @@ void fix_useless_green_blue_nodes(
 }
 
 void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape) {
-    auto nodes_view = graph.get_nodes_ids() |
-                      views::filter([&](int id) { return graph.get_degree_of_node(id) > 4; });
-    vector<int> nodes(nodes_view.begin(), nodes_view.end());
-    unordered_set<int> added_nodes_ids;
+    vector<int> nodes;
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        if (graph.get_degree_of_node(node_id) > 4)
+            nodes.push_back(node_id);
+    });
     for (int node_id : nodes) {
         vector<pair<int, int>> edges_to_remove;
         vector<pair<int, int>> edges_to_add;
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
+        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             int added_id = graph.add_node();
-            added_nodes_ids.insert(added_id);
             edges_to_add.emplace_back(added_id, node_id);
             edges_to_add.emplace_back(added_id, neighbor_id);
             shape.set_direction(added_id, neighbor_id, *shape.get_direction(node_id, neighbor_id));
@@ -407,7 +419,7 @@ void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, S
             shape.remove_direction(node_id, neighbor_id);
             shape.remove_direction(neighbor_id, node_id);
             edges_to_remove.emplace_back(node_id, neighbor_id);
-        }
+        });
         for (auto [from_id, to_id] : edges_to_add)
             graph.add_edge(from_id, to_id);
         for (auto [from_id, to_id] : edges_to_remove)
@@ -422,23 +434,25 @@ void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, S
     int current_position_x = 0;
     unordered_map<int, int> node_id_to_position_x;
     for (const int class_id : classes_x_ordering) {
-        for (const int node_id : classes_x.get_elems_of_class(class_id))
+        classes_x.get_elems_of_class(class_id).for_each([&](int node_id) {
             node_id_to_position_x[node_id] = 100 * current_position_x;
+        });
         ++current_position_x;
     }
     int current_position_y = 0;
     unordered_map<int, int> node_id_to_position_y;
     for (const int class_id : classes_y_ordering) {
-        for (const int node_id : classes_y.get_elems_of_class(class_id))
+        classes_y.get_elems_of_class(class_id).for_each([&](int node_id) {
             node_id_to_position_y[node_id] = 100 * current_position_y;
+        });
         ++current_position_y;
     }
     attributes.add_attribute(Attribute::NODES_POSITION);
-    for (int node_id : graph.get_nodes_ids()) {
+    graph.get_nodes_ids().for_each([&](int node_id) {
         const int x = node_id_to_position_x[node_id];
         const int y = node_id_to_position_y[node_id];
         attributes.set_position(node_id, x, y);
-    }
+    });
     fix_useless_green_blue_nodes(graph, attributes, shape);
     attributes.remove_attribute(Attribute::NODES_POSITION);
 }
@@ -462,10 +476,10 @@ void fix_inconsistency(
     const int colored_node_id = colored_node.value();
     int neighbors_ids[2] = {-1, -1};
     int i = 0;
-    for (int neighbor_id : graph.get_neighbors_of_node(colored_node_id)) {
+    graph.get_neighbors_of_node(colored_node_id).for_each([&](int neighbor_id) {
         neighbors_ids[i] = neighbor_id;
         ++i;
-    }
+    });
     if (shape.is_up(neighbors_ids[0], colored_node_id)) {
         shape.remove_direction(colored_node_id, neighbors_ids[0]);
         shape.remove_direction(neighbors_ids[0], colored_node_id);
@@ -596,7 +610,7 @@ void make_shifts(
                                              };
     const size_t index_of_fixed_node = find_fixed_index_node(attributes, right_nodes);
     const int initial_position = position_function_other(attributes, node_id);
-    for (int id : graph.get_nodes_ids()) {
+    graph.get_nodes_ids().for_each([&](int id) {
         const int old_position_y = position_function_other(attributes, id);
         if (old_position_y > initial_position) {
             const auto node_count = static_cast<int>(right_nodes.size());
@@ -608,7 +622,7 @@ void make_shifts(
             const int new_position_y = old_position_y - 5 * static_cast<int>(index_of_fixed_node);
             change_position_other(attributes, id, new_position_y);
         }
-    }
+    });
     for (size_t i = 0; i < right_nodes.size(); ++i) {
         if (i == index_of_fixed_node)
             continue;
@@ -651,10 +665,10 @@ void make_shifts(
 
 auto neighbors_at_each_direction(const UndirectedGraph& graph, int node_id, const Shape& shape) {
     unordered_map<Direction, vector<int>> nodes_at_direction;
-    for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
+    graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
         const Direction dir = *shape.get_direction(node_id, neighbor_id);
         nodes_at_direction[dir].push_back(neighbor_id);
-    }
+    });
     return nodes_at_direction;
 }
 
@@ -662,9 +676,10 @@ void make_shifts_overlapped_edges(
     UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape
 ) {
     vector<int> nodes;
-    for (int node_id : graph.get_nodes_ids())
+    graph.get_nodes_ids().for_each([&](int node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
             nodes.push_back(node_id);
+    });
     for (int node_id : nodes) {
         unordered_map<Direction, vector<int>> nodes_to_sort =
             neighbors_at_each_direction(graph, node_id, shape);
@@ -712,21 +727,22 @@ void make_shifts_overlapped_edges(
 }
 
 void fix_negative_positions(const UndirectedGraph& graph, GraphAttributes& attributes) {
-    auto ids = graph.get_nodes_ids();
-    if (ids.empty())
+    if (graph.size() == 0)
         return;
-
-    int min_x =
-        ranges::min(ids | views::transform([&](int id) { return attributes.get_position_x(id); }));
-    int min_y =
-        ranges::min(ids | views::transform([&](int id) { return attributes.get_position_y(id); }));
-
+    int min_x = std::numeric_limits<int>::max();
+    int min_y = std::numeric_limits<int>::max();
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        min_x = std::min(min_x, attributes.get_position_x(node_id));
+        min_y = std::min(min_y, attributes.get_position_y(node_id));
+    });
     if (min_x < 0)
-        for (int node_id : ids)
+        graph.get_nodes_ids().for_each([&](int node_id) {
             attributes.change_position_x(node_id, attributes.get_position_x(node_id) - min_x);
+        });
     if (min_y < 0)
-        for (int node_id : ids)
+        graph.get_nodes_ids().for_each([&](int node_id) {
             attributes.change_position_y(node_id, attributes.get_position_y(node_id) - min_y);
+        });
 }
 
 using json = nlohmann::json;

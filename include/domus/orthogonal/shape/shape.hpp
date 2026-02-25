@@ -4,10 +4,8 @@
 #include <array>
 #include <optional>
 #include <string>
-#include <unordered_map>
-#include <utility>
 
-#include "domus/core/utils.hpp"
+#include "domus/core/containers.hpp"
 
 enum class Direction { LEFT, RIGHT, UP, DOWN, INVALID };
 
@@ -28,7 +26,9 @@ constexpr std::array<Direction, 4> get_all_directions() {
 }
 
 class Shape {
-    std::unordered_map<std::pair<int, int>, Direction, int_pair_hash> m_shape;
+    IntPair_ToInt_HashMap m_shape;
+    int direction_to_int(Direction direction) const;
+    Direction int_to_direction(int direction) const;
 
   public:
     void set_direction(int node_id_1, int node_id_2, Direction direction);

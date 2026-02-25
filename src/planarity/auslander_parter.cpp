@@ -3,11 +3,8 @@
 #include <algorithm>
 #include <cassert>
 #include <deque>
-#include <iostream>
 #include <stddef.h>
 #include <tuple>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -29,43 +26,47 @@ Embedding merge_biconnected_components(
     for (size_t i = 0; i < biconnected_components.get_components().size(); ++i) {
         const Embedding& embedding = embeddings[i];
         const UndirectedGraph& component = biconnected_components.get_components()[i];
-        for (const int node_id : component.get_nodes_ids()) {
+        component.get_nodes_ids().for_each([&](int node_id) {
             for (const int component_neighbor_id : embedding.get_adjacency_list(node_id))
                 output.add_edge(node_id, component_neighbor_id);
-        }
+        });
     }
     return output;
 }
 
 Embedding base_case_graph(const UndirectedGraph& graph) {
     Embedding embedding(graph);
-    for (int node_id : graph.get_nodes_ids())
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id))
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             embedding.add_edge(node_id, neighbor_id);
+        });
+    });
     return embedding;
 }
 
 Embedding base_case_component(const UndirectedGraph& component, const Cycle& cycle) {
     Embedding embedding(component);
-    for (int node_id : component.get_nodes_ids()) {
+    component.get_nodes_ids().for_each([&](int node_id) {
         if (component.get_degree_of_node(node_id) == 2) {
-            for (int neighbor_id : component.get_neighbors_of_node(node_id))
+            component.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
                 embedding.add_edge(node_id, neighbor_id);
-            continue;
+            });
+            return;
         }
         optional<int> neighbor_in_between;
-        for (int neighbor_id : component.get_neighbors_of_node(node_id)) {
+        component.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+            if (neighbor_in_between.has_value())
+                return;
             if (cycle.next_of_node(node_id) == neighbor_id ||
                 cycle.prev_of_node(node_id) == neighbor_id) {
-                continue;
+                return;
             }
             neighbor_in_between = neighbor_id;
-            break;
-        }
+        });
         embedding.add_edge(node_id, cycle.next_of_node(node_id));
         embedding.add_edge(node_id, neighbor_in_between.value());
         embedding.add_edge(node_id, cycle.prev_of_node(node_id));
-    }
+    });
     return embedding;
 }
 
@@ -112,11 +113,11 @@ auto compute_min_and_max_segments_attachments(const vector<Segment>& segments, c
     for (size_t i = 0; i < segments.size(); i++) {
         size_t min = cycle.size();
         size_t max = 0;
-        for (const int attachment : segments[i].get_attachments()) {
+        segments[i].get_attachments().for_each([&](int attachment) {
             const size_t position = cycle.node_position(attachment);
             min = std::min(min, position);
             max = std::max(max, position);
-        }
+        });
         segments_min_attachment[i] = min;
         segments_max_attachment[i] = max;
     }
@@ -131,7 +132,8 @@ vector<bool> are_embeddings_inside_clockwise_cycle(
     for (size_t i = 0; i < segments.size(); ++i) {
         const Segment& segment = segments[i];
         const Embedding& embedding = embeddings[i];
-        const int attachment_id = *segment.get_attachments().begin(); // any attachment is good
+        const int attachment_id =
+            segment.get_attachments().get_one_node_id(); // any attachment is good
         const int next = cycle.next_of_node(attachment_id);
         const int prev = cycle.prev_of_node(attachment_id);
         is_inside[i] = embedding.get_adjacency_list(attachment_id).next_element(next) != prev;
@@ -248,7 +250,7 @@ void add_edges_incident_to_cycle(
     const vector<Segment>& segments,
     const Cycle& cycle,
     const vector<Embedding>& embeddings,
-    const unordered_map<int, bool>& is_segment_inside,
+    const Bipartition& is_segment_inside,
     Embedding& output,
     const vector<size_t>& segments_min_attachment,
     const vector<size_t>& segments_max_attachment,
@@ -261,7 +263,7 @@ void add_edges_incident_to_cycle(
         vector<size_t> outside_segments{};
         for (size_t i = 0; i < segments.size(); ++i) {
             if (segments[i].has_attachment(cycle_node_id)) {
-                if (is_segment_inside.at(static_cast<int>(i)))
+                if (is_segment_inside.get_side(static_cast<int>(i)))
                     inside_segments.push_back(i);
                 else
                     outside_segments.push_back(i);
@@ -290,7 +292,7 @@ void add_edges_incident_to_cycle(
         for (const size_t segment_index : inside_order) {
             const Embedding& embedding = embeddings[segment_index];
             const bool is_embedding_compatible =
-                is_segment_inside.at(static_cast<int>(segment_index)) ==
+                is_segment_inside.get_side(static_cast<int>(segment_index)) ==
                 is_embedding_inside[segment_index];
             add_middle_edges(embedding, cycle_node_id, is_embedding_compatible, output, cycle);
         }
@@ -298,7 +300,7 @@ void add_edges_incident_to_cycle(
         for (const size_t segment_index : outside_order) {
             const Embedding& embedding = embeddings[segment_index];
             const bool is_embedding_compatible =
-                is_segment_inside.at(static_cast<int>(segment_index)) ==
+                is_segment_inside.get_side(static_cast<int>(segment_index)) ==
                 is_embedding_inside[segment_index];
             add_middle_edges(embedding, cycle_node_id, is_embedding_compatible, output, cycle);
         }
@@ -311,24 +313,24 @@ void add_edges_not_incident_to_cycle(
     const Cycle& cycle,
     const vector<Embedding>& embeddings,
     const vector<bool>& is_embedding_inside,
-    const unordered_map<int, bool>& is_segment_inside
+    const Bipartition& is_segment_inside
 ) {
     for (size_t i = 0; i < segments.size(); ++i) {
         const Segment& segment = segments[i];
         const Embedding& embedding = embeddings[i];
-        for (const int node_id : segment.get_segment().get_nodes_ids()) {
+        segment.get_segment().get_nodes_ids().for_each([&](int node_id) {
             if (cycle.has_node(node_id))
-                continue;
+                return;
             vector<int> neighbors_to_add;
             for (const int neighbor_id : embedding.get_adjacency_list(node_id))
                 neighbors_to_add.push_back(neighbor_id);
-            if (is_segment_inside.at(static_cast<int>(i)) == is_embedding_inside[i])
+            if (is_segment_inside.get_side(static_cast<int>(i)) == is_embedding_inside[i])
                 for (const int neighbor_id : neighbors_to_add)
                     output.add_edge(node_id, neighbor_id);
             else
                 for (size_t j = neighbors_to_add.size(); j > 0; --j)
                     output.add_edge(node_id, neighbors_to_add[j - 1]);
-        }
+        });
     }
 }
 
@@ -337,7 +339,7 @@ Embedding merge_segments_embeddings(
     const Cycle& cycle,
     const vector<Embedding>& embeddings,
     const vector<Segment>& segments,
-    const unordered_map<int, bool>& is_segment_inside
+    const Bipartition& is_segment_inside
 ) {
     Embedding output(component);
     const auto [segments_min_attachment, segments_max_attachment] =
@@ -382,8 +384,7 @@ embed_biconnected_component(const UndirectedGraph& component, const Cycle& cycle
         return embed_biconnected_component(component, new_cycle);
     }
     const UndirectedGraph interlacement_graph = compute_interlacement_graph(segments, cycle);
-    const optional<unordered_map<int, bool>> is_segment_inside =
-        compute_bipartition(interlacement_graph);
+    const optional<Bipartition> is_segment_inside = compute_bipartition(interlacement_graph);
     if (!is_segment_inside.has_value())
         return std::nullopt; // if no bipartition exists, the component is not planar
     vector<Embedding> embeddings;
@@ -393,7 +394,6 @@ embed_biconnected_component(const UndirectedGraph& component, const Cycle& cycle
             return std::nullopt;
         embeddings.push_back(std::move(embedding.value()));
     }
-    std::cout << "embedded biconnected component\n";
     return merge_segments_embeddings(
         component,
         cycle,

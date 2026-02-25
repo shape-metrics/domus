@@ -3,9 +3,9 @@
 
 #include <expected>
 #include <filesystem>
-#include <unordered_map>
 #include <utility>
 
+#include "domus/core/containers.hpp"
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/orthogonal/shape/shape.hpp"
@@ -26,7 +26,7 @@ save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, std::filesystem
 std::expected<OrthogonalDrawing, std::string>
 load_orthogonal_drawing_from_file(std::filesystem::path path);
 
-std::pair<std::unordered_map<int, int>, std::unordered_map<int, int>>
+std::pair<Int_ToInt_HashMap, Int_ToInt_HashMap>
 compute_node_to_index_position(const UndirectedGraph& graph, const GraphAttributes& attributes);
 
 #endif

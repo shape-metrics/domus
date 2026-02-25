@@ -3,22 +3,22 @@
 
 #include <deque>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 #include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 
 class Cycle;
 
 struct Segment {
   private:
     UndirectedGraph segment;
-    std::unordered_set<int> attachments;
+    NodesContainer attachments;
 
   public:
     UndirectedGraph& get_segment();
     const UndirectedGraph& get_segment() const;
-    const std::unordered_set<int>& get_attachments() const;
+    const NodesContainer& get_attachments() const;
     bool has_attachment(int attachment_id) const;
     void add_attachment(int attachment_id);
     std::string to_string() const;

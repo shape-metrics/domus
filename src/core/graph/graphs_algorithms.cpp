@@ -1,18 +1,16 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 
-#include <algorithm>
 #include <cassert>
 #include <functional>
-#include <iostream>
 #include <list>
 #include <optional>
+#include <print>
 #include <queue>
 #include <stack>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
 
+#include "domus/core/containers.hpp"
 #include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/tree/tree.hpp"
 #include "domus/core/tree/tree_algorithms.hpp"
 
@@ -21,41 +19,39 @@ using namespace std;
 bool is_graph_connected(const UndirectedGraph& graph) {
     if (graph.size() == 0)
         return true;
-    unordered_set<int> visited;
+    NodesContainer visited;
     vector<int> stack;
-    stack.push_back(*graph.get_nodes_ids().begin());
+    stack.push_back(graph.get_nodes_ids().get_one_node_id());
     while (!stack.empty()) {
         const int node_id = stack.back();
         stack.pop_back();
-        visited.insert(node_id);
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id))
-            if (!visited.contains(neighbor_id))
+        visited.add_node(node_id);
+        graph.get_neighbors_of_node(node_id).for_each([&stack, &visited](int neighbor_id) {
+            if (!visited.has_node(neighbor_id))
                 stack.push_back(neighbor_id);
+        });
     }
-    for (const int node_id : graph.get_nodes_ids())
-        if (!visited.contains(node_id))
-            return false;
-    return true;
+    return visited.size() == graph.size();
 }
 
 vector<Cycle> compute_all_cycles_with_node_in_graph(
-    const UndirectedGraph& graph, int node_id, const unordered_set<int>& taboo_nodes
+    const UndirectedGraph& graph, int node_id, const NodesContainer& taboo_nodes
 ) {
     vector<Cycle> cycles;
-    unordered_set<int> visited;
+    NodesContainer visited;
     function<void(int, int, vector<int>&)> dfs =
         [&](const int current, const int start, vector<int>& path) {
-            visited.insert(current);
+            visited.add_node(current);
             path.push_back(current);
-            for (int neighbor_id : graph.get_neighbors_of_node(current)) {
-                if (taboo_nodes.contains(neighbor_id))
-                    continue;                                  // skip taboo nodes
+            graph.get_neighbors_of_node(current).for_each([&](int neighbor_id) {
+                if (taboo_nodes.has_node(neighbor_id))
+                    return;                                    // skip taboo nodes
                 if (neighbor_id == start && path.size() > 2) { // found a cycle
                     cycles.emplace_back(path);
-                } else if (!visited.contains(neighbor_id)) {
+                } else if (!visited.has_node(neighbor_id)) {
                     dfs(neighbor_id, start, path);
                 }
-            }
+            });
             path.pop_back();
             visited.erase(current);
         };
@@ -66,70 +62,76 @@ vector<Cycle> compute_all_cycles_with_node_in_graph(
 
 vector<Cycle> compute_all_cycles_in_graph(const UndirectedGraph& graph) {
     vector<Cycle> all_cycles;
-    unordered_set<int> taboo_nodes;
-    for (int node_id : graph.get_nodes_ids()) {
+    NodesContainer taboo_nodes;
+    graph.get_nodes_ids().for_each([&](int node_id) {
         vector<Cycle> cycles = compute_all_cycles_with_node_in_graph(graph, node_id, taboo_nodes);
         for (Cycle& cycle : cycles)
             all_cycles.emplace_back(cycle.get_nodes_ids());
-        taboo_nodes.insert(node_id);
-    }
+        taboo_nodes.add_node(node_id);
+    });
     return all_cycles;
 }
 
 bool dfs_find_cycle(
     int node_id,
     const DirectedGraph& graph,
-    unordered_map<int, int>& state,
-    unordered_map<int, int>& parent,
+    Int_ToInt_HashMap& state,
+    Int_ToInt_HashMap& parent,
     optional<int>& cycle_start,
     optional<int>& cycle_end
 ) {
-    state[node_id] = 1; // mark as visiting (gray)
-    for (int neighbor_id : graph.get_out_neighbors_of_node(node_id)) {
-        if (!state.contains(neighbor_id)) { // unvisited
-            parent[neighbor_id] = node_id;
-            if (dfs_find_cycle(neighbor_id, graph, state, parent, cycle_start, cycle_end))
-                return true;
-        } else if (state[neighbor_id] == 1) {
+    state.add(node_id, 1); // mark as visiting (gray)
+    bool found_cycle = false;
+    graph.get_out_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        if (found_cycle)
+            return;
+        if (!state.has(neighbor_id)) { // unvisited
+            parent.add(neighbor_id, node_id);
+            found_cycle = dfs_find_cycle(neighbor_id, graph, state, parent, cycle_start, cycle_end);
+        } else if (state.get(neighbor_id) == 1) {
             cycle_start = neighbor_id;
             cycle_end = node_id;
-            return true;
+            found_cycle = true;
         }
-    }
-    state[node_id] = 2; // mark as fully processed (black)
-    return false;
+    });
+    state.update(node_id, 2); // mark as fully processed (black)
+    return found_cycle;
 }
 
 optional<Cycle> find_a_cycle_in_graph(const DirectedGraph& graph) {
-    unordered_map<int, int> state;
-    unordered_map<int, int> parent;
+    Int_ToInt_HashMap state;
+    Int_ToInt_HashMap parent;
     optional<int> cycle_start = std::nullopt;
     optional<int> cycle_end = std::nullopt;
-    for (int node_id : graph.get_nodes_ids())
-        if (!state.contains(node_id))
-            if (dfs_find_cycle(node_id, graph, state, parent, cycle_start, cycle_end))
-                break;
-    if (!cycle_start.has_value())
-        return std::nullopt;
-    vector<int> cycle;
-    for (int v = cycle_end.value(); v != cycle_start; v = parent[v])
-        cycle.push_back(v);
-    cycle.push_back(cycle_start.value());
-    ranges::reverse(cycle.begin(), cycle.end());
-    return Cycle(cycle);
+    optional<Cycle> cycle;
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        if (cycle.has_value())
+            return;
+        if (!state.has(node_id))
+            if (dfs_find_cycle(node_id, graph, state, parent, cycle_start, cycle_end)) {
+                vector<int> cycle_vec;
+                for (int v = cycle_end.value(); v != cycle_start; v = parent.get(v))
+                    cycle_vec.push_back(v);
+                cycle_vec.push_back(cycle_start.value());
+                ranges::reverse(cycle_vec.begin(), cycle_vec.end());
+                cycle.emplace(cycle_vec);
+            }
+    });
+    return cycle;
 }
 
-expected<vector<Cycle>, string> compute_cycle_basis(const UndirectedGraph& graph) {
-    if (!is_graph_connected(graph))
-        return std::unexpected("Error in compute_cycle_basis: input graph is not connected");
+vector<Cycle> compute_cycle_basis(const UndirectedGraph& graph) {
+    assert(
+        is_graph_connected(graph) && "Error in compute_cycle_basis: input graph is not connected"
+    );
     const Tree spanning = *build_spanning_tree(graph);
     vector<Cycle> cycles;
-    for (int node_id : graph.get_nodes_ids()) {
-        for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (node_id > neighbor_id)
-                continue;
+                return;
             if (spanning.has_edge(node_id, neighbor_id))
-                continue;
+                return;
             int common_ancestor = compute_common_ancestor(spanning, node_id, neighbor_id);
             vector<int> path1 = get_path_from_root(spanning, node_id);
             vector<int> path2 = get_path_from_root(spanning, neighbor_id);
@@ -143,35 +145,32 @@ expected<vector<Cycle>, string> compute_cycle_basis(const UndirectedGraph& graph
             path1.insert(path1.end(), path2.begin(), path2.end());
             path1.pop_back();
             cycles.emplace_back(path1);
-        }
-    }
+        });
+    });
     return cycles;
 }
 
 optional<vector<int>> make_topological_ordering(const DirectedGraph& graph) {
-    unordered_map<int, int> in_degree;
-    for (int node_id : graph.get_nodes_ids()) {
-        for (int neighbor_id : graph.get_out_neighbors_of_node(node_id)) {
-            if (!in_degree.contains(neighbor_id))
-                in_degree[neighbor_id] = 0;
-            in_degree[neighbor_id]++;
-        }
-    }
+    Int_ToInt_HashMap in_degree;
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        in_degree[node_id] = static_cast<int>(graph.get_in_degree_of_node(node_id));
+    });
     queue<int> queue;
-    vector<int> topological_order;
-    for (int node_id : graph.get_nodes_ids())
+    graph.get_nodes_ids().for_each([&](int node_id) {
         if (in_degree[node_id] == 0)
             queue.push(node_id);
+    });
+    vector<int> topological_order;
     size_t count = 0;
     while (!queue.empty()) {
         int node_id = queue.front();
         ++count;
         queue.pop();
         topological_order.push_back(node_id);
-        for (int neighbor_id : graph.get_out_neighbors_of_node(node_id)) {
+        graph.get_out_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (--in_degree[neighbor_id] == 0)
                 queue.push(neighbor_id);
-        }
+        });
     }
     if (count != graph.size())
         return std::nullopt; // graph contains a cycle
@@ -205,31 +204,32 @@ bool are_cycles_equivalent(const Cycle& cycle1, const Cycle& cycle2) {
 }
 
 vector<UndirectedGraph> compute_connected_components(const UndirectedGraph& graph) {
-    unordered_set<int> visited;
+    NodesContainer visited;
     vector<UndirectedGraph> components;
     function<void(int, UndirectedGraph& component)> explore_component =
         [&](int node_id, UndirectedGraph& component) {
-            visited.insert(node_id);
-            for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
+            visited.add_node(node_id);
+            graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
                 if (!component.has_node(neighbor_id))
                     component.add_node(neighbor_id);
                 if (!component.has_edge(node_id, neighbor_id))
                     component.add_edge(node_id, neighbor_id);
-                if (!visited.contains(neighbor_id)) {
+                if (!visited.has_node(neighbor_id)) {
                     explore_component(neighbor_id, component);
                 }
-            }
+            });
         };
-    for (int node_id : graph.get_nodes_ids())
-        if (!visited.contains(node_id)) {
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        if (!visited.has_node(node_id)) {
             components.emplace_back().add_node(node_id);
             explore_component(node_id, components.back());
         }
+    });
     return components;
 }
 
 size_t compute_number_of_connected_components(const UndirectedGraph& graph) {
-    unordered_set<int> visited;
+    NodesContainer visited;
     size_t components = 0;
     const function<void(int)> explore_component = [&](int start_node_id) {
         stack<int> stack;
@@ -237,56 +237,62 @@ size_t compute_number_of_connected_components(const UndirectedGraph& graph) {
         while (!stack.empty()) {
             int node_id = stack.top();
             stack.pop();
-            if (visited.insert(node_id).second)
-                for (int neighbor_id : graph.get_neighbors_of_node(node_id))
-                    if (!visited.contains(neighbor_id))
+            if (!visited.has_node(node_id)) {
+                visited.add_node(node_id);
+                graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+                    if (!visited.has_node(neighbor_id))
                         stack.push(neighbor_id);
+                });
+            }
         }
     };
-    for (int node_id : graph.get_nodes_ids())
-        if (!visited.contains(node_id)) {
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        if (!visited.has_node(node_id)) {
             components++;
             explore_component(node_id);
         }
+    });
     return components;
 }
 
 void dfs_bic_com(
     const UndirectedGraph& graph,
     int node_id,
-    unordered_map<int, int>& old_node_id_to_new_id,
-    unordered_map<int, int>& prev_of_node,
+    Int_ToInt_HashMap& old_node_id_to_new_id,
+    Int_ToInt_HashMap& prev_of_node,
     int& next_id_to_assign,
-    unordered_map<int, int>& low_point,
+    Int_ToInt_HashMap& low_point,
     list<int>& stack_of_nodes,
     list<pair<int, int>>& stack_of_edges,
     vector<UndirectedGraph>& components,
-    unordered_set<int>& cut_vertices
+    NodesContainer& cut_vertices
 );
 
 BiconnectedComponents compute_biconnected_components(const UndirectedGraph& graph) {
-    unordered_map<int, int> old_node_id_to_new_id;
-    unordered_map<int, int> prev_of_node;
-    unordered_map<int, int> low_point;
-    unordered_set<int> cut_vertices;
+    Int_ToInt_HashMap old_node_id_to_new_id;
+    Int_ToInt_HashMap prev_of_node;
+    Int_ToInt_HashMap low_point;
+    NodesContainer cut_vertices;
     vector<UndirectedGraph> components;
     int next_id_to_assign = 0;
     list<int> stack_of_nodes{};
     list<pair<int, int>> stack_of_edges{};
-    for (int node_id : graph.get_nodes_ids())
-        if (!old_node_id_to_new_id.contains(node_id)) // node not visited
-            dfs_bic_com(
-                graph,
-                node_id,
-                old_node_id_to_new_id,
-                prev_of_node,
-                next_id_to_assign,
-                low_point,
-                stack_of_nodes,
-                stack_of_edges,
-                components,
-                cut_vertices
-            );
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        if (old_node_id_to_new_id.has(node_id)) // node visited
+            return;
+        dfs_bic_com(
+            graph,
+            node_id,
+            old_node_id_to_new_id,
+            prev_of_node,
+            next_id_to_assign,
+            low_point,
+            stack_of_nodes,
+            stack_of_edges,
+            components,
+            cut_vertices
+        );
+    });
     assert(
         stack_of_nodes.empty() && stack_of_edges.empty()
     ); // assessing algorithm finished correctly
@@ -306,23 +312,23 @@ void build_component(
 void dfs_bic_com(
     const UndirectedGraph& graph,
     int node_id,
-    unordered_map<int, int>& old_node_id_to_new_id,
-    unordered_map<int, int>& prev_of_node,
+    Int_ToInt_HashMap& old_node_id_to_new_id,
+    Int_ToInt_HashMap& prev_of_node,
     int& next_id_to_assign,
-    unordered_map<int, int>& low_point,
+    Int_ToInt_HashMap& low_point,
     list<int>& stack_of_nodes,
     list<pair<int, int>>& stack_of_edges,
     vector<UndirectedGraph>& components,
-    unordered_set<int>& cut_vertices
+    NodesContainer& cut_vertices
 ) {
     old_node_id_to_new_id[node_id] = next_id_to_assign;
     low_point[node_id] = next_id_to_assign;
     ++next_id_to_assign;
     int children_number = 0;
-    for (int neighbor_id : graph.get_neighbors_of_node(node_id)) {
-        if (prev_of_node.contains(node_id) && prev_of_node[node_id] == neighbor_id)
-            continue;
-        if (!old_node_id_to_new_id.contains(neighbor_id)) { // means the node is not visited
+    graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        if (prev_of_node.has(node_id) && prev_of_node[node_id] == neighbor_id)
+            return;
+        if (!old_node_id_to_new_id.has(neighbor_id)) { // means the node is not visited
             list<int> new_stack_of_nodes{};
             list<pair<int, int>> new_stack_of_edges{};
             ++children_number;
@@ -347,9 +353,9 @@ void dfs_bic_com(
                 new_stack_of_nodes.push_back(node_id);
                 components.emplace_back();
                 build_component(components.back(), new_stack_of_nodes, new_stack_of_edges);
-                if (prev_of_node.contains(node_id)) // the root needs to be handled differently
+                if (prev_of_node.has(node_id)) // the root needs to be handled differently
                     // (handled at the end of the function)
-                    cut_vertices.insert(node_id);
+                    cut_vertices.add_node(node_id);
             } else {
                 stack_of_nodes.splice(stack_of_nodes.end(), new_stack_of_nodes);
                 stack_of_edges.splice(stack_of_edges.end(), new_stack_of_edges);
@@ -362,10 +368,10 @@ void dfs_bic_com(
                     low_point[node_id] = neighbor_node_id;
             }
         }
-    }
-    if (!prev_of_node.contains(node_id)) { // handling of node with no parents (the root)
+    });
+    if (!prev_of_node.has(node_id)) { // handling of node with no parents (the root)
         if (children_number >= 2)
-            cut_vertices.insert(node_id);
+            cut_vertices.add_node(node_id);
         else if (children_number == 0) { // node is isolated
             components.emplace_back().add_node(node_id);
         }
@@ -375,105 +381,139 @@ void dfs_bic_com(
 string BiconnectedComponents::to_string() const {
     string result = "Biconnected Components:\n";
     result += "Cut vertices: ";
-    for (const int cv : m_cutvertices)
-        result += std::to_string(cv) + " ";
+    m_cutvertices.for_each([&result](int cv) { result += std::to_string(cv) + " "; });
     result += "\nComponents:\n";
     for (const auto& component : m_components)
         result += component.to_string() + "\n";
     return result;
 }
 
-void BiconnectedComponents::print() const { std::cout << to_string() << std::endl; }
+void BiconnectedComponents::print() const { println("{}", to_string()); }
 
-bool bfs_bipartition(
-    const UndirectedGraph& graph, int node_id, unordered_map<int, bool>& bipartition
-) {
-    bipartition[node_id] = false;
-    list<int> queue;
-    queue.push_back(node_id);
+bool bfs_bipartition(const UndirectedGraph& graph, int node_id, Bipartition& bipartition) {
+    bipartition.set_side(node_id, false);
+    queue<int> queue;
+    queue.push(node_id);
+    bool is_bipartite = true;
     while (!queue.empty()) {
         int current_id = queue.front();
-        queue.pop_front();
-        for (int neighbor_id : graph.get_neighbors_of_node(current_id)) {
-            if (!bipartition.contains(neighbor_id)) {
-                bipartition[neighbor_id] = !bipartition[current_id];
-                queue.push_back(neighbor_id);
-            } else if (bipartition[neighbor_id] == bipartition[current_id])
-                return false;
-        }
+        queue.pop();
+        graph.get_neighbors_of_node(current_id).for_each([&](int neighbor_id) {
+            if (!is_bipartite)
+                return;
+            if (!bipartition.has_node(neighbor_id)) {
+                bipartition.set_side(neighbor_id, !bipartition.get_side(current_id));
+                queue.push(neighbor_id);
+            } else if (bipartition.are_in_same_side(neighbor_id, current_id))
+                is_bipartite = false;
+        });
     }
-    return true;
+    return is_bipartite;
 }
 
-optional<unordered_map<int, bool>> compute_bipartition(const UndirectedGraph& graph) {
-    unordered_map<int, bool> bipartition{};
-    for (int node_id : graph.get_nodes_ids())
-        if (!bipartition.contains(node_id))
+optional<Bipartition> compute_bipartition(const UndirectedGraph& graph) {
+    Bipartition bipartition{};
+    bool is_bipartite = true;
+    graph.get_nodes_ids().for_each([&](int node_id) {
+        if (!is_bipartite)
+            return;
+        if (!bipartition.has_node(node_id))
             if (!bfs_bipartition(graph, node_id, bipartition))
-                return std::nullopt;
+                is_bipartite = false;
+    });
     return bipartition;
 }
 
 optional<Cycle> find_a_cycle_in_graph(const UndirectedGraph& graph) {
     if (graph.size() <= 2)
         return std::nullopt;
-    unordered_set<int> visited;
-    unordered_map<int, int> parent;
-    for (int start_node_id : graph.get_nodes_ids()) {
-        if (visited.contains(start_node_id))
-            continue;
+    NodesContainer visited;
+    Int_ToInt_HashMap parent;
+    optional<Cycle> cycle;
+    graph.get_nodes_ids().for_each([&](int start_node_id) {
+        if (cycle.has_value())
+            return;
+        if (visited.has_node(start_node_id))
+            return;
         vector<int> stack;
         stack.push_back(start_node_id);
         while (!stack.empty()) {
             int current_id = stack.back();
             stack.pop_back();
-            visited.insert(current_id);
-            for (int neighbor_id : graph.get_neighbors_of_node(current_id)) {
-                if (!visited.contains(neighbor_id)) {
+            visited.add_node(current_id);
+            graph.get_neighbors_of_node(current_id).for_each([&](int neighbor_id) {
+                if (cycle.has_value())
+                    return;
+                if (!visited.has_node(neighbor_id)) {
                     parent[neighbor_id] = current_id;
                     stack.push_back(neighbor_id);
                 } else if (neighbor_id != parent[current_id]) {
-                    vector<int> cycle;
+                    vector<int> cycle_vec;
                     int x = current_id;
                     int y = neighbor_id;
-                    unordered_set<int> path_x;
+                    NodesContainer path_x;
                     while (true) {
-                        path_x.insert(x);
-                        if (!parent.contains(x))
+                        path_x.add_node(x);
+                        if (!parent.has(x))
                             break;
                         x = parent[x];
                     }
                     vector<int> path_to_lca;
-                    while (!path_x.contains(y)) {
+                    while (!path_x.has_node(y)) {
                         path_to_lca.push_back(y);
-                        if (!parent.contains(y))
+                        if (!parent.has(y))
                             break;
                         y = parent[y];
                     }
-                    cycle.push_back(y);
+                    cycle_vec.push_back(y);
                     x = current_id;
                     while (x != y) {
-                        cycle.push_back(x);
+                        cycle_vec.push_back(x);
                         x = parent[x];
                     }
                     ranges::reverse(path_to_lca);
-                    cycle.insert(cycle.end(), path_to_lca.begin(), path_to_lca.end());
-                    return Cycle{cycle};
+                    cycle_vec.insert(cycle_vec.end(), path_to_lca.begin(), path_to_lca.end());
+                    cycle.emplace(cycle_vec);
                 }
-            }
+            });
         }
-    }
+    });
     return std::nullopt; // No cycle found
 }
-
-unordered_set<int>& BiconnectedComponents::get_cutvertices() { return m_cutvertices; }
-const unordered_set<int>& BiconnectedComponents::get_cutvertices() const { return m_cutvertices; }
 
 const vector<UndirectedGraph>& BiconnectedComponents::get_components() const {
     return m_components;
 }
 
 BiconnectedComponents::BiconnectedComponents(
-    unordered_set<int>&& cutvertices, vector<UndirectedGraph>&& components
+    NodesContainer&& cutvertices, vector<UndirectedGraph>&& components
 )
     : m_cutvertices(std::move(cutvertices)), m_components(std::move(components)) {}
+
+class IBipartitionImpl {
+  public:
+    Int_ToInt_HashMap partition_map{};
+};
+
+Bipartition::Bipartition() { m_impl = std::make_unique<IBipartitionImpl>(); }
+
+Bipartition::~Bipartition() = default;
+Bipartition::Bipartition(Bipartition&&) noexcept = default;
+Bipartition& Bipartition::operator=(Bipartition&&) noexcept = default;
+
+bool Bipartition::get_side(int node_id) const { return m_impl->partition_map.get(node_id); }
+
+bool Bipartition::has_node(int node_id) const { return m_impl->partition_map.has(node_id); }
+
+void Bipartition::set_side(int node_id, bool side) {
+    assert(!m_impl->partition_map.has(node_id) && "Bipartition::set_side: node already exists");
+    m_impl->partition_map[node_id] = side;
+}
+
+bool Bipartition::are_in_same_side(int node_id_1, int node_id_2) const {
+    assert(
+        has_node(node_id_1) && has_node(node_id_2) &&
+        "Bipartition::are_in_same_side: nodes do not exist"
+    );
+    return get_side(node_id_1) == get_side(node_id_2);
+}

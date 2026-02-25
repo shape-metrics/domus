@@ -3,7 +3,6 @@
 #include <cassert>
 #include <stddef.h>
 #include <unordered_map>
-#include <unordered_set>
 
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/segment.hpp"
@@ -39,11 +38,11 @@ void compute_conflicts(
             const Segment& otherSegment = segments[j];
             for (size_t k = 0; k < number_of_labels; ++k)
                 labels[k] = 0;
-            for (const int attachment_id : otherSegment.get_attachments()) {
+            otherSegment.get_attachments().for_each([&](int attachment_id) {
                 const int cycle_label = cycle_labels[attachment_id];
                 assert(cycle_label >= 0);
                 labels[static_cast<size_t>(cycle_label)] = 1;
-            }
+            });
             int sum = 0;
             for (size_t k = 0; k < number_of_labels; ++k)
                 sum += labels[k];

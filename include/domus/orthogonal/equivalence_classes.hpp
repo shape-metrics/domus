@@ -2,33 +2,29 @@
 #define MY_EUIVALENCE_CLASSES_H
 
 #include <map>
-#include <ranges>
 #include <string>
 #include <tuple>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
+#include "domus/core/containers.hpp"
 #include "domus/core/graph/graph.hpp"
 
 class Shape;
 
 class EquivalenceClasses {
-    std::unordered_map<int, int> m_elem_to_class;
-    std::unordered_map<int, std::unordered_set<int>> m_class_to_elems;
+    Int_ToInt_HashMap m_elem_to_class;
+    Int_ToIntContainer_HashMap m_class_to_elems;
+    IntHashSet m_all_classes;
     bool has_class(int class_id) const;
 
   public:
     void set_class(int elem, int class_id);
     bool has_elem_a_class(int elem) const;
     int get_class_of_elem(int elem) const;
-    const std::unordered_set<int>& get_elems_of_class(int class_id) const;
+    const IntHashSet& get_elems_of_class(int class_id) const;
     std::string to_string() const;
     void print() const;
-    auto get_all_classes() const {
-        return m_class_to_elems |
-               std::views::transform([](const auto& pair) -> int { return pair.first; });
-    }
+    const IntHashSet& get_all_classes() const;
 };
 
 std::pair<const EquivalenceClasses, const EquivalenceClasses>

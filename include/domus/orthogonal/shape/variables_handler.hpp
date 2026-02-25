@@ -13,10 +13,10 @@ class VariablesHandler {
     std::unordered_map<int, std::pair<int, int>> variable_to_edge;
     std::unordered_map<int, Direction> variable_to_direction;
     std::unordered_map<int, bool> variable_to_value;
-    GraphEdgeHashMap<int> m_edge_up_variable;
-    GraphEdgeHashMap<int> m_edge_down_variable;
-    GraphEdgeHashMap<int> m_edge_right_variable;
-    GraphEdgeHashMap<int> m_edge_left_variable;
+    IntPair_ToInt_HashMap m_edge_up_variable;
+    IntPair_ToInt_HashMap m_edge_down_variable;
+    IntPair_ToInt_HashMap m_edge_right_variable;
+    IntPair_ToInt_HashMap m_edge_left_variable;
     void add_variable(int i, int j, Direction direction);
     void add_edge_variables(int i, int j);
 

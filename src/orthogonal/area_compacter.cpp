@@ -5,48 +5,60 @@
 #include <limits.h>
 #include <tuple>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
+#include "domus/core/containers.hpp"
 #include "domus/core/graph/attributes.hpp"
-#include "domus/core/utils.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
 class UndirectedGraph;
 
 using namespace std;
 
-using IntPairHashSet = std::unordered_set<std::pair<int, int>, int_pair_hash>;
-
 auto build_index_to_nodes_map(const UndirectedGraph& graph, const GraphAttributes& attributes) {
     auto [node_to_index_x, node_to_index_y] = compute_node_to_index_position(graph, attributes);
-    unordered_map<int, unordered_set<int>> index_x_to_nodes;
-    for (const auto& [node_id, index] : node_to_index_x)
-        index_x_to_nodes[index].insert(node_id);
-    unordered_map<int, unordered_set<int>> index_y_to_nodes;
-    for (const auto& [node_id, index] : node_to_index_y)
-        index_y_to_nodes[index].insert(node_id);
-    return make_tuple(index_x_to_nodes, node_to_index_x, index_y_to_nodes, node_to_index_y);
+    unordered_map<int, NodesContainer> index_x_to_nodes;
+    node_to_index_x.for_each([&index_x_to_nodes](int node_id, int index) {
+        index_x_to_nodes[index].add_node(node_id);
+    });
+    unordered_map<int, NodesContainer> index_y_to_nodes;
+    node_to_index_y.for_each([&index_y_to_nodes](int node_id, int index) {
+        index_y_to_nodes[index].add_node(node_id);
+    });
+    return make_tuple(
+        std::move(index_x_to_nodes),
+        std::move(node_to_index_x),
+        std::move(index_y_to_nodes),
+        std::move(node_to_index_y)
+    );
 }
 
-bool can_move_to_prev_index(IntPairHashSet& prev, IntPairHashSet& to_shift) {
+bool can_move_to_prev_index(PairIntHashSet& prev, PairIntHashSet& to_shift) {
     assert(to_shift.size() == 1);
-    auto [to_shift_min, to_shift_max] = *to_shift.begin();
-    for (auto [prev_min, prev_max] : prev)
+    int to_shift_min = 0;
+    int to_shift_max = 0;
+    prev.for_each([&](int min, int max) {
+        to_shift_min = min;
+        to_shift_max = max;
+    });
+    bool can_move = true;
+    prev.for_each([&](int prev_min, int prev_max) {
         if (!(prev_min > to_shift_max || to_shift_min > prev_max))
-            return false;
-    return true;
+            can_move = false;
+    });
+    return can_move;
 }
 
 int compute_shift_amount(
-    int index, unordered_map<int, IntPairHashSet>& index_to_min_max_coordinate
+    int index, unordered_map<int, PairIntHashSet>& index_to_min_max_coordinate
 ) {
     int shift = 0;
-    IntPairHashSet& to_shift = index_to_min_max_coordinate[index];
+    PairIntHashSet& to_shift = index_to_min_max_coordinate[index];
     while (true) {
         if (index - shift == 0)
             return shift;
-        IntPairHashSet& prev = index_to_min_max_coordinate[index - shift - 1];
+        PairIntHashSet& prev = index_to_min_max_coordinate[index - shift - 1];
         if (can_move_to_prev_index(prev, to_shift))
             shift++;
         else
@@ -56,36 +68,35 @@ int compute_shift_amount(
 }
 
 auto build_index_x_to_min_max_index_y(
-    unordered_map<int, unordered_set<int>>& index_x_to_nodes,
-    unordered_map<int, int>& node_to_index_y
+    unordered_map<int, NodesContainer>& index_x_to_nodes, Int_ToInt_HashMap& node_to_index_y
 ) {
-    unordered_map<int, IntPairHashSet> index_to_min_max_y;
+    unordered_map<int, PairIntHashSet> index_to_min_max_y;
     for (const auto& [index, nodes] : index_x_to_nodes) {
         int min_y = INT_MAX;
         int max_y = 0;
-        for (int node_id : nodes) {
-            int y = node_to_index_y[node_id];
+        nodes.for_each([&](int node_id) {
+            int y = node_to_index_y.get(node_id);
             min_y = std::min(min_y, y);
             max_y = std::max(max_y, y);
-        }
-        index_to_min_max_y[index] = {{min_y, max_y}};
+        });
+        index_to_min_max_y[index].add(min_y, max_y);
     }
     return index_to_min_max_y;
 }
 
 auto build_index_y_to_min_max_index_x(
-    unordered_map<int, unordered_set<int>>& index_to_nodes, unordered_map<int, int>& node_to_index_x
+    unordered_map<int, NodesContainer>& index_to_nodes, Int_ToInt_HashMap& node_to_index_x
 ) {
-    unordered_map<int, IntPairHashSet> index_to_min_max_x;
+    unordered_map<int, PairIntHashSet> index_to_min_max_x;
     for (const auto& [index, nodes] : index_to_nodes) {
         int min_x = INT_MAX;
         int max_x = 0;
-        for (int node_id : nodes) {
-            int x = node_to_index_x[node_id];
+        nodes.for_each([&](int node_id) {
+            int x = node_to_index_x.get(node_id);
             min_x = std::min(min_x, x);
             max_x = std::max(max_x, x);
-        }
-        index_to_min_max_x[index] = {{min_x, max_x}};
+        });
+        index_to_min_max_x[index].add(min_x, max_x);
     }
     return index_to_min_max_x;
 }
@@ -102,12 +113,17 @@ void compact_area(const UndirectedGraph& graph, GraphAttributes& attributes) {
         if (shift_amount == 0) {
             continue;
         }
-        unordered_set<int>& nodes_to_shift = index_x_to_nodes[index];
-        for (int node_id : nodes_to_shift) {
+        index_x_to_nodes[index].for_each([&](int node_id) {
             int old_x = attributes.get_position_x(node_id);
             attributes.change_position_x(node_id, old_x - 100 * shift_amount);
-        }
-        index_to_min_max_y[index - shift_amount].insert(*index_to_min_max_y[index].begin());
+        });
+        bool added = false;
+        index_to_min_max_y[index].for_each([&](int min, int max) {
+            if (added)
+                return;
+            index_to_min_max_y[index - shift_amount].add(min, max);
+            added = true;
+        });
         index_to_min_max_y[index].clear();
     }
     // compacting y
@@ -118,12 +134,17 @@ void compact_area(const UndirectedGraph& graph, GraphAttributes& attributes) {
         int shift_amount = compute_shift_amount(index, index_to_min_max_x);
         if (shift_amount == 0)
             continue;
-        unordered_set<int>& nodes_to_shift = index_y_to_nodes[index];
-        for (int node_id : nodes_to_shift) {
+        index_y_to_nodes[index].for_each([&](int node_id) {
             int old_y = attributes.get_position_y(node_id);
             attributes.change_position_y(node_id, old_y - 100 * shift_amount);
-        }
-        index_to_min_max_x[index - shift_amount].insert(*index_to_min_max_x[index].begin());
+        });
+        bool added = false;
+        index_to_min_max_x[index].for_each([&](int min, int max) {
+            if (added)
+                return;
+            index_to_min_max_x[index - shift_amount].add(min, max);
+            added = true;
+        });
         index_to_min_max_x[index].clear();
     }
 }

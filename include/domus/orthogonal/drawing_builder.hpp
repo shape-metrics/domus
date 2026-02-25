@@ -3,7 +3,6 @@
 
 #include <expected>
 #include <filesystem>
-#include <stddef.h>
 #include <string>
 
 #include "domus/orthogonal/drawing.hpp"

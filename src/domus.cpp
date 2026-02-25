@@ -13,29 +13,7 @@ using namespace std;
 
 class UndirectedGraph;
 
-int main() {
-    string svg_filename = "drawing.svg";
-    string input_graph_filename = "graph.txt";
-    const auto graph = load_graph_from_txt_file(input_graph_filename);
-    if (!graph) {
-        cout << graph.error() << "\n";
-        return 1;
-    }
-    const auto result = make_orthogonal_drawing(*graph);
-    if (!result) {
-        cout << result.error() << "\n";
-        return 1;
-    }
-    make_svg(result->drawing.augmented_graph, result->drawing.attributes, svg_filename);
-    const OrthogonalStats stats = compute_all_orthogonal_stats(result->drawing);
-    print_orthogonal_stats(stats);
-    cout << "Initial number of cycles: " << result->initial_number_of_cycles << "\n"
-         << "Number of added cycles: " << result->number_of_added_cycles << "\n"
-         << "Number of useless bends: " << result->number_of_useless_bends << "\n";
-    return 0;
-}
-
-int main2() {
+int planarity() {
     const auto graph = load_graph_from_txt_file("graph.txt");
     if (!graph) {
         cout << graph.error() << "\n";
@@ -50,5 +28,28 @@ int main2() {
              << std::boolalpha << is_embedding_planar(embedding.value()) << "\n";
     } else
         cout << "Embedding not found\n";
+    return 0;
+}
+
+int main() {
+    string svg_filename = "drawing.svg";
+    string input_graph_filename = "graph.txt";
+    const auto graph = load_graph_from_txt_file(input_graph_filename);
+    if (!graph) {
+        cout << graph.error() << "\n";
+        return 1;
+    }
+    const auto result = make_orthogonal_drawing(*graph);
+    if (!result) {
+        cout << result.error() << "\n";
+        return 1;
+    }
+    make_svg(result->drawing.augmented_graph, result->drawing.attributes, svg_filename).value();
+    const OrthogonalStats stats = compute_all_orthogonal_stats(result->drawing);
+    print_orthogonal_stats(stats);
+    cout << "Initial number of cycles: " << result->initial_number_of_cycles << "\n"
+         << "Number of added cycles: " << result->number_of_added_cycles << "\n"
+         << "Number of useless bends: " << result->number_of_useless_bends << "\n";
+    planarity();
     return 0;
 }

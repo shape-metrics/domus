@@ -1,7 +1,6 @@
 #ifndef MY_POLYGON_H
 #define MY_POLYGON_H
 
-#include <iostream>
 #include <optional>
 #include <string>
 #include <vector>
@@ -17,12 +16,7 @@ class Point2D {
     Point2D operator/(const double scalar) const { return {x_m / scalar, y_m / scalar}; }
     bool operator==(const Point2D& other) const { return x_m == other.x_m && y_m == other.y_m; }
     bool operator!=(const Point2D& other) const { return !(*this == other); }
-    // Operatore di confronto lessicografico (prima x, poi y)
     bool operator<(const Point2D& p) const { return x_m < p.x_m || (x_m == p.x_m && y_m < p.y_m); }
-    friend std::ostream& operator<<(std::ostream& os, const Point2D& p) {
-        os << "(" << p.x_m << ", " << p.y_m << ")";
-        return os;
-    }
 };
 
 class Path2D {
@@ -39,10 +33,6 @@ class Line2D {
     bool isIntersecting(const Line2D& l) const;
     bool operator==(const Line2D& other) const { return p1_m == other.p1_m && p2_m == other.p2_m; }
     bool operator!=(const Line2D& other) const { return !(*this == other); }
-    friend std::ostream& operator<<(std::ostream& os, const Line2D& l) {
-        os << "[" << l.p1_m << " - " << l.p2_m << "]";
-        return os;
-    }
 };
 
 class Polygon2D {
