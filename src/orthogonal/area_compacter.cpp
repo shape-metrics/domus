@@ -38,7 +38,7 @@ bool can_move_to_prev_index(PairIntHashSet& prev, PairIntHashSet& to_shift) {
     assert(to_shift.size() == 1);
     int to_shift_min = 0;
     int to_shift_max = 0;
-    prev.for_each([&](int min, int max) {
+    to_shift.for_each([&](int min, int max) {
         to_shift_min = min;
         to_shift_max = max;
     });

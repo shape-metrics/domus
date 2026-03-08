@@ -3,7 +3,7 @@
 
 #include <functional>
 #include <memory>
-#include <stddef.h>
+#include <stdint.h>
 
 #include "domus/core/containers.hpp"
 

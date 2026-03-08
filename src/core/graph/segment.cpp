@@ -49,7 +49,7 @@ bool is_segment_a_path(const Segment& segment) {
         if (segment.get_segment().get_degree_of_node(node_id) > 2)
             is_path = false;
     });
-    return true;
+    return is_path;
 }
 
 deque<int> compute_path_between_attachments(

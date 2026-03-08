@@ -41,6 +41,7 @@ Embedding base_case_graph(const UndirectedGraph& graph) {
             embedding.add_edge(node_id, neighbor_id);
         });
     });
+    assert(is_embedding_planar(embedding) && "base_case_graph: output embedding is not planar");
     return embedding;
 }
 
@@ -53,6 +54,14 @@ Embedding base_case_component(const UndirectedGraph& component, const Cycle& cyc
             });
             return;
         }
+        assert(
+            component.get_degree_of_node(node_id) == 3 &&
+            "base_case_component: node has degree different from 3"
+        );
+        assert(
+            cycle.has_node(node_id) &&
+            "base_case_component: cycle does not contain the node with degree 3"
+        );
         optional<int> neighbor_in_between;
         component.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (neighbor_in_between.has_value())
@@ -67,6 +76,7 @@ Embedding base_case_component(const UndirectedGraph& component, const Cycle& cyc
         embedding.add_edge(node_id, neighbor_in_between.value());
         embedding.add_edge(node_id, cycle.prev_of_node(node_id));
     });
+    assert(is_embedding_planar(embedding) && "base_case_component: output embedding is not planar");
     return embedding;
 }
 
@@ -379,9 +389,7 @@ embed_biconnected_component(const UndirectedGraph& component, const Cycle& cycle
         if (is_segment_a_path(segment))
             return base_case_component(component, cycle);
         // the chosen cycle is bad
-        Cycle new_cycle = make_cycle_good(cycle, segment);
-        new_cycle.print();
-        return embed_biconnected_component(component, new_cycle);
+        return embed_biconnected_component(component, make_cycle_good(cycle, segment));
     }
     const UndirectedGraph interlacement_graph = compute_interlacement_graph(segments, cycle);
     const optional<Bipartition> is_segment_inside = compute_bipartition(interlacement_graph);

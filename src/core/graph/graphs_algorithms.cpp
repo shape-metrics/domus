@@ -425,60 +425,40 @@ optional<Bipartition> compute_bipartition(const UndirectedGraph& graph) {
 }
 
 optional<Cycle> find_a_cycle_in_graph(const UndirectedGraph& graph) {
-    if (graph.size() <= 2)
-        return std::nullopt;
     NodesContainer visited;
     Int_ToInt_HashMap parent;
-    optional<Cycle> cycle;
-    graph.get_nodes_ids().for_each([&](int start_node_id) {
-        if (cycle.has_value())
+    optional<Cycle> found_cycle;
+    std::function<void(int, int)> dfs = [&](int node_id, int parent_id) {
+        if (found_cycle)
             return;
-        if (visited.has_node(start_node_id))
-            return;
-        vector<int> stack;
-        stack.push_back(start_node_id);
-        while (!stack.empty()) {
-            int current_id = stack.back();
-            stack.pop_back();
-            visited.add_node(current_id);
-            graph.get_neighbors_of_node(current_id).for_each([&](int neighbor_id) {
-                if (cycle.has_value())
-                    return;
-                if (!visited.has_node(neighbor_id)) {
-                    parent[neighbor_id] = current_id;
-                    stack.push_back(neighbor_id);
-                } else if (neighbor_id != parent[current_id]) {
-                    vector<int> cycle_vec;
-                    int x = current_id;
-                    int y = neighbor_id;
-                    NodesContainer path_x;
-                    while (true) {
-                        path_x.add_node(x);
-                        if (!parent.has(x))
-                            break;
-                        x = parent[x];
-                    }
-                    vector<int> path_to_lca;
-                    while (!path_x.has_node(y)) {
-                        path_to_lca.push_back(y);
-                        if (!parent.has(y))
-                            break;
-                        y = parent[y];
-                    }
-                    cycle_vec.push_back(y);
-                    x = current_id;
-                    while (x != y) {
-                        cycle_vec.push_back(x);
-                        x = parent[x];
-                    }
-                    ranges::reverse(path_to_lca);
-                    cycle_vec.insert(cycle_vec.end(), path_to_lca.begin(), path_to_lca.end());
-                    cycle.emplace(cycle_vec);
+        visited.add_node(node_id);
+        parent.add(node_id, parent_id);
+        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+            if (found_cycle)
+                return;
+            if (neighbor_id == parent_id)
+                return;
+            if (visited.has_node(neighbor_id)) {
+                // reconstruct cycle from u to v
+                vector<int> cycle_vec;
+                int curr = node_id;
+                while (curr != neighbor_id) {
+                    cycle_vec.push_back(curr);
+                    curr = parent.get(curr);
                 }
-            });
-        }
+                cycle_vec.push_back(neighbor_id);
+                found_cycle.emplace(cycle_vec);
+                return;
+            } else {
+                dfs(neighbor_id, node_id);
+            }
+        });
+    };
+    graph.get_nodes_ids().for_each([&](int start_node_id) {
+        if (!visited.has_node(start_node_id) && !found_cycle)
+            dfs(start_node_id, -1);
     });
-    return std::nullopt; // No cycle found
+    return found_cycle;
 }
 
 const vector<UndirectedGraph>& BiconnectedComponents::get_components() const {

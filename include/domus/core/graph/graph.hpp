@@ -1,7 +1,7 @@
 #ifndef MY_GRAPH_H
 #define MY_GRAPH_H
 
-#include <stddef.h>
+#include <stdint.h>
 #include <string>
 
 #include "domus/core/graph/graph_utilities.hpp"
