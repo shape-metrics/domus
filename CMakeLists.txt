@@ -132,9 +132,6 @@ function(apply_warnings target)
             -Wshadow -Wold-style-cast
             -Woverloaded-virtual
             -Wnon-virtual-dtor
-            -Wduplicated-cond
-            -Wduplicated-branches
-            -Wlogical-op
             -Wnull-dereference
         )
     endif()

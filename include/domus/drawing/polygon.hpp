@@ -1,6 +1,7 @@
 #ifndef MY_POLYGON_H
 #define MY_POLYGON_H
 
+#include <cassert>
 #include <optional>
 #include <string>
 #include <vector>
@@ -50,19 +51,25 @@ class Polygon2D {
 class Circle2D {
     Point2D center_m;
     double radius_m;
-    std::optional<std::string> label_m;
-    std::optional<std::string> color_m;
+    std::string label_m{};
+    std::string color_m{};
 
   public:
     Circle2D(const Point2D& center, const double radius) : center_m(center), radius_m(radius) {}
     Point2D getCenter() const { return center_m; }
     double getRadius() const { return radius_m; }
-    void setLabel(const std::string& label) { this->label_m = label; }
-    bool hasLabel() const { return label_m.has_value(); }
-    std::optional<std::string> getLabel() const { return label_m; }
-    void setColor(const std::string& color) { this->color_m = color; }
-    bool hasColor() const { return color_m.has_value(); }
-    std::optional<std::string> getColor() const { return color_m; }
+    void setLabel(const std::string_view label) { label_m = label; }
+    bool hasLabel() const { return !label_m.empty(); }
+    const std::string_view getLabel() const {
+        assert(hasLabel());
+        return label_m;
+    }
+    void setColor(const std::string_view color) { color_m = color; }
+    bool hasColor() const { return !color_m.empty(); }
+    const std::string_view getColor() const {
+        assert(hasColor());
+        return color_m;
+    }
 };
 
 class Square2D {

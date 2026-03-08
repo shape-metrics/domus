@@ -3,7 +3,7 @@
 
 #include <string>
 
-class OrthogonalDrawing;
+struct OrthogonalDrawing;
 
 int compute_total_edge_length(const OrthogonalDrawing& result);
 
