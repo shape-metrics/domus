@@ -4,9 +4,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "domus/core/circular_sequence.hpp"
 #include "domus/core/containers.hpp"
 #include "domus/core/graph/graph.hpp"
-#include "domus/core/utils.hpp"
 
 class Embedding {
     std::unordered_map<int, CircularSequence<int>> adjacency_list;
