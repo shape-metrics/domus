@@ -19,8 +19,6 @@ std::vector<Cycle> compute_cycle_basis(const UndirectedGraph& graph);
 
 std::optional<std::vector<int>> make_topological_ordering(const DirectedGraph& graph);
 
-bool are_cycles_equivalent(const Cycle& cycle1, const Cycle& cycle2);
-
 std::vector<UndirectedGraph> compute_connected_components(const UndirectedGraph& graph);
 
 size_t compute_number_of_connected_components(const UndirectedGraph& graph);

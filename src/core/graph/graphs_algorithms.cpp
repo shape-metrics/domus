@@ -139,32 +139,6 @@ optional<vector<int>> make_topological_ordering(const DirectedGraph& graph) {
     return topological_order;
 }
 
-bool are_cycles_equivalent(const Cycle& cycle1, const Cycle& cycle2) {
-    if (cycle1.size() != cycle2.size())
-        return false;
-    const int v = cycle1[0];
-    if (!cycle2.has_node(v))
-        return false;
-    int current_1 = v;
-    int current_2 = v;
-    for (size_t i = 1; i < cycle1.size(); ++i) {
-        current_1 = cycle1.next_of_node(current_1);
-        current_2 = cycle2.next_of_node(current_2);
-        if (current_1 != current_2)
-            return false;
-    }
-    // Check the reverse
-    current_1 = v;
-    current_2 = v;
-    for (size_t i = 1; i < cycle1.size(); ++i) {
-        current_1 = cycle1.next_of_node(current_1);
-        current_2 = cycle2.prev_of_node(current_2);
-        if (current_1 != current_2)
-            return false;
-    }
-    return true;
-}
-
 vector<UndirectedGraph> compute_connected_components(const UndirectedGraph& graph) {
     NodesContainer visited;
     vector<UndirectedGraph> components;
