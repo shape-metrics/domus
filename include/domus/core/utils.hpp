@@ -35,15 +35,6 @@ collect_txt_files(std::filesystem::path folder_path);
 
 double compute_stddev(const std::vector<int>& values);
 
-class ISequenceIndex {
-  public:
-    virtual ~ISequenceIndex() = default;
-    virtual void clear() = 0;
-    virtual void insert(size_t hash, size_t pos) = 0;
-    virtual bool contains(size_t hash) const = 0;
-    virtual std::optional<size_t> get_position(size_t hash) const = 0;
-};
-
 template <typename T> class CircularSequence {
     std::vector<T> m_elements{};
     Int_ToInt_HashMap m_index;
