@@ -1,5 +1,4 @@
-#ifndef MY_GRAPHS_ALGORITHMS_H
-#define MY_GRAPHS_ALGORITHMS_H
+#pragma once
 
 #include <memory>
 #include <optional>
@@ -64,5 +63,3 @@ class Bipartition {
 };
 
 std::optional<Bipartition> compute_bipartition(const UndirectedGraph& graph);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef MY_SHAPE_BUILDER_H
-#define MY_SHAPE_BUILDER_H
+#pragma once
 
 #include <vector>
 
@@ -13,6 +12,5 @@ Shape build_shape(
     UndirectedGraph& graph,
     GraphAttributes& attributes,
     std::vector<Cycle>& cycles,
-    bool randomize = false);
-
-#endif
+    bool randomize = false
+);

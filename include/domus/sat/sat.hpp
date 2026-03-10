@@ -1,5 +1,4 @@
-#ifndef MY_SAT_H
-#define MY_SAT_H
+#pragma once
 
 #include <expected>
 #include <string>
@@ -20,5 +19,3 @@ struct SatSolverResult {
 SatSolverResult launch_glucose(const Cnf& cnf);
 
 std::expected<SatSolverResult, std::string> launch_kissat(const Cnf& cnf);
-
-#endif

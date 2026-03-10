@@ -1,5 +1,4 @@
-#ifndef MY_SVG_DRAWER_H
-#define MY_SVG_DRAWER_H
+#pragma once
 
 #include <expected>
 #include <filesystem>
@@ -29,5 +28,3 @@ class SvgDrawer {
     void add_and_smooth(Path2D& path, std::string color = "black");
     std::expected<void, std::string> save_to_file(std::filesystem::path path);
 };
-
-#endif

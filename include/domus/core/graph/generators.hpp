@@ -1,5 +1,4 @@
-#ifndef MY_GRAPH_GENERATORS_H
-#define MY_GRAPH_GENERATORS_H
+#pragma once
 
 #include "domus/core/graph/graph.hpp"
 
@@ -13,5 +12,3 @@ UndirectedGraph generate_grid_graph(size_t n, size_t m);
 
 // num_nodes > 1
 UndirectedGraph generate_triangle_graph(size_t num_nodes);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef MY_LINEAR_SCALE_H
-#define MY_LINEAR_SCALE_H
+#pragma once
 
 class ScaleLinear {
   private:
@@ -26,5 +25,3 @@ class ScaleLinear {
     }
     double invert(double y) const { return m_domainMin + (y - m_rangeMin) / m_scaleFactor; }
 };
-
-#endif

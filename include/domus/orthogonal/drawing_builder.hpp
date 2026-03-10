@@ -1,5 +1,4 @@
-#ifndef MY_DRAWING_BUILDER_H
-#define MY_DRAWING_BUILDER_H
+#pragma once
 
 #include <expected>
 #include <filesystem>
@@ -24,5 +23,3 @@ save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, std::files
 
 std::expected<ShapeMetricsDrawing, std::string>
 load_shape_metrics_drawing_from_file(std::filesystem::path path);
-
-#endif

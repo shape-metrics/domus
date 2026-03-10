@@ -1,5 +1,4 @@
-#ifndef MY_TREE_H
-#define MY_TREE_H
+#pragma once
 
 #include <expected>
 #include <stddef.h>
@@ -29,5 +28,3 @@ class Tree {
     std::string to_string() const;
     void print() const;
 };
-
-#endif

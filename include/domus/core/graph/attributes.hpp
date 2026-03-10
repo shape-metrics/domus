@@ -1,5 +1,4 @@
-#ifndef MY_GRAPH_ATTRIBUTES_H
-#define MY_GRAPH_ATTRIBUTES_H
+#pragma once
 
 #include <memory>
 #include <string>
@@ -49,5 +48,3 @@ class GraphAttributes {
     void remove_position(int node_id);
     ~GraphAttributes();
 };
-
-#endif

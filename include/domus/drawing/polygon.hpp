@@ -1,5 +1,4 @@
-#ifndef MY_POLYGON_H
-#define MY_POLYGON_H
+#pragma once
 
 #include <cassert>
 #include <optional>
@@ -89,5 +88,3 @@ class Square2D {
     bool hasColor() const { return color_m.has_value(); }
     std::optional<std::string> getColor() const { return color_m; }
 };
-
-#endif

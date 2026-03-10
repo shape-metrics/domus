@@ -1,5 +1,4 @@
-#ifndef MY_VARIABLES_HANDLER_H
-#define MY_VARIABLES_HANDLER_H
+#pragma once
 
 #include <string>
 #include <unordered_map>
@@ -34,5 +33,3 @@ class VariablesHandler {
     std::string to_string() const;
     void print() const;
 };
-
-#endif

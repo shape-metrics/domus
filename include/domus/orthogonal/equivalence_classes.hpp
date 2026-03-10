@@ -1,5 +1,4 @@
-#ifndef MY_EUIVALENCE_CLASSES_H
-#define MY_EUIVALENCE_CLASSES_H
+#pragma once
 
 #include <map>
 #include <string>
@@ -41,5 +40,3 @@ equivalence_classes_to_ordering(
     const UndirectedGraph& graph,
     const Shape& shape
 );
-
-#endif

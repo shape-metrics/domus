@@ -1,5 +1,4 @@
-#ifndef CSV_HANDLER_H
-#define CSV_HANDLER_H
+#pragma once
 
 #include <expected>
 #include <filesystem>
@@ -12,5 +11,3 @@ struct CSVData {
 };
 
 std::expected<CSVData, std::string> parse_csv(std::filesystem::path path);
-
-#endif

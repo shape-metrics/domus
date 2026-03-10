@@ -1,5 +1,4 @@
-#ifndef MY_GRAPH_UTILITIES_HPP
-#define MY_GRAPH_UTILITIES_HPP
+#pragma once
 
 #include <functional>
 #include <memory>
@@ -35,5 +34,3 @@ class AdjacencyList {
     void erase_edge(int from_id, int to_id);
     void erase_node(int node_id);
 };
-
-#endif

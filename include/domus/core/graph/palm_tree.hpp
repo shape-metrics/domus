@@ -1,5 +1,4 @@
-#ifndef PALM_TREE_HPP
-#define PALM_TREE_HPP
+#pragma once
 
 #include "domus/core/tree/tree.hpp"
 
@@ -11,5 +10,3 @@ class PalmTree {
 
 // assumes the graph is biconnected
 PalmTree compute_palm_tree(const Graph& graph);
-
-#endif

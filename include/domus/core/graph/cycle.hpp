@@ -1,5 +1,4 @@
-#ifndef MY_CYCLE_H
-#define MY_CYCLE_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -32,5 +31,3 @@ class Cycle {
     std::string to_string() const;
     void print() const;
 };
-
-#endif

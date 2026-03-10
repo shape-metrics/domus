@@ -1,5 +1,4 @@
-#ifndef MY_EMBEDDER_H
-#define MY_EMBEDDER_H
+#pragma once
 
 #include <optional>
 
@@ -8,5 +7,3 @@
 class UndirectedGraph;
 
 std::optional<Embedding> embed_graph(const UndirectedGraph& graph);
-
-#endif

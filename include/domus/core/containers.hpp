@@ -1,5 +1,4 @@
-#ifndef MY_CONTAINERS_HPP
-#define MY_CONTAINERS_HPP
+#pragma once
 
 #include <functional>
 #include <memory>
@@ -107,5 +106,3 @@ class Int_ToInt_HashMap {
     void clear();
     int& operator[](int key);
 };
-
-#endif

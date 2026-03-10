@@ -1,5 +1,4 @@
-#ifndef MY_GRAPH_H
-#define MY_GRAPH_H
+#pragma once
 
 #include <stdint.h>
 #include <string>
@@ -54,5 +53,3 @@ class UndirectedGraph {
     std::string to_string() const;
     void print() const;
 };
-
-#endif

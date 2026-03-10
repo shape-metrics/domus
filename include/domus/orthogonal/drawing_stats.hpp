@@ -1,5 +1,4 @@
-#ifndef MY_DRAWING_STATS_H
-#define MY_DRAWING_STATS_H
+#pragma once
 
 #include <string>
 
@@ -37,5 +36,3 @@ OrthogonalStats compute_all_orthogonal_stats(const OrthogonalDrawing& result);
 std::string orthogonal_stats_to_string(const OrthogonalStats& stats);
 
 void print_orthogonal_stats(const OrthogonalStats& stats);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef MY_INTERLACEMENT_GRAPH_HPP
-#define MY_INTERLACEMENT_GRAPH_HPP
+#pragma once
 
 #include <vector>
 
@@ -10,5 +9,3 @@ struct Segment;
 
 UndirectedGraph
 compute_interlacement_graph(const std::vector<Segment>& segments, const Cycle& cycle);
-
-#endif

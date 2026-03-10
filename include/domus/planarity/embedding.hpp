@@ -1,5 +1,4 @@
-#ifndef MY_EMBEDDING_HPP
-#define MY_EMBEDDING_HPP
+#pragma once
 
 #include <ranges>
 #include <string>
@@ -42,5 +41,3 @@ int compute_embedding_genus(
 int compute_embedding_genus(const Embedding& embedding);
 
 bool is_embedding_planar(const Embedding& embedding);
-
-#endif

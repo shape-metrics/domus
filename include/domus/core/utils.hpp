@@ -1,5 +1,4 @@
-#ifndef MY_UTILS_H
-#define MY_UTILS_H
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -173,5 +172,3 @@ class MemoryFile {
         return state->size;
     }
 };
-
-#endif

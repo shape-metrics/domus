@@ -1,5 +1,4 @@
-#ifndef MY_SEGMENT_HPP
-#define MY_SEGMENT_HPP
+#pragma once
 
 #include <deque>
 #include <string>
@@ -32,5 +31,3 @@ bool is_segment_a_path(const Segment& segment);
 
 std::deque<int>
 compute_path_between_attachments(const Segment& segment, int attachment_1, int attachment_2);
-
-#endif

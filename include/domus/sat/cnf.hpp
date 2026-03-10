@@ -1,5 +1,4 @@
-#ifndef MY_CNF_H
-#define MY_CNF_H
+#pragma once
 
 #include <expected>
 #include <string>
@@ -31,5 +30,3 @@ class Cnf {
     const std::vector<CnfRow>& get_rows() const;
     void print() const;
 };
-
-#endif

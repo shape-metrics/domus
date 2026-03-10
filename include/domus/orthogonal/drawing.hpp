@@ -1,5 +1,4 @@
-#ifndef MY_DRAWING_HPP
-#define MY_DRAWING_HPP
+#pragma once
 
 #include <expected>
 #include <filesystem>
@@ -28,5 +27,3 @@ load_orthogonal_drawing_from_file(std::filesystem::path path);
 
 std::pair<Int_ToInt_HashMap, Int_ToInt_HashMap>
 compute_node_to_index_position(const UndirectedGraph& graph, const GraphAttributes& attributes);
-
-#endif

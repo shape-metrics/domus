@@ -1,5 +1,4 @@
-#ifndef MY_SHAPE_HPP
-#define MY_SHAPE_HPP
+#pragma once
 
 #include <array>
 #include <optional>
@@ -44,5 +43,3 @@ class Shape {
     std::string to_string() const;
     void print() const;
 };
-
-#endif

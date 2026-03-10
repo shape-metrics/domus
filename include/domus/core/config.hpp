@@ -1,5 +1,4 @@
-#ifndef MY_CONFIG_H
-#define MY_CONFIG_H
+#pragma once
 
 #include <expected>
 #include <filesystem>
@@ -20,5 +19,3 @@ class Config {
   protected:
     Config() = default;
 };
-
-#endif
