@@ -103,13 +103,13 @@ build_equivalence_classes(const Shape& shape, const UndirectedGraph& graph) {
     EquivalenceClasses equivalence_classes_y;
     int next_class_x = 0;
     int next_class_y = 0;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (!equivalence_classes_y.has_elem_a_class(node_id))
             horizontal_node_expander(shape, graph, node_id, next_class_y++, equivalence_classes_y);
         if (!equivalence_classes_x.has_elem_a_class(node_id))
             vertical_node_expander(shape, graph, node_id, next_class_x++, equivalence_classes_x);
     });
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (!equivalence_classes_x.has_elem_a_class(node_id))
             equivalence_classes_x.set_class(node_id, next_class_x++);
         if (!equivalence_classes_y.has_elem_a_class(node_id))
@@ -141,7 +141,7 @@ equivalence_classes_to_ordering(
     map<pair<int, int>, pair<int, int>> ordering_x_edge_to_graph_edge;
     map<pair<int, int>, pair<int, int>> ordering_y_edge_to_graph_edge;
 
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (shape.is_right(node_id, neighbor_id)) {
                 const int node_class_x = equivalence_classes_x.get_class_of_elem(node_id);

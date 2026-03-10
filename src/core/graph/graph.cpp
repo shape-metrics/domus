@@ -8,7 +8,7 @@ using namespace std;
 
 bool DirectedGraph::has_node(int node_id) const { return m_nodes_ids.has_node(node_id); }
 
-const NodesContainer& DirectedGraph::get_nodes_ids() const { return m_nodes_ids; }
+void DirectedGraph::for_each_node(function<void(int)> f) const { m_nodes_ids.for_each(f); }
 
 const NodesContainer& DirectedGraph::get_out_neighbors_of_node(int node_id) const {
     assert(has_node(node_id) && "Node does not exist");
@@ -82,7 +82,7 @@ void DirectedGraph::remove_edge(int from_id, int to_id) {
 }
 string DirectedGraph::to_string() const {
     string result = "DirectedGraph:\n";
-    get_nodes_ids().for_each([&result, this](int node_id) {
+    for_each_node([&result, this](int node_id) {
         result += std::to_string(node_id) + ": ";
         get_out_neighbors_of_node(node_id).for_each([&result](int neighbor_id) {
             result += std::to_string(neighbor_id) + " ";
@@ -94,9 +94,11 @@ string DirectedGraph::to_string() const {
 
 void DirectedGraph::print() const { std::println("{}", to_string()); }
 
+int UndirectedGraph::get_one_node_id() const { return m_nodes_ids.get_one_node_id(); }
+
 bool UndirectedGraph::has_node(int node_id) const { return m_nodes_ids.has_node(node_id); }
 
-const NodesContainer& UndirectedGraph::get_nodes_ids() const { return m_nodes_ids; }
+void UndirectedGraph::for_each_node(function<void(int)> f) const { m_nodes_ids.for_each(f); }
 
 const NodesContainer& UndirectedGraph::get_neighbors_of_node(int node_id) const {
     return m_adjacency_list.get_neighbors_of_node(node_id);
@@ -154,7 +156,7 @@ void UndirectedGraph::remove_edge(int node_1_id, int node_2_id) {
 
 string UndirectedGraph::to_string() const {
     string result = "UndirectedGraph:\n";
-    get_nodes_ids().for_each([&result, this](int node_id) {
+    for_each_node([&result, this](int node_id) {
         result += std::to_string(node_id) + ": ";
         get_neighbors_of_node(node_id).for_each([&result](int neighbor_id) {
             result += std::to_string(neighbor_id) + " ";

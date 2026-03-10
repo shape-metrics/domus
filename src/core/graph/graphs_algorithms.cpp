@@ -21,7 +21,7 @@ bool is_graph_connected(const UndirectedGraph& graph) {
         return true;
     NodesContainer visited;
     vector<int> stack;
-    stack.push_back(graph.get_nodes_ids().get_one_node_id());
+    stack.push_back(graph.get_one_node_id());
     while (!stack.empty()) {
         const int node_id = stack.back();
         stack.pop_back();
@@ -66,7 +66,7 @@ optional<Cycle> find_a_cycle_in_graph(const DirectedGraph& graph) {
     optional<int> cycle_start = std::nullopt;
     optional<int> cycle_end = std::nullopt;
     optional<Cycle> cycle;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (cycle.has_value())
             return;
         if (!state.has(node_id))
@@ -88,7 +88,7 @@ vector<Cycle> compute_cycle_basis(const UndirectedGraph& graph) {
     );
     const Tree spanning = *build_spanning_tree(graph);
     vector<Cycle> cycles;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (node_id > neighbor_id)
                 return;
@@ -114,11 +114,11 @@ vector<Cycle> compute_cycle_basis(const UndirectedGraph& graph) {
 
 optional<vector<int>> make_topological_ordering(const DirectedGraph& graph) {
     Int_ToInt_HashMap in_degree;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         in_degree[node_id] = static_cast<int>(graph.get_in_degree_of_node(node_id));
     });
     queue<int> queue;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (in_degree[node_id] == 0)
             queue.push(node_id);
     });
@@ -155,7 +155,7 @@ vector<UndirectedGraph> compute_connected_components(const UndirectedGraph& grap
                 }
             });
         };
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (!visited.has_node(node_id)) {
             components.emplace_back().add_node(node_id);
             explore_component(node_id, components.back());
@@ -182,7 +182,7 @@ size_t compute_number_of_connected_components(const UndirectedGraph& graph) {
             }
         }
     };
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (!visited.has_node(node_id)) {
             components++;
             explore_component(node_id);
@@ -213,7 +213,7 @@ BiconnectedComponents compute_biconnected_components(const UndirectedGraph& grap
     int next_id_to_assign = 0;
     list<int> stack_of_nodes{};
     list<pair<int, int>> stack_of_edges{};
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (old_node_id_to_new_id.has(node_id)) // node visited
             return;
         dfs_bic_com(
@@ -350,7 +350,7 @@ bool bfs_bipartition(const UndirectedGraph& graph, int node_id, Bipartition& bip
 optional<Bipartition> compute_bipartition(const UndirectedGraph& graph) {
     Bipartition bipartition{};
     bool is_bipartite = true;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (!is_bipartite)
             return;
         if (!bipartition.has_node(node_id))
@@ -390,7 +390,7 @@ optional<Cycle> find_a_cycle_in_graph(const UndirectedGraph& graph) {
             }
         });
     };
-    graph.get_nodes_ids().for_each([&](int start_node_id) {
+    graph.for_each_node([&](int start_node_id) {
         if (!visited.has_node(start_node_id) && !found_cycle)
             dfs(start_node_id, -1);
     });

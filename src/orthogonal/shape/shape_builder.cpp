@@ -11,7 +11,6 @@
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
-#include "domus/core/utils.hpp"
 #include "domus/orthogonal/shape/clauses_functions.hpp"
 #include "domus/orthogonal/shape/variables_handler.hpp"
 #include "domus/sat/cnf.hpp"
@@ -29,7 +28,7 @@ Shape result_to_shape(
             handler.set_variable_value(-var, false);
     }
     Shape shape;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             shape.set_direction(
                 node_id,

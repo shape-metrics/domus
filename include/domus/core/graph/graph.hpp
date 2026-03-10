@@ -14,7 +14,7 @@ class DirectedGraph {
 
   public:
     bool has_node(int node_id) const;
-    const NodesContainer& get_nodes_ids() const;
+    void for_each_node(std::function<void(int)> f) const;
     const NodesContainer& get_out_neighbors_of_node(int node_id) const;
     const NodesContainer& get_in_neighbors_of_node(int node_id) const;
     void add_node(int id);
@@ -39,8 +39,9 @@ class UndirectedGraph {
     AdjacencyList m_adjacency_list;
 
   public:
+    int get_one_node_id() const;
     bool has_node(int node_id) const;
-    const NodesContainer& get_nodes_ids() const;
+    void for_each_node(std::function<void(int)> f) const;
     const NodesContainer& get_neighbors_of_node(int node_id) const;
     void add_node(int id);
     int add_node();

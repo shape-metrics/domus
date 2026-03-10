@@ -5,7 +5,6 @@
 #include <sstream>
 
 #include "domus/core/graph/attributes.hpp"
-#include "domus/core/utils.hpp"
 
 using namespace std;
 using namespace std::filesystem;
@@ -48,9 +47,9 @@ std::expected<void, std::string> save_graph_to_file(const UndirectedGraph& graph
         return std::unexpected(error);
     }
     outfile << "nodes:\n";
-    graph.get_nodes_ids().for_each([&outfile](int node_id) { outfile << node_id << '\n'; });
+    graph.for_each_node([&outfile](int node_id) { outfile << node_id << '\n'; });
     outfile << "edges:\n";
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (neighbor_id > node_id)
                 outfile << node_id << ' ' << neighbor_id << '\n';
@@ -85,7 +84,7 @@ void save_to_graphml(
     }
     os << "\n";
     os << "  <graph id=\"G\" edgedefault=\"undirected\">\n";
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         os << "    <node id=\"n" << node_id << "\">\n";
         if (attributes.has_attribute(Attribute::NODES_COLOR)) {
             const Color color = attributes.get_node_color(node_id);
@@ -97,7 +96,7 @@ void save_to_graphml(
         }
         os << "    </node>\n";
     });
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         graph.get_neighbors_of_node(node_id).for_each([node_id, &os](int neighbor_id) {
             if (neighbor_id > node_id)
                 return;

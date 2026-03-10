@@ -11,7 +11,7 @@ using namespace std;
 optional<Tree> build_spanning_tree(const UndirectedGraph& graph) {
     NodesContainer visited;
     queue<int> queue;
-    queue.push(graph.get_nodes_ids().get_one_node_id());
+    queue.push(graph.get_one_node_id());
     Tree tree(queue.front());
     visited.add_node(queue.front());
     while (!queue.empty()) {

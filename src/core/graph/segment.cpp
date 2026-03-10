@@ -41,7 +41,7 @@ void Segment::print() const { println("{}", to_string()); }
 
 bool is_segment_a_path(const Segment& segment) {
     bool is_path = true;
-    segment.get_segment().get_nodes_ids().for_each([&](int node_id) {
+    segment.get_segment().for_each_node([&](int node_id) {
         if (!is_path)
             return;
         if (segment.has_attachment(node_id))
@@ -148,11 +148,11 @@ Segment build_segment(const vector<int>& nodes, vector<pair<int, int>>& edges, c
 
 void find_segments(const UndirectedGraph& graph, const Cycle& cycle, vector<Segment>& segments) {
     NodesContainer visited;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (cycle.has_node(node_id))
             visited.add_node(node_id);
     });
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (!visited.has_node(node_id)) {
             vector<int> nodes;            // does NOT contain cycle nodes
             vector<pair<int, int>> edges; // does NOT contain edges of the cycle

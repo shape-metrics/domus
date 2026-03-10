@@ -9,7 +9,7 @@
 using namespace std;
 
 Embedding::Embedding(const UndirectedGraph& graph) {
-    graph.get_nodes_ids().for_each([&](int node_id) { adjacency_list[node_id]; });
+    graph.for_each_node([&](int node_id) { adjacency_list[node_id]; });
 }
 
 void Embedding::add_edge(const int from_id, const int to_id) {

@@ -87,7 +87,7 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
 // useless bends are red nodes with two horizontal or vertical edges
 void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attributes, Shape& shape) {
     vector<int> nodes_to_remove;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (attributes.get_node_color(node_id) == Color::BLACK)
             return;
         assert(graph.get_degree_of_node(node_id) == 2);
@@ -158,7 +158,7 @@ void build_nodes_positions(UndirectedGraph& graph, GraphAttributes& attributes, 
 
 bool has_graph_degree_more_than_4(const UndirectedGraph& graph) {
     bool has_degree_more_than_4 = false;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
             has_degree_more_than_4 = true;
     });
@@ -187,11 +187,11 @@ make_orthogonal_drawing_incremental(const UndirectedGraph& graph, vector<Cycle>&
     UndirectedGraph augmented_graph;
     GraphAttributes attributes;
     attributes.add_attribute(Attribute::NODES_COLOR);
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         augmented_graph.add_node(node_id);
         attributes.set_node_color(node_id, Color::BLACK);
     });
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (node_id < neighbor_id)
                 augmented_graph.add_edge(node_id, neighbor_id);
@@ -264,7 +264,7 @@ void build_nodes_positions(UndirectedGraph& graph, GraphAttributes& attributes, 
         current_position_y = next_position_y;
     }
     attributes.add_attribute(Attribute::NODES_POSITION);
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         const int x = node_id_to_position_x[node_id];
         const int y = node_id_to_position_y[node_id];
         attributes.set_position(node_id, x, y);
@@ -278,7 +278,7 @@ auto find_edges_to_fix(
     unordered_map<int, int> node_to_leftest_down;
     unordered_map<int, int> node_to_downest_left;
     unordered_map<int, int> node_to_downest_right;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (graph.get_degree_of_node(node_id) <= 4)
             return;
         optional<int> downest_left, downest_right, leftest_up, leftest_down;
@@ -394,7 +394,7 @@ void fix_useless_green_blue_nodes(
 
 void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape) {
     vector<int> nodes;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
             nodes.push_back(node_id);
     });
@@ -448,7 +448,7 @@ void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, S
         ++current_position_y;
     }
     attributes.add_attribute(Attribute::NODES_POSITION);
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         const int x = node_id_to_position_x[node_id];
         const int y = node_id_to_position_y[node_id];
         attributes.set_position(node_id, x, y);
@@ -610,7 +610,7 @@ void make_shifts(
                                              };
     const size_t index_of_fixed_node = find_fixed_index_node(attributes, right_nodes);
     const int initial_position = position_function_other(attributes, node_id);
-    graph.get_nodes_ids().for_each([&](int id) {
+    graph.for_each_node([&](int id) {
         const int old_position_y = position_function_other(attributes, id);
         if (old_position_y > initial_position) {
             const auto node_count = static_cast<int>(right_nodes.size());
@@ -676,7 +676,7 @@ void make_shifts_overlapped_edges(
     UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape
 ) {
     vector<int> nodes;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
             nodes.push_back(node_id);
     });
@@ -731,16 +731,16 @@ void fix_negative_positions(const UndirectedGraph& graph, GraphAttributes& attri
         return;
     int min_x = std::numeric_limits<int>::max();
     int min_y = std::numeric_limits<int>::max();
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         min_x = std::min(min_x, attributes.get_position_x(node_id));
         min_y = std::min(min_y, attributes.get_position_y(node_id));
     });
     if (min_x < 0)
-        graph.get_nodes_ids().for_each([&](int node_id) {
+        graph.for_each_node([&](int node_id) {
             attributes.change_position_x(node_id, attributes.get_position_x(node_id) - min_x);
         });
     if (min_y < 0)
-        graph.get_nodes_ids().for_each([&](int node_id) {
+        graph.for_each_node([&](int node_id) {
             attributes.change_position_y(node_id, attributes.get_position_y(node_id) - min_y);
         });
 }

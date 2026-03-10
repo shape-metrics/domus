@@ -26,7 +26,7 @@ Embedding merge_biconnected_components(
     for (size_t i = 0; i < biconnected_components.get_components().size(); ++i) {
         const Embedding& embedding = embeddings[i];
         const UndirectedGraph& component = biconnected_components.get_components()[i];
-        component.get_nodes_ids().for_each([&](int node_id) {
+        component.for_each_node([&](int node_id) {
             embedding.get_adjacency_list(node_id).for_each([&](int component_neighbor_id) {
                 output.add_edge(node_id, component_neighbor_id);
             });
@@ -37,7 +37,7 @@ Embedding merge_biconnected_components(
 
 Embedding base_case_graph(const UndirectedGraph& graph) {
     Embedding embedding(graph);
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             embedding.add_edge(node_id, neighbor_id);
         });
@@ -48,7 +48,7 @@ Embedding base_case_graph(const UndirectedGraph& graph) {
 
 Embedding base_case_component(const UndirectedGraph& component, const Cycle& cycle) {
     Embedding embedding(component);
-    component.get_nodes_ids().for_each([&](int node_id) {
+    component.for_each_node([&](int node_id) {
         if (component.get_degree_of_node(node_id) == 2) {
             component.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
                 embedding.add_edge(node_id, neighbor_id);
@@ -329,7 +329,7 @@ void add_edges_not_incident_to_cycle(
     for (size_t i = 0; i < segments.size(); ++i) {
         const Segment& segment = segments[i];
         const Embedding& embedding = embeddings[i];
-        segment.get_segment().get_nodes_ids().for_each([&](int node_id) {
+        segment.get_segment().for_each_node([&](int node_id) {
             if (cycle.has_node(node_id))
                 return;
             vector<int> neighbors_to_add;

@@ -22,7 +22,7 @@ vector<int> compute_edge_lengths(const UndirectedGraph& graph, const GraphAttrib
         compute_node_to_index_position(graph, attributes);
     vector<int> edge_lengths;
     NodesContainer visited;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
             return;
         function<void(int, int, int)> dfs =
@@ -84,7 +84,7 @@ vector<int> compute_bends_counts(const UndirectedGraph& graph, const GraphAttrib
     auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     vector<int> bends_counts;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
             return;
         NodesContainer visited;
@@ -154,7 +154,7 @@ int compute_total_area(const OrthogonalDrawing& result) {
     int max_y = -INT_MAX;
     int min_x = INT_MAX;
     int min_y = INT_MAX;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         const int x = node_to_coordinate_x.get(node_id);
         const int y = node_to_coordinate_y.get(node_id);
         max_x = max(max_x, x);
@@ -250,7 +250,7 @@ int compute_total_crossings(const OrthogonalDrawing& result) {
         compute_node_to_index_position(graph, attributes);
     int total_crossings = 0;
     vector<pair<int, int>> edges;
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (neighbor_id < node_id)
                 return;

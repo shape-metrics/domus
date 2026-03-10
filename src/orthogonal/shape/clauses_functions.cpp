@@ -35,7 +35,7 @@ void add_constraints_one_direction_per_edge(
     const UndirectedGraph& graph, Cnf& cnf_builder, const VariablesHandler& handler
 ) {
 
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (node_id > neighbor_id)
                 return;
@@ -118,7 +118,7 @@ void add_cycles_constraints(
 void add_nodes_constraints(
     const UndirectedGraph& graph, Cnf& cnf_builder, const VariablesHandler& handler
 ) {
-    graph.get_nodes_ids().for_each([&](int node_id) {
+    graph.for_each_node([&](int node_id) {
         if (graph.get_degree_of_node(node_id) <= 4) {
             add_one_edge_per_direction_clauses(graph, cnf_builder, handler, Direction::UP, node_id);
             add_one_edge_per_direction_clauses(
