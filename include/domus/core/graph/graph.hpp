@@ -23,6 +23,7 @@ class DirectedGraph {
     size_t get_in_degree_of_node(int node_id) const;
     void add_edge(int from_id, int to_id);
     bool has_edge(int from_id, int to_id) const;
+    bool are_neighbors(int node_1_id, int node_2_id) const;
     size_t size() const;
     size_t get_number_of_edges() const;
     void remove_node(int node_id);

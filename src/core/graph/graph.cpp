@@ -53,6 +53,10 @@ bool DirectedGraph::has_edge(int from_id, int to_id) const {
     return m_out_adjacency_list.has_edge(from_id, to_id);
 }
 
+bool DirectedGraph::are_neighbors(int node_1_id, int node_2_id) const {
+    return has_edge(node_1_id, node_2_id) || has_edge(node_2_id, node_1_id);
+}
+
 size_t DirectedGraph::size() const { return m_nodes_ids.size(); }
 size_t DirectedGraph::get_number_of_edges() const { return m_total_edges; }
 
