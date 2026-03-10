@@ -44,7 +44,7 @@ bool dfs_find_cycle(
 ) {
     state.add(node_id, 1); // mark as visiting (gray)
     bool found_cycle = false;
-    graph.get_out_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+    graph.for_each_out_neighbors(node_id, [&](int neighbor_id) {
         if (found_cycle)
             return;
         if (!state.has(neighbor_id)) { // unvisited
@@ -129,7 +129,7 @@ optional<vector<int>> make_topological_ordering(const DirectedGraph& graph) {
         ++count;
         queue.pop();
         topological_order.push_back(node_id);
-        graph.get_out_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_out_neighbors(node_id, [&](int neighbor_id) {
             if (--in_degree[neighbor_id] == 0)
                 queue.push(neighbor_id);
         });

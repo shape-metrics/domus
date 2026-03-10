@@ -10,14 +10,20 @@ bool DirectedGraph::has_node(int node_id) const { return m_nodes_ids.has_node(no
 
 void DirectedGraph::for_each_node(function<void(int)> f) const { m_nodes_ids.for_each(f); }
 
-const NodesContainer& DirectedGraph::get_out_neighbors_of_node(int node_id) const {
+void DirectedGraph::for_each_out_neighbors(int node_id, function<void(int)> f) const {
     assert(has_node(node_id) && "Node does not exist");
-    return m_out_adjacency_list.get_neighbors_of_node(node_id);
+    m_out_adjacency_list.get_neighbors_of_node(node_id).for_each(f);
 }
 
-const NodesContainer& DirectedGraph::get_in_neighbors_of_node(int node_id) const {
+void DirectedGraph::for_each_in_neighbors(int node_id, function<void(int)> f) const {
     assert(has_node(node_id) && "Node does not exist");
-    return m_in_adjacency_list.get_neighbors_of_node(node_id);
+    m_in_adjacency_list.get_neighbors_of_node(node_id).for_each(f);
+}
+
+void DirectedGraph::for_each_neighbor(int node_id, function<void(int)> f) const {
+    assert(has_node(node_id) && "Node does not exist");
+    for_each_in_neighbors(node_id, f);
+    for_each_out_neighbors(node_id, f);
 }
 
 void DirectedGraph::add_node(int id) {
@@ -33,11 +39,18 @@ int DirectedGraph::add_node() {
 }
 
 size_t DirectedGraph::get_out_degree_of_node(int node_id) const {
-    return get_out_neighbors_of_node(node_id).size();
+    assert(has_node(node_id) && "Node does not exist");
+    return m_out_adjacency_list.get_neighbors_of_node(node_id).size();
 }
 
 size_t DirectedGraph::get_in_degree_of_node(int node_id) const {
-    return get_in_neighbors_of_node(node_id).size();
+    assert(has_node(node_id) && "Node does not exist");
+    return m_in_adjacency_list.get_neighbors_of_node(node_id).size();
+}
+
+size_t DirectedGraph::get_degree_of_node(int node_id) const {
+    assert(has_node(node_id) && "Node does not exist");
+    return get_out_degree_of_node(node_id) + get_in_degree_of_node(node_id);
 }
 
 void DirectedGraph::add_edge(int from_id, int to_id) {
@@ -65,10 +78,10 @@ void DirectedGraph::remove_node(int node_id) {
     m_nodes_ids.erase(node_id);
     m_total_edges -= get_out_degree_of_node(node_id);
     m_total_edges -= get_in_degree_of_node(node_id);
-    get_out_neighbors_of_node(node_id).for_each([this, node_id](int neighbor_id) {
+    for_each_out_neighbors(node_id, [this, node_id](int neighbor_id) {
         m_in_adjacency_list.erase_edge(neighbor_id, node_id);
     });
-    get_in_neighbors_of_node(node_id).for_each([this, node_id](int neighbor_id) {
+    for_each_in_neighbors(node_id, [this, node_id](int neighbor_id) {
         m_out_adjacency_list.erase_edge(neighbor_id, node_id);
     });
 }
@@ -81,14 +94,14 @@ void DirectedGraph::remove_edge(int from_id, int to_id) {
     m_total_edges--;
 }
 string DirectedGraph::to_string() const {
-    string result = "DirectedGraph:\n";
-    for_each_node([&result, this](int node_id) {
-        result += std::to_string(node_id) + ": ";
-        get_out_neighbors_of_node(node_id).for_each([&result](int neighbor_id) {
-            result += std::to_string(neighbor_id) + " ";
-        });
-        result += "\n";
-    });
+    string result = "Graph:\n";
+    // for_each_node([&result, this](int node_id) {
+    //     result += std::to_string(node_id) + ": ";
+    //     get_out_neighbors_of_node(node_id).for_each([&result](int neighbor_id) {
+    //         result += std::to_string(neighbor_id) + " ";
+    //     });
+    //     result += "\n";
+    // });
     return result;
 }
 

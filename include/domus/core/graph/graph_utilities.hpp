@@ -2,7 +2,6 @@
 
 #include <functional>
 #include <memory>
-#include <stdint.h>
 
 #include "domus/core/containers.hpp"
 

@@ -2,7 +2,6 @@
 
 #include <functional>
 #include <memory>
-#include <stddef.h>
 
 class I_IntPairHashSet;
 
