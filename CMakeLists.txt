@@ -75,6 +75,7 @@ set(COMMON_SRCS
     src/orthogonal/drawing.cpp
     src/drawing/polygon.cpp
     src/core/config.cpp
+    src/core/color.cpp
     src/core/graph/graphs_algorithms.cpp
     src/core/containers.cpp
     src/core/graph/graph.cpp

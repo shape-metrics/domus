@@ -1,10 +1,8 @@
 #include "domus/core/utils.hpp"
 
-#include <cassert>
 #include <cmath>
-#include <filesystem>
 #include <fstream>
-#include <unistd.h>
+// #include <unistd.h>
 
 using namespace std;
 
@@ -18,37 +16,6 @@ expected<void, string> save_string_to_file(const string& filename, const string&
     string error_msg = "Error in save_string_to_file: ";
     error_msg += "Failed to open file for writing: " + filename;
     return unexpected(error_msg);
-}
-
-string color_to_string(const Color color) {
-    switch (color) {
-    case Color::RED:
-        return "red";
-    case Color::BLUE:
-        return "blue";
-    case Color::BLACK:
-        return "black";
-    case Color::GREEN:
-        return "green";
-    case Color::RED_SPECIAL:
-        return "darkred";
-    default:
-        assert(false && "Invalid color");
-        return "Invalid color";
-    }
-}
-
-Color string_to_color(const string& color) {
-    if (color == "red")
-        return Color::RED;
-    if (color == "blue")
-        return Color::BLUE;
-    if (color == "green")
-        return Color::GREEN;
-    if (color == "black")
-        return Color::BLACK;
-    assert(false && "Invalid color string");
-    return Color::BLACK;
 }
 
 expected<vector<string>, string> collect_txt_files(std::filesystem::path folder_path) {

@@ -1,8 +1,9 @@
 #pragma once
 
+#include <functional>
 #include <string>
 
-#include "domus/core/utils.hpp"
+#include "domus/core/circular_sequence.hpp"
 
 class Cycle {
     CircularSequence<int> m_nodes_ids;

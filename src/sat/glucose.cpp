@@ -1,13 +1,13 @@
 #include "domus/sat/sat.hpp"
 
-#include <assert.h>
+#include <cassert>
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <vector>
 
-#include "domus/core/utils.hpp"
+#include "domus/core/memory_file.hpp"
 #include "domus/sat/cnf.hpp"
 
 #include "glucose/src/SimpSolver.h"

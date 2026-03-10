@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include "domus/core/utils.hpp"
+#include "domus/core/color.hpp"
 
 enum class Attribute {
     NODES_COLOR,

@@ -11,7 +11,7 @@ extern "C" {
 #include "kissat/src/proof.h"
 }
 
-#include "domus/core/utils.hpp"
+#include "domus/core/memory_file.hpp"
 #include "domus/sat/cnf.hpp"
 
 using namespace std;
