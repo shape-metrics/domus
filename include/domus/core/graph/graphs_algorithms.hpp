@@ -11,12 +11,6 @@
 
 bool is_graph_connected(const UndirectedGraph& graph);
 
-std::vector<Cycle> compute_all_cycles_with_node_in_graph(
-    const UndirectedGraph& graph, int node_id, const NodesContainer& taboo_nodes
-);
-
-std::vector<Cycle> compute_all_cycles_in_graph(const UndirectedGraph& graph);
-
 std::optional<Cycle> find_a_cycle_in_graph(const UndirectedGraph& graph);
 
 std::optional<Cycle> find_a_cycle_in_graph(const DirectedGraph& graph);

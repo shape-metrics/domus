@@ -34,44 +34,6 @@ bool is_graph_connected(const UndirectedGraph& graph) {
     return visited.size() == graph.size();
 }
 
-vector<Cycle> compute_all_cycles_with_node_in_graph(
-    const UndirectedGraph& graph, int node_id, const NodesContainer& taboo_nodes
-) {
-    vector<Cycle> cycles;
-    NodesContainer visited;
-    function<void(int, int, vector<int>&)> dfs =
-        [&](const int current, const int start, vector<int>& path) {
-            visited.add_node(current);
-            path.push_back(current);
-            graph.get_neighbors_of_node(current).for_each([&](int neighbor_id) {
-                if (taboo_nodes.has_node(neighbor_id))
-                    return;                                    // skip taboo nodes
-                if (neighbor_id == start && path.size() > 2) { // found a cycle
-                    cycles.emplace_back(path);
-                } else if (!visited.has_node(neighbor_id)) {
-                    dfs(neighbor_id, start, path);
-                }
-            });
-            path.pop_back();
-            visited.erase(current);
-        };
-    vector<int> path;
-    dfs(node_id, node_id, path);
-    return cycles;
-}
-
-vector<Cycle> compute_all_cycles_in_graph(const UndirectedGraph& graph) {
-    vector<Cycle> all_cycles;
-    NodesContainer taboo_nodes;
-    graph.get_nodes_ids().for_each([&](int node_id) {
-        vector<Cycle> cycles = compute_all_cycles_with_node_in_graph(graph, node_id, taboo_nodes);
-        for (Cycle& cycle : cycles)
-            all_cycles.push_back(cycle);
-        taboo_nodes.add_node(node_id);
-    });
-    return all_cycles;
-}
-
 bool dfs_find_cycle(
     int node_id,
     const DirectedGraph& graph,
