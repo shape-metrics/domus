@@ -36,11 +36,7 @@ int Cycle::operator[](const size_t index) const { return m_nodes_ids[index]; }
 
 int Cycle::at(const size_t index) const { return m_nodes_ids.at(index); }
 
-vector<int>::const_iterator Cycle::begin() const { return m_nodes_ids.begin(); }
-
-vector<int>::const_iterator Cycle::end() const { return m_nodes_ids.end(); }
-
-std::string Cycle::to_string() const { return std::format("Cycle: {}", m_nodes_ids); }
+std::string Cycle::to_string() const { return std::format("Cycle"); }
 
 void Cycle::print() const { std::println("{}", to_string()); }
 
@@ -57,3 +53,5 @@ size_t Cycle::node_position(const int node_id) const {
 void Cycle::reverse() { m_nodes_ids.reverse(); }
 
 size_t Cycle::next_index(const size_t index) const { return m_nodes_ids.next_index(index); }
+
+void Cycle::for_each(std::function<void(int)> func) const { m_nodes_ids.for_each(func); }

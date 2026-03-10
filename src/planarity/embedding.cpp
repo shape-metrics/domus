@@ -32,12 +32,12 @@ const CircularSequence<int>& Embedding::get_adjacency_list(const int node_id) co
 
 string Embedding::to_string() const {
     string result;
-    for (const auto& [node_id, neighbors] : adjacency_list) {
-        result += "Node " + std::to_string(node_id) + " neighbors:";
-        for (const int neighbor_id : neighbors)
-            result += " " + std::to_string(neighbor_id);
-        result += "\n";
-    }
+    // for (const auto& [node_id, neighbors] : adjacency_list) {
+    //     result += "Node " + std::to_string(node_id) + " neighbors:";
+    //     for (const int neighbor_id : neighbors)
+    //         result += " " + std::to_string(neighbor_id);
+    //     result += "\n";
+    // }
     return result;
 }
 
@@ -51,9 +51,9 @@ size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
     size_t number_of_faces = 0;
     PairIntHashSet visited_edges; // visited oriented edges
     for (int node_id : embedding.get_nodes_ids()) {
-        for (int neighbor_id : embedding.get_adjacency_list(node_id)) {
+        embedding.get_adjacency_list(node_id).for_each([&](int neighbor_id) {
             if (visited_edges.has(node_id, neighbor_id))
-                continue;
+                return;
             ++number_of_faces;
             int current_node = node_id;
             int next_node = neighbor_id;
@@ -68,7 +68,7 @@ size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
                 if (current_node == node_id && next_node == neighbor_id)
                     break;
             }
-        }
+        });
     }
     return number_of_faces;
 }
@@ -89,9 +89,10 @@ size_t compute_number_of_connected_components(const Embedding& embedding) {
             stack.pop();
             if (!visited.has_node(node_id)) {
                 visited.add_node(node_id);
-                for (const int neighbor_id : embedding.get_adjacency_list(node_id))
+                embedding.get_adjacency_list(node_id).for_each([&stack, &visited](int neighbor_id) {
                     if (!visited.has_node(neighbor_id))
                         stack.push(neighbor_id);
+                });
             }
         }
     };

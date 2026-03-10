@@ -5,7 +5,14 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "domus/core/utils.hpp"
+struct int_pair_hash {
+    int operator()(const std::pair<int, int>& p) const {
+        const int h1 = static_cast<int>(std::hash<int>{}(p.first));
+        const int h2 = static_cast<int>(std::hash<int>{}(p.second));
+        const int mult = h2 * static_cast<int>(0x9e3779b9);
+        return h1 ^ (mult + (h1 << 6) + (h1 >> 2));
+    }
+};
 
 // INT PAIR SET
 

@@ -30,15 +30,6 @@ std::string color_to_string(Color color);
 
 Color string_to_color(const std::string& color);
 
-struct int_pair_hash {
-    int operator()(const std::pair<int, int>& p) const {
-        const int h1 = static_cast<int>(std::hash<int>{}(p.first));
-        const int h2 = static_cast<int>(std::hash<int>{}(p.second));
-        const int mult = h2 * static_cast<int>(0x9e3779b9);
-        return h1 ^ (mult + (h1 << 6) + (h1 >> 2));
-    }
-};
-
 std::expected<std::vector<std::string>, std::string>
 collect_txt_files(std::filesystem::path folder_path);
 
@@ -101,13 +92,13 @@ template <typename T> class CircularSequence {
         m_elements.erase(erase_position);
         recompute_positions();
     }
-    T prev_element(T element) const {
+    const T& prev_element(const T& element) const {
         const size_t pos = *element_position(element);
         if (pos == 0)
             return at(size() - 1);
         return at(pos - 1);
     }
-    T next_element(T element) const {
+    const T& next_element(const T& element) const {
         const size_t pos = *element_position(element);
         if (pos == size() - 1)
             return at(0);
@@ -120,10 +111,12 @@ template <typename T> class CircularSequence {
         );
         return m_index.get(element);
     }
-    T operator[](const size_t index) const { return m_elements[index]; }
-    T at(const size_t index) const { return m_elements.at(index); }
-    typename std::vector<T>::const_iterator begin() const { return m_elements.begin(); }
-    typename std::vector<T>::const_iterator end() const { return m_elements.end(); }
+    const T& operator[](const size_t index) const { return m_elements[index]; }
+    const T& at(const size_t index) const { return m_elements.at(index); }
+    void for_each(std::function<void(T)> func) const {
+        for (const auto& element : m_elements)
+            func(element);
+    }
 };
 
 class MemoryFile {

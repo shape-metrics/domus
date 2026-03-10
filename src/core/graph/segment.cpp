@@ -121,16 +121,15 @@ void dfs_find_segments(
 }
 
 void add_cycle_edges(const Cycle& cycle, Segment& segment) {
-    for (const int node_id : cycle) {
+    cycle.for_each([&](int node_id) {
         const int next_node_id = cycle.next_of_node(node_id);
         segment.get_segment().add_edge(node_id, next_node_id);
-    }
+    });
 }
 
 Segment build_segment(const vector<int>& nodes, vector<pair<int, int>>& edges, const Cycle& cycle) {
     Segment segment;
-    for (const int node_id : cycle)
-        segment.get_segment().add_node(node_id);
+    cycle.for_each([&](int node_id) { segment.get_segment().add_node(node_id); });
     for (const int node_id : nodes)
         segment.get_segment().add_node(node_id);
     // adding edges
@@ -165,8 +164,7 @@ void find_segments(const UndirectedGraph& graph, const Cycle& cycle, vector<Segm
 
 Segment build_chord(const int attachment_1, const int attachment_2, const Cycle& cycle) {
     Segment chord;
-    for (const int node_id : cycle)
-        chord.get_segment().add_node(node_id);
+    cycle.for_each([&](int node_id) { chord.get_segment().add_node(node_id); });
     add_cycle_edges(cycle, chord);
     // adding chord edge
     chord.get_segment().add_edge(attachment_1, attachment_2);
@@ -176,7 +174,7 @@ Segment build_chord(const int attachment_1, const int attachment_2, const Cycle&
 }
 
 void find_chords(const UndirectedGraph& graph, const Cycle& cycle, vector<Segment>& segments) {
-    for (int node_id : cycle)
+    cycle.for_each([&](int node_id) {
         graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
             if (node_id < neighbor_id)
                 return;
@@ -186,6 +184,7 @@ void find_chords(const UndirectedGraph& graph, const Cycle& cycle, vector<Segmen
                     segments.push_back(build_chord(node_id, neighbor_id, cycle));
                 }
         });
+    });
 }
 
 vector<Segment> compute_segments(const UndirectedGraph& graph, const Cycle& cycle) {

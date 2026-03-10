@@ -13,14 +13,14 @@ unordered_map<int, int> compute_cycle_labels(const Segment& segment, const Cycle
     unordered_map<int, int> cycle_labels;
     int found_attachments = 0;
     const int total_attachments = static_cast<int>(segment.get_attachments().size());
-    for (int node_id : cycle) {
+    cycle.for_each([&](int node_id) {
         if (segment.has_attachment(node_id))
             cycle_labels[node_id] = 2 * (found_attachments++);
         else if (found_attachments == 0)
             cycle_labels[node_id] = 2 * total_attachments - 1;
         else
             cycle_labels[node_id] = 2 * found_attachments - 1;
-    }
+    });
     return cycle_labels;
 }
 

@@ -27,8 +27,9 @@ Embedding merge_biconnected_components(
         const Embedding& embedding = embeddings[i];
         const UndirectedGraph& component = biconnected_components.get_components()[i];
         component.get_nodes_ids().for_each([&](int node_id) {
-            for (const int component_neighbor_id : embedding.get_adjacency_list(node_id))
+            embedding.get_adjacency_list(node_id).for_each([&](int component_neighbor_id) {
                 output.add_edge(node_id, component_neighbor_id);
+            });
         });
     }
     return output;
@@ -103,13 +104,13 @@ Cycle change_cycle_with_path(
 
 Cycle make_cycle_good(const Cycle& cycle, const Segment& segment) {
     vector<int> attachments_to_use{};
-    for (const int cycle_node_id : cycle) {
-        if (!segment.has_attachment(cycle_node_id))
-            continue;
-        attachments_to_use.push_back(cycle_node_id);
+    cycle.for_each([&](int cycle_node_id) {
         if (attachments_to_use.size() == 3)
-            break;
-    }
+            return;
+        if (!segment.has_attachment(cycle_node_id))
+            return;
+        attachments_to_use.push_back(cycle_node_id);
+    });
     const deque<int> path =
         compute_path_between_attachments(segment, attachments_to_use[0], attachments_to_use[1]);
     if (attachments_to_use.size() == 3)
@@ -332,8 +333,9 @@ void add_edges_not_incident_to_cycle(
             if (cycle.has_node(node_id))
                 return;
             vector<int> neighbors_to_add;
-            for (const int neighbor_id : embedding.get_adjacency_list(node_id))
+            embedding.get_adjacency_list(node_id).for_each([&neighbors_to_add](int neighbor_id) {
                 neighbors_to_add.push_back(neighbor_id);
+            });
             if (is_segment_inside.get_side(static_cast<int>(i)) == is_embedding_inside[i])
                 for (const int neighbor_id : neighbors_to_add)
                     output.add_edge(node_id, neighbor_id);

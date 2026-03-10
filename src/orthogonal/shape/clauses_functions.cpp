@@ -101,13 +101,13 @@ void add_cycles_constraints(
         vector<int> at_least_one_up{};
         vector<int> at_least_one_right{};
         vector<int> at_least_one_left{};
-        for (const int cycle_node : cycle) {
-            const int next_cycle_node = cycle.next_of_node(cycle_node);
+        cycle.for_each([&](int cycle_node) {
+            int next_cycle_node = cycle.next_of_node(cycle_node);
             at_least_one_down.push_back(handler.get_down_variable(cycle_node, next_cycle_node));
             at_least_one_up.push_back(handler.get_up_variable(cycle_node, next_cycle_node));
             at_least_one_right.push_back(handler.get_right_variable(cycle_node, next_cycle_node));
             at_least_one_left.push_back(handler.get_left_variable(cycle_node, next_cycle_node));
-        }
+        });
         cnf_builder.add_clause(at_least_one_down);
         cnf_builder.add_clause(at_least_one_up);
         cnf_builder.add_clause(at_least_one_right);

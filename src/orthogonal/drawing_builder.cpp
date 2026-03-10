@@ -467,11 +467,11 @@ void fix_inconsistency(
     const Direction direction = color_to_find == Color::GREEN ? Direction::UP : Direction::RIGHT;
     const Color dark_color = color_to_find == Color::GREEN ? Color::GREEN_DARK : Color::BLUE_DARK;
     optional<int> colored_node;
-    for (const int node_id : cycle) {
+    cycle.for_each([&](int node_id) {
         if (attributes.get_node_color(node_id) != color_to_find)
-            continue;
+            return;
         colored_node = node_id;
-    }
+    });
     assert(colored_node.has_value());
     const int colored_node_id = colored_node.value();
     int neighbors_ids[2] = {-1, -1};

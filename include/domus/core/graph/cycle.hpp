@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
 #include "domus/core/utils.hpp"
 
@@ -11,8 +10,17 @@ class Cycle {
     void reverse();
 
   public:
-    explicit Cycle(std::ranges::input_range auto&& nodes_ids) : m_nodes_ids(nodes_ids) {}
-    const auto& get_nodes_ids() const { return m_nodes_ids.get_elements(); }
+    Cycle(std::ranges::input_range auto&& nodes_ids) : m_nodes_ids(nodes_ids) {}
+    Cycle(const Cycle& other) {
+        other.for_each([this](int node_id) { append(node_id); });
+    };
+    Cycle& operator=(const Cycle& other) {
+        if (this != &other) {
+            m_nodes_ids.clear();
+            other.for_each([this](int node_id) { append(node_id); });
+        }
+        return *this;
+    }
     void clear();
     bool empty() const;
     size_t size() const;
@@ -26,8 +34,7 @@ class Cycle {
     size_t node_position(int node_id) const;
     int operator[](size_t index) const;
     int at(size_t index) const;
-    std::vector<int>::const_iterator begin() const;
-    std::vector<int>::const_iterator end() const;
+    void for_each(std::function<void(int)> func) const;
     std::string to_string() const;
     void print() const;
 };

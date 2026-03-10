@@ -66,7 +66,7 @@ vector<Cycle> compute_all_cycles_in_graph(const UndirectedGraph& graph) {
     graph.get_nodes_ids().for_each([&](int node_id) {
         vector<Cycle> cycles = compute_all_cycles_with_node_in_graph(graph, node_id, taboo_nodes);
         for (Cycle& cycle : cycles)
-            all_cycles.emplace_back(cycle.get_nodes_ids());
+            all_cycles.push_back(cycle);
         taboo_nodes.add_node(node_id);
     });
     return all_cycles;
