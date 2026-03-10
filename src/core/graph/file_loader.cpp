@@ -50,7 +50,7 @@ std::expected<void, std::string> save_graph_to_file(const UndirectedGraph& graph
     graph.for_each_node([&outfile](int node_id) { outfile << node_id << '\n'; });
     outfile << "edges:\n";
     graph.for_each_node([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (neighbor_id > node_id)
                 outfile << node_id << ' ' << neighbor_id << '\n';
         });
@@ -97,7 +97,7 @@ void save_to_graphml(
         os << "    </node>\n";
     });
     graph.for_each_node([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([node_id, &os](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [node_id, &os](int neighbor_id) {
             if (neighbor_id > node_id)
                 return;
             os << "    <source=\"n" << node_id << "\" target=\"n" << neighbor_id << "\">\n";

@@ -23,7 +23,7 @@ expected<void, string> save_orthogonal_drawing_to_file(const OrthogonalDrawing& 
     data["nodes"] = nodes;
     vector<pair<int, int>> edges;
     graph.for_each_node([&graph, &edges](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&edges, node_id](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&edges, node_id](int neighbor_id) {
             if (neighbor_id < node_id)
                 return;
             edges.push_back({node_id, neighbor_id});
@@ -45,7 +45,7 @@ expected<void, string> save_orthogonal_drawing_to_file(const OrthogonalDrawing& 
     graph.for_each_node([&](int node_id) {
         if (error_msg.has_value())
             return;
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (error_msg.has_value())
                 return;
             if (neighbor_id < node_id)
@@ -138,7 +138,7 @@ make_svg(const UndirectedGraph& graph, const GraphAttributes& attributes, path p
         points.emplace(node_id, Point2D(x, y));
     });
     graph.for_each_node([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             Line2D line(points.at(node_id), points.at(neighbor_id));
             drawer.add(line);
         });

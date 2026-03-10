@@ -12,7 +12,6 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/segment.hpp"
-#include "domus/core/utils.hpp"
 #include "domus/planarity/interlacement.hpp"
 
 using namespace std;
@@ -38,7 +37,7 @@ Embedding merge_biconnected_components(
 Embedding base_case_graph(const UndirectedGraph& graph) {
     Embedding embedding(graph);
     graph.for_each_node([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             embedding.add_edge(node_id, neighbor_id);
         });
     });
@@ -50,7 +49,7 @@ Embedding base_case_component(const UndirectedGraph& component, const Cycle& cyc
     Embedding embedding(component);
     component.for_each_node([&](int node_id) {
         if (component.get_degree_of_node(node_id) == 2) {
-            component.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+            component.for_each_neighbor(node_id, [&](int neighbor_id) {
                 embedding.add_edge(node_id, neighbor_id);
             });
             return;
@@ -64,7 +63,7 @@ Embedding base_case_component(const UndirectedGraph& component, const Cycle& cyc
             "base_case_component: cycle does not contain the node with degree 3"
         );
         optional<int> neighbor_in_between;
-        component.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        component.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (neighbor_in_between.has_value())
                 return;
             if (cycle.next_of_node(node_id) == neighbor_id ||

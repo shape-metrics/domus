@@ -45,7 +45,7 @@ void directional_node_expander(
     const function<bool(const Shape&, int, int)>& is_direction_wrong
 ) {
     equivalence_classes.set_class(node_id, class_id);
-    graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+    graph.for_each_neighbor(node_id, [&](int neighbor_id) {
         if (equivalence_classes.has_elem_a_class(neighbor_id))
             return;
         if (is_direction_wrong(shape, node_id, neighbor_id))
@@ -142,7 +142,7 @@ equivalence_classes_to_ordering(
     map<pair<int, int>, pair<int, int>> ordering_y_edge_to_graph_edge;
 
     graph.for_each_node([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (shape.is_right(node_id, neighbor_id)) {
                 const int node_class_x = equivalence_classes_x.get_class_of_elem(node_id);
                 const int neighbor_class_x = equivalence_classes_x.get_class_of_elem(neighbor_id);

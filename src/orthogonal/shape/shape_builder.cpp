@@ -29,7 +29,7 @@ Shape result_to_shape(
     }
     Shape shape;
     graph.for_each_node([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             shape.set_direction(
                 node_id,
                 neighbor_id,

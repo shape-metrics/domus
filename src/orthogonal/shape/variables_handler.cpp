@@ -40,7 +40,7 @@ void VariablesHandler::add_edge_variables(const int i, const int j) {
 
 VariablesHandler::VariablesHandler(const UndirectedGraph& graph) {
     graph.for_each_node([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (node_id > neighbor_id)
                 return;
             add_edge_variables(node_id, neighbor_id);

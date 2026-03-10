@@ -62,7 +62,7 @@ deque<int> compute_path_between_attachments(
         const int node_id = queue.front();
         queue.pop_front();
         bool keep_exploring = true;
-        segment.get_segment().get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        segment.get_segment().for_each_neighbor(node_id, [&](int neighbor_id) {
             if (!keep_exploring)
                 return;
             if (neighbor_id == attachment_2) {
@@ -101,7 +101,7 @@ void dfs_find_segments(
 ) {
     nodes_in_segment.push_back(node_id);
     is_node_visited.add_node(node_id);
-    graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+    graph.for_each_neighbor(node_id, [&](int neighbor_id) {
         if (cycle.has_node(neighbor_id)) {
             edges_in_segment.emplace_back(node_id, neighbor_id);
             return;
@@ -175,7 +175,7 @@ Segment build_chord(const int attachment_1, const int attachment_2, const Cycle&
 
 void find_chords(const UndirectedGraph& graph, const Cycle& cycle, vector<Segment>& segments) {
     cycle.for_each([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (node_id < neighbor_id)
                 return;
             if (cycle.has_node(neighbor_id))

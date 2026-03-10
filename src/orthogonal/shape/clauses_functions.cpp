@@ -36,7 +36,7 @@ void add_constraints_one_direction_per_edge(
 ) {
 
     graph.for_each_node([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (node_id > neighbor_id)
                 return;
             const int up = handler.get_up_variable(node_id, neighbor_id);
@@ -56,7 +56,7 @@ void add_clause_at_least_one_in_direction(
     Direction direction
 ) {
     vector<int> clause;
-    graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+    graph.for_each_neighbor(node_id, [&](int neighbor_id) {
         clause.push_back(handler.get_variable(node_id, neighbor_id, direction));
     });
     cnf_builder.add_clause(clause);
@@ -74,7 +74,7 @@ void add_one_edge_per_direction_clauses(
         add_clause_at_least_one_in_direction(graph, cnf_builder, handler, node_id, direction);
     } else if (degree == 3) {
         vector<int> variables;
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             variables.push_back(handler.get_variable(node_id, neighbor_id, direction));
         });
         // at most one is true (at least 2 are false)
@@ -83,7 +83,7 @@ void add_one_edge_per_direction_clauses(
         cnf_builder.add_clause({-variables[1], -variables[2]});
     } else if (degree == 2) {
         vector<int> clause;
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             clause.push_back(-handler.get_variable(node_id, neighbor_id, direction));
         });
         // at most one is true (at least 1 is false)

@@ -17,7 +17,7 @@ optional<Tree> build_spanning_tree(const UndirectedGraph& graph) {
     while (!queue.empty()) {
         int node_id = queue.front();
         queue.pop();
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (!visited.has_node(neighbor_id)) {
                 visited.add_node(neighbor_id);
                 tree.add_node(neighbor_id, node_id);

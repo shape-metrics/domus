@@ -28,7 +28,7 @@ vector<int> compute_edge_lengths(const UndirectedGraph& graph, const GraphAttrib
         function<void(int, int, int)> dfs =
             [&](const int current_id, const int black_id, const int current_length) {
                 visited.add_node(current_id);
-                graph.get_neighbors_of_node(current_id).for_each([&](int neighbor_id) {
+                graph.for_each_neighbor(current_id, [&](int neighbor_id) {
                     if (visited.has_node(neighbor_id))
                         return;
                     const int x1 = node_to_coordinate_x.get(current_id);
@@ -91,7 +91,7 @@ vector<int> compute_bends_counts(const UndirectedGraph& graph, const GraphAttrib
         function<void(int, int, int, int)> dfs =
             [&](int current, int black, int count, int previous_id) {
                 visited.add_node(current);
-                graph.get_neighbors_of_node(current).for_each([&](int neighbor_id) {
+                graph.for_each_neighbor(current, [&](int neighbor_id) {
                     if (visited.has_node(neighbor_id))
                         return;
                     Color neighbor_color = attributes.get_node_color(neighbor_id);
@@ -251,7 +251,7 @@ int compute_total_crossings(const OrthogonalDrawing& result) {
     int total_crossings = 0;
     vector<pair<int, int>> edges;
     graph.for_each_node([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (neighbor_id < node_id)
                 return;
             edges.emplace_back(node_id, neighbor_id);

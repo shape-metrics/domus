@@ -16,7 +16,6 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
-#include "domus/core/utils.hpp"
 #include "domus/nlohmann/json.hpp"
 #include "domus/orthogonal/area_compacter.hpp"
 #include "domus/orthogonal/equivalence_classes.hpp"
@@ -38,7 +37,7 @@ vector<int> path_in_class(
         }
         bool stop = false;
         visited.add_node(current);
-        graph.get_neighbors_of_node(current).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(current, [&](int neighbor_id) {
             if (stop)
                 return;
             if (visited.has_node(neighbor_id))
@@ -93,7 +92,7 @@ void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attribu
         assert(graph.get_degree_of_node(node_id) == 2);
         array<int, 2> neighbors{-1, -1};
         size_t i = 0;
-        graph.get_neighbors_of_node(node_id).for_each([&neighbors, &i](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&neighbors, &i](int neighbor_id) {
             neighbors[i++] = neighbor_id;
         });
         // if the added corner is flat, remove it
@@ -104,7 +103,7 @@ void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attribu
     for (int node_id : nodes_to_remove) {
         array<int, 2> neighbors{-1, -1};
         size_t i = 0;
-        graph.get_neighbors_of_node(node_id).for_each([&neighbors, &i](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&neighbors, &i](int neighbor_id) {
             neighbors[i++] = neighbor_id;
         });
         auto direction = shape.get_direction(neighbors[0], node_id);
@@ -192,7 +191,7 @@ make_orthogonal_drawing_incremental(const UndirectedGraph& graph, vector<Cycle>&
         attributes.set_node_color(node_id, Color::BLACK);
     });
     graph.for_each_node([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (node_id < neighbor_id)
                 augmented_graph.add_edge(node_id, neighbor_id);
         });
@@ -282,11 +281,11 @@ auto find_edges_to_fix(
         if (graph.get_degree_of_node(node_id) <= 4)
             return;
         optional<int> downest_left, downest_right, leftest_up, leftest_down;
-        graph.get_neighbors_of_node(node_id).for_each([&](int added_id) {
+        graph.for_each_neighbor(node_id, [&](int added_id) {
             if (shape.is_horizontal(node_id, added_id)) {
                 assert(!shape.is_left(node_id, added_id));
                 int other_neighbor_id = 0;
-                graph.get_neighbors_of_node(added_id).for_each([&](int neighbor_id) {
+                graph.for_each_neighbor(added_id, [&](int neighbor_id) {
                     if (neighbor_id == node_id)
                         return;
                     other_neighbor_id = neighbor_id;
@@ -307,7 +306,7 @@ auto find_edges_to_fix(
             } else {
                 assert(!shape.is_down(node_id, added_id));
                 int other_neighbor_id = 0;
-                graph.get_neighbors_of_node(added_id).for_each([&](int neighbor_id) {
+                graph.for_each_neighbor(added_id, [&](int neighbor_id) {
                     if (neighbor_id == node_id)
                         return;
                     other_neighbor_id = neighbor_id;
@@ -343,7 +342,7 @@ auto find_edges_to_fix(
 
 int get_other_neighbor_id(const UndirectedGraph& graph, const int node_id, const int neighbor_id) {
     optional<int> other;
-    graph.get_neighbors_of_node(node_id).for_each([&](int other_id) {
+    graph.for_each_neighbor(node_id, [&](int other_id) {
         if (other.has_value())
             return;
         if (other_id != neighbor_id)
@@ -401,7 +400,7 @@ void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, S
     for (int node_id : nodes) {
         vector<pair<int, int>> edges_to_remove;
         vector<pair<int, int>> edges_to_add;
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             int added_id = graph.add_node();
             edges_to_add.emplace_back(added_id, node_id);
             edges_to_add.emplace_back(added_id, neighbor_id);
@@ -476,7 +475,7 @@ void fix_inconsistency(
     const int colored_node_id = colored_node.value();
     int neighbors_ids[2] = {-1, -1};
     int i = 0;
-    graph.get_neighbors_of_node(colored_node_id).for_each([&](int neighbor_id) {
+    graph.for_each_neighbor(colored_node_id, [&](int neighbor_id) {
         neighbors_ids[i] = neighbor_id;
         ++i;
     });
@@ -665,7 +664,7 @@ void make_shifts(
 
 auto neighbors_at_each_direction(const UndirectedGraph& graph, int node_id, const Shape& shape) {
     unordered_map<Direction, vector<int>> nodes_at_direction;
-    graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+    graph.for_each_neighbor(node_id, [&](int neighbor_id) {
         const Direction dir = *shape.get_direction(node_id, neighbor_id);
         nodes_at_direction[dir].push_back(neighbor_id);
     });

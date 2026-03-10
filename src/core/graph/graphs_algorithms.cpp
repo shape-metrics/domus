@@ -26,7 +26,7 @@ bool is_graph_connected(const UndirectedGraph& graph) {
         const int node_id = stack.back();
         stack.pop_back();
         visited.add_node(node_id);
-        graph.get_neighbors_of_node(node_id).for_each([&stack, &visited](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&stack, &visited](int neighbor_id) {
             if (!visited.has_node(neighbor_id))
                 stack.push_back(neighbor_id);
         });
@@ -89,7 +89,7 @@ vector<Cycle> compute_cycle_basis(const UndirectedGraph& graph) {
     const Tree spanning = *build_spanning_tree(graph);
     vector<Cycle> cycles;
     graph.for_each_node([&](int node_id) {
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (node_id > neighbor_id)
                 return;
             if (spanning.has_edge(node_id, neighbor_id))
@@ -145,7 +145,7 @@ vector<UndirectedGraph> compute_connected_components(const UndirectedGraph& grap
     function<void(int, UndirectedGraph& component)> explore_component =
         [&](int node_id, UndirectedGraph& component) {
             visited.add_node(node_id);
-            graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+            graph.for_each_neighbor(node_id, [&](int neighbor_id) {
                 if (!component.has_node(neighbor_id))
                     component.add_node(neighbor_id);
                 if (!component.has_edge(node_id, neighbor_id))
@@ -175,7 +175,7 @@ size_t compute_number_of_connected_components(const UndirectedGraph& graph) {
             stack.pop();
             if (!visited.has_node(node_id)) {
                 visited.add_node(node_id);
-                graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+                graph.for_each_neighbor(node_id, [&](int neighbor_id) {
                     if (!visited.has_node(neighbor_id))
                         stack.push(neighbor_id);
                 });
@@ -261,7 +261,7 @@ void dfs_bic_com(
     low_point[node_id] = next_id_to_assign;
     ++next_id_to_assign;
     int children_number = 0;
-    graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+    graph.for_each_neighbor(node_id, [&](int neighbor_id) {
         if (prev_of_node.has(node_id) && prev_of_node[node_id] == neighbor_id)
             return;
         if (!old_node_id_to_new_id.has(neighbor_id)) { // means the node is not visited
@@ -334,7 +334,7 @@ bool bfs_bipartition(const UndirectedGraph& graph, int node_id, Bipartition& bip
     while (!queue.empty()) {
         int current_id = queue.front();
         queue.pop();
-        graph.get_neighbors_of_node(current_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(current_id, [&](int neighbor_id) {
             if (!is_bipartite)
                 return;
             if (!bipartition.has_node(neighbor_id)) {
@@ -369,7 +369,7 @@ optional<Cycle> find_a_cycle_in_graph(const UndirectedGraph& graph) {
             return;
         visited.add_node(node_id);
         parent.add(node_id, parent_id);
-        graph.get_neighbors_of_node(node_id).for_each([&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (found_cycle)
                 return;
             if (neighbor_id == parent_id)

@@ -100,8 +100,9 @@ bool UndirectedGraph::has_node(int node_id) const { return m_nodes_ids.has_node(
 
 void UndirectedGraph::for_each_node(function<void(int)> f) const { m_nodes_ids.for_each(f); }
 
-const NodesContainer& UndirectedGraph::get_neighbors_of_node(int node_id) const {
-    return m_adjacency_list.get_neighbors_of_node(node_id);
+void UndirectedGraph::for_each_neighbor(int node_id, function<void(int)> f) const {
+    assert(has_node(node_id) && "Node does not exist");
+    m_adjacency_list.get_neighbors_of_node(node_id).for_each(f);
 }
 
 void UndirectedGraph::add_node(int id) {
@@ -117,7 +118,7 @@ int UndirectedGraph::add_node() {
 }
 
 size_t UndirectedGraph::get_degree_of_node(int node_id) const {
-    return get_neighbors_of_node(node_id).size();
+    return m_adjacency_list.get_neighbors_of_node(node_id).size();
 }
 
 void UndirectedGraph::add_edge(int node_1_id, int node_2_id) {
@@ -139,7 +140,7 @@ size_t UndirectedGraph::get_number_of_edges() const { return m_total_edges; }
 void UndirectedGraph::remove_node(int node_id) {
     assert(has_node(node_id) && "Node does not exist");
     m_total_edges -= get_degree_of_node(node_id);
-    get_neighbors_of_node(node_id).for_each([node_id, this](int neighbor_id) {
+    for_each_neighbor(node_id, [node_id, this](int neighbor_id) {
         m_adjacency_list.erase_edge(neighbor_id, node_id);
     });
     m_adjacency_list.erase_node(node_id);
@@ -158,7 +159,7 @@ string UndirectedGraph::to_string() const {
     string result = "UndirectedGraph:\n";
     for_each_node([&result, this](int node_id) {
         result += std::to_string(node_id) + ": ";
-        get_neighbors_of_node(node_id).for_each([&result](int neighbor_id) {
+        for_each_neighbor(node_id, [&result](int neighbor_id) {
             result += std::to_string(neighbor_id) + " ";
         });
         result += "\n";
