@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 enum class Color {
     RED,
@@ -17,4 +18,4 @@ enum class Color {
 
 std::string color_to_string(Color color);
 
-Color string_to_color(const std::string& color);
+Color string_to_color(const std::string_view color);

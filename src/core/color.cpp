@@ -20,7 +20,7 @@ std::string color_to_string(const Color color) {
     }
 }
 
-Color string_to_color(const std::string& color) {
+Color string_to_color(const std::string_view color) {
     if (color == "red")
         return Color::RED;
     if (color == "blue")

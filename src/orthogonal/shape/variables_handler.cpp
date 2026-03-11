@@ -1,8 +1,9 @@
 #include "domus/orthogonal/shape/variables_handler.hpp"
-#include "domus/orthogonal/shape/shape.hpp"
 
 #include <cassert>
 #include <print>
+
+#include "domus/core/graph/graph.hpp"
 
 void VariablesHandler::add_variable(int i, int j, const Direction direction) {
     variable_to_edge[m_next_var] = std::make_pair(i, j);
@@ -38,7 +39,7 @@ void VariablesHandler::add_edge_variables(const int i, const int j) {
     add_variable(i, j, Direction::RIGHT);
 }
 
-VariablesHandler::VariablesHandler(const UndirectedGraph& graph) {
+VariablesHandler::VariablesHandler(const Graph& graph) {
     graph.for_each_node([&](int node_id) {
         graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (node_id > neighbor_id)

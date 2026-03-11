@@ -6,11 +6,8 @@
 
 class Cycle;
 class GraphAttributes;
-class UndirectedGraph;
+class Graph;
 
 Shape build_shape(
-    UndirectedGraph& graph,
-    GraphAttributes& attributes,
-    std::vector<Cycle>& cycles,
-    bool randomize = false
+    Graph& graph, GraphAttributes& attributes, std::vector<Cycle>& cycles, bool randomize = false
 );

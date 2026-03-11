@@ -5,7 +5,6 @@
 
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
-#include "domus/orthogonal/shape/shape.hpp"
 #include "domus/orthogonal/shape/variables_handler.hpp"
 #include "domus/sat/cnf.hpp"
 
@@ -32,7 +31,7 @@ void add_constraints_one_direction_per_edge(
 }
 
 void add_constraints_one_direction_per_edge(
-    const UndirectedGraph& graph, Cnf& cnf_builder, const VariablesHandler& handler
+    const Graph& graph, Cnf& cnf_builder, const VariablesHandler& handler
 ) {
 
     graph.for_each_node([&](int node_id) {
@@ -49,7 +48,7 @@ void add_constraints_one_direction_per_edge(
 }
 
 void add_clause_at_least_one_in_direction(
-    const UndirectedGraph& graph,
+    const Graph& graph,
     Cnf& cnf_builder,
     const VariablesHandler& handler,
     int node_id,
@@ -63,7 +62,7 @@ void add_clause_at_least_one_in_direction(
 }
 
 void add_one_edge_per_direction_clauses(
-    const UndirectedGraph& graph,
+    const Graph& graph,
     Cnf& cnf_builder,
     const VariablesHandler& handler,
     const Direction direction,
@@ -115,9 +114,7 @@ void add_cycles_constraints(
     }
 }
 
-void add_nodes_constraints(
-    const UndirectedGraph& graph, Cnf& cnf_builder, const VariablesHandler& handler
-) {
+void add_nodes_constraints(const Graph& graph, Cnf& cnf_builder, const VariablesHandler& handler) {
     graph.for_each_node([&](int node_id) {
         if (graph.get_degree_of_node(node_id) <= 4) {
             add_one_edge_per_direction_clauses(graph, cnf_builder, handler, Direction::UP, node_id);

@@ -17,14 +17,14 @@
 using namespace std;
 
 Embedding merge_biconnected_components(
-    const UndirectedGraph& graph,
+    const Graph& graph,
     const BiconnectedComponents& biconnected_components,
     const vector<Embedding>& embeddings
 ) {
     Embedding output(graph);
     for (size_t i = 0; i < biconnected_components.get_components().size(); ++i) {
         const Embedding& embedding = embeddings[i];
-        const UndirectedGraph& component = biconnected_components.get_components()[i];
+        const Graph& component = biconnected_components.get_components()[i];
         component.for_each_node([&](int node_id) {
             embedding.get_adjacency_list(node_id).for_each([&](int component_neighbor_id) {
                 output.add_edge(node_id, component_neighbor_id);
@@ -34,7 +34,7 @@ Embedding merge_biconnected_components(
     return output;
 }
 
-Embedding base_case_graph(const UndirectedGraph& graph) {
+Embedding base_case_graph(const Graph& graph) {
     Embedding embedding(graph);
     graph.for_each_node([&](int node_id) {
         graph.for_each_neighbor(node_id, [&](int neighbor_id) {
@@ -45,7 +45,7 @@ Embedding base_case_graph(const UndirectedGraph& graph) {
     return embedding;
 }
 
-Embedding base_case_component(const UndirectedGraph& component, const Cycle& cycle) {
+Embedding base_case_component(const Graph& component, const Cycle& cycle) {
     Embedding embedding(component);
     component.for_each_node([&](int node_id) {
         if (component.get_degree_of_node(node_id) == 2) {
@@ -346,7 +346,7 @@ void add_edges_not_incident_to_cycle(
 }
 
 Embedding merge_segments_embeddings(
-    const UndirectedGraph& component,
+    const Graph& component,
     const Cycle& cycle,
     const vector<Embedding>& embeddings,
     const vector<Segment>& segments,
@@ -378,10 +378,9 @@ Embedding merge_segments_embeddings(
     return output;
 }
 
-optional<Embedding> embed_biconnected_component(const UndirectedGraph& component);
+optional<Embedding> embed_biconnected_component(const Graph& component);
 
-optional<Embedding>
-embed_biconnected_component(const UndirectedGraph& component, const Cycle& cycle) {
+optional<Embedding> embed_biconnected_component(const Graph& component, const Cycle& cycle) {
     const vector<Segment> segments = compute_segments(component, cycle);
     if (segments.empty()) // the entire biconnected component is a cycle
         return base_case_graph(component);
@@ -392,7 +391,7 @@ embed_biconnected_component(const UndirectedGraph& component, const Cycle& cycle
         // the chosen cycle is bad
         return embed_biconnected_component(component, make_cycle_good(cycle, segment));
     }
-    const UndirectedGraph interlacement_graph = compute_interlacement_graph(segments, cycle);
+    const Graph interlacement_graph = compute_interlacement_graph(segments, cycle);
     const optional<Bipartition> is_segment_inside = compute_bipartition(interlacement_graph);
     if (!is_segment_inside.has_value())
         return std::nullopt; // if no bipartition exists, the component is not planar
@@ -412,14 +411,14 @@ embed_biconnected_component(const UndirectedGraph& component, const Cycle& cycle
     );
 }
 
-optional<Embedding> embed_biconnected_component(const UndirectedGraph& component) {
-    const optional<Cycle> cycle = find_a_cycle_in_graph(component);
+optional<Embedding> embed_biconnected_component(const Graph& component) {
+    const optional<Cycle> cycle = find_an_undirected_cycle_in_graph(component);
     if (cycle.has_value())
         return embed_biconnected_component(component, cycle.value());
     return base_case_graph(component);
 }
 
-optional<Embedding> embed_graph(const UndirectedGraph& graph) {
+optional<Embedding> embed_graph(const Graph& graph) {
     if (graph.size() < 4)
         return base_case_graph(graph);
     if (graph.get_number_of_edges() / 2 > 3 * graph.size() - 6)

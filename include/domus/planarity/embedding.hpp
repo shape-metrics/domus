@@ -15,7 +15,7 @@ class Embedding {
     PairIntHashSet m_edges_to_add;
 
   public:
-    explicit Embedding(const UndirectedGraph& graph);
+    explicit Embedding(const Graph& graph);
     void add_edge(int from_id, int to_id);
     const CircularSequence<int>& get_adjacency_list(int node_id) const;
     auto get_nodes_ids() const {

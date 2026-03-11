@@ -25,7 +25,7 @@ unordered_map<int, int> compute_cycle_labels(const Segment& segment, const Cycle
 }
 
 void compute_conflicts(
-    const vector<Segment>& segments, const Cycle& cycle, UndirectedGraph& interlacement_graph
+    const vector<Segment>& segments, const Cycle& cycle, Graph& interlacement_graph
 ) {
     if (segments.size() <= 1)
         return;
@@ -63,8 +63,8 @@ void compute_conflicts(
     }
 }
 
-UndirectedGraph compute_interlacement_graph(const vector<Segment>& segments, const Cycle& cycle) {
-    UndirectedGraph interlacement_graph;
+Graph compute_interlacement_graph(const vector<Segment>& segments, const Cycle& cycle) {
+    Graph interlacement_graph;
     for (int i = 0; i < static_cast<int>(segments.size()); ++i)
         interlacement_graph.add_node(i);
     compute_conflicts(segments, cycle, interlacement_graph);

@@ -17,7 +17,7 @@
 
 using namespace std;
 
-vector<int> compute_edge_lengths(const UndirectedGraph& graph, const GraphAttributes& attributes) {
+vector<int> compute_edge_lengths(const Graph& graph, const GraphAttributes& attributes) {
     auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     vector<int> edge_lengths;
@@ -54,7 +54,7 @@ vector<int> compute_edge_lengths(const UndirectedGraph& graph, const GraphAttrib
 }
 
 int compute_total_edge_length(const OrthogonalDrawing& result) {
-    const UndirectedGraph& graph = result.augmented_graph;
+    const Graph& graph = result.augmented_graph;
     const vector<int> edge_lengths = compute_edge_lengths(graph, result.attributes);
     int total_edge_length = 0;
     for (const int length : edge_lengths)
@@ -63,7 +63,7 @@ int compute_total_edge_length(const OrthogonalDrawing& result) {
 }
 
 int compute_max_edge_length(const OrthogonalDrawing& result) {
-    const UndirectedGraph& graph = result.augmented_graph;
+    const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
     const vector<int> edge_lengths = compute_edge_lengths(graph, attributes);
     int max_edge_length = 0;
@@ -74,13 +74,13 @@ int compute_max_edge_length(const OrthogonalDrawing& result) {
 }
 
 double compute_edge_length_std_dev(const OrthogonalDrawing& result) {
-    const UndirectedGraph& graph = result.augmented_graph;
+    const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
     const vector<int> edge_lengths = compute_edge_lengths(graph, attributes);
     return compute_stddev(edge_lengths);
 }
 
-vector<int> compute_bends_counts(const UndirectedGraph& graph, const GraphAttributes& attributes) {
+vector<int> compute_bends_counts(const Graph& graph, const GraphAttributes& attributes) {
     auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     vector<int> bends_counts;
@@ -120,7 +120,7 @@ vector<int> compute_bends_counts(const UndirectedGraph& graph, const GraphAttrib
 }
 
 int compute_total_bends(const OrthogonalDrawing& result) {
-    const UndirectedGraph& graph = result.augmented_graph;
+    const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
     const vector<int> bends_counts = compute_bends_counts(graph, attributes);
     int total_bends = 0;
@@ -130,7 +130,7 @@ int compute_total_bends(const OrthogonalDrawing& result) {
 }
 
 int compute_max_bends_per_edge(const OrthogonalDrawing& result) {
-    const UndirectedGraph& graph = result.augmented_graph;
+    const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
     const vector<int> bends_counts = compute_bends_counts(graph, attributes);
     int max_bends = 0;
@@ -141,13 +141,13 @@ int compute_max_bends_per_edge(const OrthogonalDrawing& result) {
 }
 
 double compute_bends_std_dev(const OrthogonalDrawing& result) {
-    const UndirectedGraph& graph = result.augmented_graph;
+    const Graph& graph = result.augmented_graph;
     const auto& attributes = result.attributes;
     return compute_stddev(compute_bends_counts(graph, attributes));
 }
 
 int compute_total_area(const OrthogonalDrawing& result) {
-    const UndirectedGraph& graph = result.augmented_graph;
+    const Graph& graph = result.augmented_graph;
     auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, result.attributes);
     int max_x = -INT_MAX;
@@ -244,7 +244,7 @@ bool do_edges_cross(
 }
 
 int compute_total_crossings(const OrthogonalDrawing& result) {
-    const UndirectedGraph& graph = result.augmented_graph;
+    const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
     auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);

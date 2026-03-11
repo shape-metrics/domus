@@ -12,11 +12,11 @@
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
-class UndirectedGraph;
+class Graph;
 
 using namespace std;
 
-auto build_index_to_nodes_map(const UndirectedGraph& graph, const GraphAttributes& attributes) {
+auto build_index_to_nodes_map(const Graph& graph, const GraphAttributes& attributes) {
     auto [node_to_index_x, node_to_index_y] = compute_node_to_index_position(graph, attributes);
     unordered_map<int, NodesContainer> index_x_to_nodes;
     node_to_index_x.for_each([&index_x_to_nodes](int node_id, int index) {
@@ -101,7 +101,7 @@ auto build_index_y_to_min_max_index_x(
     return index_to_min_max_x;
 }
 
-void compact_area(const UndirectedGraph& graph, GraphAttributes& attributes) {
+void compact_area(const Graph& graph, GraphAttributes& attributes) {
     auto [index_x_to_nodes, nodes_to_index_x, index_y_to_nodes, nodes_to_index_y] =
         build_index_to_nodes_map(graph, attributes);
     // compacting x

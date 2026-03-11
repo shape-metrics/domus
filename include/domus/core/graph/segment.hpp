@@ -11,12 +11,12 @@ class Cycle;
 
 struct Segment {
   private:
-    UndirectedGraph segment;
+    Graph segment;
     NodesContainer attachments;
 
   public:
-    UndirectedGraph& get_segment();
-    const UndirectedGraph& get_segment() const;
+    Graph& get_segment();
+    const Graph& get_segment() const;
     const NodesContainer& get_attachments() const;
     bool has_attachment(int attachment_id) const;
     void add_attachment(int attachment_id);
@@ -25,7 +25,7 @@ struct Segment {
     Segment();
 };
 
-std::vector<Segment> compute_segments(const UndirectedGraph& graph, const Cycle& cycle);
+std::vector<Segment> compute_segments(const Graph& graph, const Cycle& cycle);
 
 bool is_segment_a_path(const Segment& segment);
 

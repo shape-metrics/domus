@@ -38,7 +38,7 @@ const IntHashSet& EquivalenceClasses::get_all_classes() const { return m_all_cla
 
 void directional_node_expander(
     const Shape& shape,
-    const UndirectedGraph& graph,
+    const Graph& graph,
     int node_id,
     int class_id,
     EquivalenceClasses& equivalence_classes,
@@ -63,7 +63,7 @@ void directional_node_expander(
 
 void horizontal_node_expander(
     const Shape& shape,
-    const UndirectedGraph& graph,
+    const Graph& graph,
     int node_id,
     const int class_id,
     EquivalenceClasses& equivalence_classes
@@ -81,7 +81,7 @@ void horizontal_node_expander(
 
 void vertical_node_expander(
     const Shape& shape,
-    const UndirectedGraph& graph,
+    const Graph& graph,
     int node_id,
     const int class_id,
     EquivalenceClasses& equivalence_classes
@@ -98,7 +98,7 @@ void vertical_node_expander(
 }
 
 pair<const EquivalenceClasses, const EquivalenceClasses>
-build_equivalence_classes(const Shape& shape, const UndirectedGraph& graph) {
+build_equivalence_classes(const Shape& shape, const Graph& graph) {
     EquivalenceClasses equivalence_classes_x;
     EquivalenceClasses equivalence_classes_y;
     int next_class_x = 0;
@@ -118,19 +118,15 @@ build_equivalence_classes(const Shape& shape, const UndirectedGraph& graph) {
     return make_pair(std::move(equivalence_classes_x), std::move(equivalence_classes_y));
 }
 
-tuple<
-    DirectedGraph,
-    DirectedGraph,
-    map<pair<int, int>, pair<int, int>>,
-    map<pair<int, int>, pair<int, int>>>
+tuple<Graph, Graph, map<pair<int, int>, pair<int, int>>, map<pair<int, int>, pair<int, int>>>
 equivalence_classes_to_ordering(
     const EquivalenceClasses& equivalence_classes_x,
     const EquivalenceClasses& equivalence_classes_y,
-    const UndirectedGraph& graph,
+    const Graph& graph,
     const Shape& shape
 ) {
-    DirectedGraph ordering_x;
-    DirectedGraph ordering_y;
+    Graph ordering_x;
+    Graph ordering_y;
 
     equivalence_classes_x.get_all_classes().for_each([&ordering_x](int class_id) {
         ordering_x.add_node(class_id);

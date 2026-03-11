@@ -7,7 +7,7 @@
 
 using namespace std;
 
-UndirectedGraph generate_connected_random_graph_degree_max_4(
+Graph generate_connected_random_graph_degree_max_4(
     const size_t number_of_nodes, const size_t number_of_edges
 ) {
     assert(
@@ -20,14 +20,14 @@ UndirectedGraph generate_connected_random_graph_degree_max_4(
         "Error in generate_connected_random_graph_degree_max_4: "
         "Number of edges is too small.\n"
     );
-    UndirectedGraph graph;
+    Graph graph;
     for (size_t i = 0; i < number_of_nodes; ++i)
         graph.add_node(static_cast<int>(i));
     size_t added_edges = 0;
     while (added_edges < number_of_edges) {
         const int i = rand() % static_cast<int>(number_of_nodes);
         const int j = rand() % static_cast<int>(number_of_nodes);
-        if (i == j || graph.has_edge(i, j))
+        if (i == j || graph.are_neighbors(i, j))
             continue;
         if (graph.get_degree_of_node(i) >= 4)
             continue;
@@ -41,20 +41,19 @@ UndirectedGraph generate_connected_random_graph_degree_max_4(
     return graph;
 }
 
-UndirectedGraph
-generate_connected_random_graph(const size_t number_of_nodes, const size_t number_of_edges) {
+Graph generate_connected_random_graph(const size_t number_of_nodes, const size_t number_of_edges) {
     assert(
         number_of_edges + 1 >= number_of_nodes && "Error in generate_connected_random_graph: "
                                                   "Number of edges is too small.\n"
     );
-    UndirectedGraph graph;
+    Graph graph;
     for (int i = 0; i < static_cast<int>(number_of_nodes); ++i)
         graph.add_node(i);
     size_t added_edges = 0;
     while (added_edges < number_of_edges) {
         int i = rand() % static_cast<int>(number_of_nodes);
         int j = rand() % static_cast<int>(number_of_nodes);
-        if (i == j || graph.has_edge(i, j))
+        if (i == j || graph.are_neighbors(i, j))
             continue;
         graph.add_edge(i, j);
         ++added_edges;
@@ -65,11 +64,11 @@ generate_connected_random_graph(const size_t number_of_nodes, const size_t numbe
 }
 
 // n*m grid, n, m > 1
-UndirectedGraph generate_grid_graph(const size_t n, const size_t m) {
+Graph generate_grid_graph(const size_t n, const size_t m) {
     const int num_nodes = 2 * static_cast<int>(n) + 2 * static_cast<int>(m) - 4;
     const int n_int = static_cast<int>(n);
     int m_int = static_cast<int>(m);
-    UndirectedGraph graph;
+    Graph graph;
     for (int i = 0; i < num_nodes; ++i)
         graph.add_node(i);
     for (int i = 0; i < num_nodes - 1; ++i)
@@ -84,9 +83,9 @@ UndirectedGraph generate_grid_graph(const size_t n, const size_t m) {
 }
 
 // num_nodes > 1
-UndirectedGraph generate_triangle_graph(size_t num_nodes) {
+Graph generate_triangle_graph(size_t num_nodes) {
     num_nodes = 3 * num_nodes;
-    UndirectedGraph graph;
+    Graph graph;
     for (int i = 0; i < static_cast<int>(num_nodes); ++i)
         graph.add_node(i);
     for (int i = 0; i < static_cast<int>(num_nodes) - 3; ++i) {

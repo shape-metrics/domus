@@ -6,54 +6,56 @@
 
 using namespace std;
 
-bool DirectedGraph::has_node(int node_id) const { return m_nodes_ids.has_node(node_id); }
+int Graph::get_one_node_id() const { return m_nodes_ids.get_one_node_id(); }
 
-void DirectedGraph::for_each_node(function<void(int)> f) const { m_nodes_ids.for_each(f); }
+bool Graph::has_node(int node_id) const { return m_nodes_ids.has_node(node_id); }
 
-void DirectedGraph::for_each_out_neighbors(int node_id, function<void(int)> f) const {
+void Graph::for_each_node(function<void(int)> f) const { m_nodes_ids.for_each(f); }
+
+void Graph::for_each_out_neighbors(int node_id, function<void(int)> f) const {
     assert(has_node(node_id) && "Node does not exist");
     m_out_adjacency_list.get_neighbors_of_node(node_id).for_each(f);
 }
 
-void DirectedGraph::for_each_in_neighbors(int node_id, function<void(int)> f) const {
+void Graph::for_each_in_neighbors(int node_id, function<void(int)> f) const {
     assert(has_node(node_id) && "Node does not exist");
     m_in_adjacency_list.get_neighbors_of_node(node_id).for_each(f);
 }
 
-void DirectedGraph::for_each_neighbor(int node_id, function<void(int)> f) const {
+void Graph::for_each_neighbor(int node_id, function<void(int)> f) const {
     assert(has_node(node_id) && "Node does not exist");
     for_each_in_neighbors(node_id, f);
     for_each_out_neighbors(node_id, f);
 }
 
-void DirectedGraph::add_node(int id) {
+void Graph::add_node(int id) {
     assert(!has_node(id) && "Node already exists");
     m_nodes_ids.add_node(id);
 }
 
-int DirectedGraph::add_node() {
+int Graph::add_node() {
     while (has_node(m_next_node_id))
         m_next_node_id++;
     add_node(m_next_node_id);
     return m_next_node_id++;
 }
 
-size_t DirectedGraph::get_out_degree_of_node(int node_id) const {
+size_t Graph::get_out_degree_of_node(int node_id) const {
     assert(has_node(node_id) && "Node does not exist");
     return m_out_adjacency_list.get_neighbors_of_node(node_id).size();
 }
 
-size_t DirectedGraph::get_in_degree_of_node(int node_id) const {
+size_t Graph::get_in_degree_of_node(int node_id) const {
     assert(has_node(node_id) && "Node does not exist");
     return m_in_adjacency_list.get_neighbors_of_node(node_id).size();
 }
 
-size_t DirectedGraph::get_degree_of_node(int node_id) const {
+size_t Graph::get_degree_of_node(int node_id) const {
     assert(has_node(node_id) && "Node does not exist");
     return get_out_degree_of_node(node_id) + get_in_degree_of_node(node_id);
 }
 
-void DirectedGraph::add_edge(int from_id, int to_id) {
+void Graph::add_edge(int from_id, int to_id) {
     assert(has_node(from_id) && has_node(to_id) && "Node does not exist");
     assert(!has_edge(from_id, to_id) && "Edge already exists");
     m_out_adjacency_list.add_edge(from_id, to_id);
@@ -61,19 +63,19 @@ void DirectedGraph::add_edge(int from_id, int to_id) {
     m_total_edges++;
 }
 
-bool DirectedGraph::has_edge(int from_id, int to_id) const {
+bool Graph::has_edge(int from_id, int to_id) const {
     assert(has_node(from_id) && has_node(to_id) && "Node does not exist");
     return m_out_adjacency_list.has_edge(from_id, to_id);
 }
 
-bool DirectedGraph::are_neighbors(int node_1_id, int node_2_id) const {
+bool Graph::are_neighbors(int node_1_id, int node_2_id) const {
     return has_edge(node_1_id, node_2_id) || has_edge(node_2_id, node_1_id);
 }
 
-size_t DirectedGraph::size() const { return m_nodes_ids.size(); }
-size_t DirectedGraph::get_number_of_edges() const { return m_total_edges; }
+size_t Graph::size() const { return m_nodes_ids.size(); }
+size_t Graph::get_number_of_edges() const { return m_total_edges; }
 
-void DirectedGraph::remove_node(int node_id) {
+void Graph::remove_node(int node_id) {
     assert(has_node(node_id) && "Node does not exist");
     m_nodes_ids.erase(node_id);
     m_total_edges -= get_out_degree_of_node(node_id);
@@ -86,14 +88,14 @@ void DirectedGraph::remove_node(int node_id) {
     });
 }
 
-void DirectedGraph::remove_edge(int from_id, int to_id) {
+void Graph::remove_edge(int from_id, int to_id) {
     assert(has_node(from_id) && has_node(to_id) && "Node does not exist");
     assert(has_edge(from_id, to_id) && "Edge does not exist");
     m_out_adjacency_list.erase_edge(from_id, to_id);
     m_in_adjacency_list.erase_edge(to_id, from_id);
     m_total_edges--;
 }
-string DirectedGraph::to_string() const {
+string Graph::to_string() const {
     string result = "Graph:\n";
     // for_each_node([&result, this](int node_id) {
     //     result += std::to_string(node_id) + ": ";
@@ -105,79 +107,4 @@ string DirectedGraph::to_string() const {
     return result;
 }
 
-void DirectedGraph::print() const { std::println("{}", to_string()); }
-
-int UndirectedGraph::get_one_node_id() const { return m_nodes_ids.get_one_node_id(); }
-
-bool UndirectedGraph::has_node(int node_id) const { return m_nodes_ids.has_node(node_id); }
-
-void UndirectedGraph::for_each_node(function<void(int)> f) const { m_nodes_ids.for_each(f); }
-
-void UndirectedGraph::for_each_neighbor(int node_id, function<void(int)> f) const {
-    assert(has_node(node_id) && "Node does not exist");
-    m_adjacency_list.get_neighbors_of_node(node_id).for_each(f);
-}
-
-void UndirectedGraph::add_node(int id) {
-    assert(!has_node(id) && "Node already exists");
-    m_nodes_ids.add_node(id);
-}
-
-int UndirectedGraph::add_node() {
-    while (has_node(m_next_node_id))
-        m_next_node_id++;
-    add_node(m_next_node_id);
-    return m_next_node_id++;
-}
-
-size_t UndirectedGraph::get_degree_of_node(int node_id) const {
-    return m_adjacency_list.get_neighbors_of_node(node_id).size();
-}
-
-void UndirectedGraph::add_edge(int node_1_id, int node_2_id) {
-    assert(has_node(node_1_id) && has_node(node_2_id) && "Node does not exist");
-    assert(!has_edge(node_1_id, node_2_id) && "Edge already exists");
-    m_adjacency_list.add_edge(node_1_id, node_2_id);
-    m_adjacency_list.add_edge(node_2_id, node_1_id);
-    m_total_edges++;
-}
-
-bool UndirectedGraph::has_edge(int node_1_id, int node_2_id) const {
-    return m_adjacency_list.has_edge(node_1_id, node_2_id);
-}
-
-size_t UndirectedGraph::size() const { return m_nodes_ids.size(); }
-
-size_t UndirectedGraph::get_number_of_edges() const { return m_total_edges; }
-
-void UndirectedGraph::remove_node(int node_id) {
-    assert(has_node(node_id) && "Node does not exist");
-    m_total_edges -= get_degree_of_node(node_id);
-    for_each_neighbor(node_id, [node_id, this](int neighbor_id) {
-        m_adjacency_list.erase_edge(neighbor_id, node_id);
-    });
-    m_adjacency_list.erase_node(node_id);
-    m_nodes_ids.erase(node_id);
-}
-
-void UndirectedGraph::remove_edge(int node_1_id, int node_2_id) {
-    assert(has_node(node_1_id) && has_node(node_2_id) && "Node does not exist");
-    assert(has_edge(node_1_id, node_2_id) && "Edge does not exist");
-    m_adjacency_list.erase_edge(node_1_id, node_2_id);
-    m_adjacency_list.erase_edge(node_2_id, node_1_id);
-    m_total_edges--;
-}
-
-string UndirectedGraph::to_string() const {
-    string result = "UndirectedGraph:\n";
-    for_each_node([&result, this](int node_id) {
-        result += std::to_string(node_id) + ": ";
-        for_each_neighbor(node_id, [&result](int neighbor_id) {
-            result += std::to_string(neighbor_id) + " ";
-        });
-        result += "\n";
-    });
-    return result;
-}
-
-void UndirectedGraph::print() const { std::println("{}", to_string()); }
+void Graph::print() const { std::println("{}", to_string()); }

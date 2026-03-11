@@ -9,32 +9,32 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
-bool is_graph_connected(const UndirectedGraph& graph);
+bool is_graph_connected(const Graph& graph);
 
-std::optional<Cycle> find_a_cycle_in_graph(const UndirectedGraph& graph);
+std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph);
 
-std::optional<Cycle> find_a_cycle_in_graph(const DirectedGraph& graph);
+std::optional<Cycle> find_a_directed_cycle_in_graph(const Graph& graph);
 
-std::vector<Cycle> compute_cycle_basis(const UndirectedGraph& graph);
+std::vector<Cycle> compute_cycle_basis(const Graph& graph);
 
-std::optional<std::vector<int>> make_topological_ordering(const DirectedGraph& graph);
+std::optional<std::vector<int>> make_topological_ordering(const Graph& graph);
 
-std::vector<UndirectedGraph> compute_connected_components(const UndirectedGraph& graph);
+std::vector<Graph> compute_connected_components(const Graph& graph);
 
-size_t compute_number_of_connected_components(const UndirectedGraph& graph);
+size_t compute_number_of_connected_components(const Graph& graph);
 
 class BiconnectedComponents {
     NodesContainer m_cutvertices;
-    std::vector<UndirectedGraph> m_components;
+    std::vector<Graph> m_components;
 
   public:
-    const std::vector<UndirectedGraph>& get_components() const;
+    const std::vector<Graph>& get_components() const;
     std::string to_string() const;
     void print() const;
-    BiconnectedComponents(NodesContainer&& cutvertices, std::vector<UndirectedGraph>&& components);
+    BiconnectedComponents(NodesContainer&& cutvertices, std::vector<Graph>&& components);
 };
 
-BiconnectedComponents compute_biconnected_components(const UndirectedGraph& graph);
+BiconnectedComponents compute_biconnected_components(const Graph& graph);
 
 class IBipartitionImpl;
 
@@ -54,4 +54,4 @@ class Bipartition {
     bool are_in_same_side(int node_id_1, int node_id_2) const;
 };
 
-std::optional<Bipartition> compute_bipartition(const UndirectedGraph& graph);
+std::optional<Bipartition> compute_bipartition(const Graph& graph);

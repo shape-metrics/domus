@@ -6,7 +6,7 @@
 
 #include "domus/orthogonal/drawing.hpp"
 
-class UndirectedGraph;
+class Graph;
 
 struct ShapeMetricsDrawing {
     OrthogonalDrawing drawing;
@@ -15,8 +15,7 @@ struct ShapeMetricsDrawing {
     size_t number_of_useless_bends;
 };
 
-std::expected<ShapeMetricsDrawing, std::string>
-make_orthogonal_drawing(const UndirectedGraph& graph);
+std::expected<ShapeMetricsDrawing, std::string> make_orthogonal_drawing(const Graph& graph);
 
 std::expected<void, std::string>
 save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, std::filesystem::path path);

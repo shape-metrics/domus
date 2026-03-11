@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "domus/core/color.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/drawing/linear_scale.hpp"
 #include "domus/drawing/polygon.hpp"
@@ -17,7 +18,7 @@ using namespace std::filesystem;
 
 expected<void, string> save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, path path) {
     json data;
-    const UndirectedGraph& graph = result.augmented_graph;
+    const Graph& graph = result.augmented_graph;
     vector<int> nodes;
     graph.for_each_node([&nodes](int node_id) { nodes.push_back(node_id); });
     data["nodes"] = nodes;
@@ -92,8 +93,10 @@ expected<OrthogonalDrawing, string> load_orthogonal_drawing_from_file(path path)
     for (const auto& edge_arr : data.at("edges"))
         result.augmented_graph.add_edge(edge_arr[0], edge_arr[1]);
     result.attributes.add_attribute(Attribute::NODES_COLOR);
-    for (auto& [id_str, color_str] : data.at("node_colors").items())
-        result.attributes.set_node_color(std::stoi(id_str), string_to_color(color_str));
+    for (auto& [id_str, color_str] : data.at("node_colors").items()) {
+        std::string color = std::string(color_str);
+        result.attributes.set_node_color(std::stoi(id_str), string_to_color(color));
+    }
     result.attributes.add_attribute(Attribute::NODES_POSITION);
     for (auto& [id_str, pos_arr] : data.at("node_positions").items())
         result.attributes.set_position(std::stoi(id_str), pos_arr[0], pos_arr[1]);
@@ -104,8 +107,7 @@ expected<OrthogonalDrawing, string> load_orthogonal_drawing_from_file(path path)
     return result;
 }
 
-expected<void, string>
-make_svg(const UndirectedGraph& graph, const GraphAttributes& attributes, path path) {
+expected<void, string> make_svg(const Graph& graph, const GraphAttributes& attributes, path path) {
     int max_x = -INT_MAX;
     int max_y = -INT_MAX;
     graph.for_each_node([&](int node_id) {
@@ -181,7 +183,7 @@ int min_coordinate(unordered_map<int, NodesContainer>& coordinate_to_nodes) {
 }
 
 pair<Int_ToInt_HashMap, Int_ToInt_HashMap>
-compute_node_to_index_position(const UndirectedGraph& graph, const GraphAttributes& attributes) {
+compute_node_to_index_position(const Graph& graph, const GraphAttributes& attributes) {
     constexpr int THRESHOLD = 45;
     unordered_map<int, NodesContainer> coordinate_y_to_nodes;
     graph.for_each_node([&](int node_id) {

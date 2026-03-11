@@ -14,9 +14,9 @@ Segment::Segment() {
     this->attachments = {};
 }
 
-UndirectedGraph& Segment::get_segment() { return segment; }
+Graph& Segment::get_segment() { return segment; }
 
-const UndirectedGraph& Segment::get_segment() const { return segment; }
+const Graph& Segment::get_segment() const { return segment; }
 
 const NodesContainer& Segment::get_attachments() const { return attachments; }
 
@@ -92,7 +92,7 @@ deque<int> compute_path_between_attachments(
 }
 
 void dfs_find_segments(
-    const UndirectedGraph& graph,
+    const Graph& graph,
     const int node_id,
     NodesContainer& is_node_visited,
     vector<int>& nodes_in_segment,
@@ -146,7 +146,7 @@ Segment build_segment(const vector<int>& nodes, vector<pair<int, int>>& edges, c
     return segment;
 }
 
-void find_segments(const UndirectedGraph& graph, const Cycle& cycle, vector<Segment>& segments) {
+void find_segments(const Graph& graph, const Cycle& cycle, vector<Segment>& segments) {
     NodesContainer visited;
     graph.for_each_node([&](int node_id) {
         if (cycle.has_node(node_id))
@@ -173,7 +173,7 @@ Segment build_chord(const int attachment_1, const int attachment_2, const Cycle&
     return chord;
 }
 
-void find_chords(const UndirectedGraph& graph, const Cycle& cycle, vector<Segment>& segments) {
+void find_chords(const Graph& graph, const Cycle& cycle, vector<Segment>& segments) {
     cycle.for_each([&](int node_id) {
         graph.for_each_neighbor(node_id, [&](int neighbor_id) {
             if (node_id < neighbor_id)
@@ -187,7 +187,7 @@ void find_chords(const UndirectedGraph& graph, const Cycle& cycle, vector<Segmen
     });
 }
 
-vector<Segment> compute_segments(const UndirectedGraph& graph, const Cycle& cycle) {
+vector<Segment> compute_segments(const Graph& graph, const Cycle& cycle) {
     vector<Segment> segments;
     find_segments(graph, cycle, segments);
     find_chords(graph, cycle, segments);

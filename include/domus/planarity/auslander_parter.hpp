@@ -4,6 +4,6 @@
 
 #include "domus/planarity/embedding.hpp"
 
-class UndirectedGraph;
+class Graph;
 
-std::optional<Embedding> embed_graph(const UndirectedGraph& graph);
+std::optional<Embedding> embed_graph(const Graph& graph);

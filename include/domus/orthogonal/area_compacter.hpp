@@ -1,6 +1,6 @@
 #pragma once
 
 class GraphAttributes;
-class UndirectedGraph;
+class Graph;
 
-void compact_area(const UndirectedGraph& graph, GraphAttributes& attributes);
+void compact_area(const Graph& graph, GraphAttributes& attributes);

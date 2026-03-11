@@ -7,5 +7,4 @@
 class Cycle;
 struct Segment;
 
-UndirectedGraph
-compute_interlacement_graph(const std::vector<Segment>& segments, const Cycle& cycle);
+Graph compute_interlacement_graph(const std::vector<Segment>& segments, const Cycle& cycle);

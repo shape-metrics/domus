@@ -25,9 +25,8 @@
 using namespace std;
 using namespace std::filesystem;
 
-vector<int> path_in_class(
-    const UndirectedGraph& graph, int from, int to, const Shape& shape, bool go_horizontal
-) {
+vector<int>
+path_in_class(const Graph& graph, int from, int to, const Shape& shape, bool go_horizontal) {
     vector<int> path;
     NodesContainer visited;
     function<void(int)> dfs = [&](const int current) {
@@ -58,7 +57,7 @@ vector<int> path_in_class(
 }
 
 Cycle build_cycle_in_graph_from_cycle_in_ordering(
-    const UndirectedGraph& graph,
+    const Graph& graph,
     const Shape& shape,
     const Cycle& cycle_in_ordering,
     const map<pair<int, int>, pair<int, int>>& ordering_edge_to_graph_edge,
@@ -84,7 +83,7 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
 }
 
 // useless bends are red nodes with two horizontal or vertical edges
-void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attributes, Shape& shape) {
+void remove_useless_bends(Graph& graph, const GraphAttributes& attributes, Shape& shape) {
     vector<int> nodes_to_remove;
     graph.for_each_node([&](int node_id) {
         if (attributes.get_node_color(node_id) == Color::BLACK)
@@ -118,20 +117,19 @@ void remove_useless_bends(UndirectedGraph& graph, const GraphAttributes& attribu
     }
 }
 
-ShapeMetricsDrawing
-make_orthogonal_drawing_incremental(const UndirectedGraph& graph, vector<Cycle>& cycles);
+ShapeMetricsDrawing make_orthogonal_drawing_incremental(const Graph& graph, vector<Cycle>& cycles);
 
-expected<ShapeMetricsDrawing, string> make_orthogonal_drawing(const UndirectedGraph& graph) {
+expected<ShapeMetricsDrawing, string> make_orthogonal_drawing(const Graph& graph) {
     auto cycles = compute_cycle_basis(graph);
     return make_orthogonal_drawing_incremental(graph, cycles);
 }
 
-optional<Cycle> check_if_metrics_exist(Shape& shape, UndirectedGraph& graph) {
+optional<Cycle> check_if_metrics_exist(Shape& shape, Graph& graph) {
     auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
     auto [ordering_x, ordering_y, ordering_x_edge_to_graph_edge, ordering_y_edge_to_graph_edge] =
         equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
-    optional<Cycle> cycle_x = find_a_cycle_in_graph(ordering_x);
-    optional<Cycle> cycle_y = find_a_cycle_in_graph(ordering_y);
+    optional<Cycle> cycle_x = find_a_directed_cycle_in_graph(ordering_x);
+    optional<Cycle> cycle_y = find_a_directed_cycle_in_graph(ordering_y);
     if (cycle_x.has_value()) {
         return build_cycle_in_graph_from_cycle_in_ordering(
             graph,
@@ -153,9 +151,9 @@ optional<Cycle> check_if_metrics_exist(Shape& shape, UndirectedGraph& graph) {
     return std::nullopt;
 }
 
-void build_nodes_positions(UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape);
+void build_nodes_positions(Graph& graph, GraphAttributes& attributes, Shape& shape);
 
-bool has_graph_degree_more_than_4(const UndirectedGraph& graph) {
+bool has_graph_degree_more_than_4(const Graph& graph) {
     bool has_degree_more_than_4 = false;
     graph.for_each_node([&](int node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
@@ -164,26 +162,21 @@ bool has_graph_degree_more_than_4(const UndirectedGraph& graph) {
     return has_degree_more_than_4;
 }
 
-void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape);
+void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shape);
 
-void make_shifts_overlapped_edges(
-    UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape
-);
+void make_shifts_overlapped_edges(Graph& graph, GraphAttributes& attributes, Shape& shape);
 
-void fix_negative_positions(const UndirectedGraph& graph, GraphAttributes& attributes);
+void fix_negative_positions(const Graph& graph, GraphAttributes& attributes);
 
-void fix_degree_more_than_4(
-    UndirectedGraph& augmented_graph, GraphAttributes& attributes, Shape& shape
-) {
+void fix_degree_more_than_4(Graph& augmented_graph, GraphAttributes& attributes, Shape& shape) {
     add_green_blue_nodes(augmented_graph, attributes, shape);
     build_nodes_positions(augmented_graph, attributes, shape);
     make_shifts_overlapped_edges(augmented_graph, attributes, shape);
     fix_negative_positions(augmented_graph, attributes);
 }
 
-ShapeMetricsDrawing
-make_orthogonal_drawing_incremental(const UndirectedGraph& graph, vector<Cycle>& cycles) {
-    UndirectedGraph augmented_graph;
+ShapeMetricsDrawing make_orthogonal_drawing_incremental(const Graph& graph, vector<Cycle>& cycles) {
+    Graph augmented_graph;
     GraphAttributes attributes;
     attributes.add_attribute(Attribute::NODES_COLOR);
     graph.for_each_node([&](int node_id) {
@@ -226,9 +219,9 @@ make_orthogonal_drawing_incremental(const UndirectedGraph& graph, vector<Cycle>&
     };
 }
 
-void find_inconsistencies(UndirectedGraph& graph, Shape& shape, GraphAttributes& attributes);
+void find_inconsistencies(Graph& graph, Shape& shape, GraphAttributes& attributes);
 
-void build_nodes_positions(UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape) {
+void build_nodes_positions(Graph& graph, GraphAttributes& attributes, Shape& shape) {
     find_inconsistencies(graph, shape, attributes);
     auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
     auto [ordering_x, ordering_y, ignored_1, ignored_2] =
@@ -270,9 +263,7 @@ void build_nodes_positions(UndirectedGraph& graph, GraphAttributes& attributes, 
     });
 }
 
-auto find_edges_to_fix(
-    const UndirectedGraph& graph, const Shape& shape, const GraphAttributes& attributes
-) {
+auto find_edges_to_fix(const Graph& graph, const Shape& shape, const GraphAttributes& attributes) {
     unordered_map<int, int> node_to_leftest_up;
     unordered_map<int, int> node_to_leftest_down;
     unordered_map<int, int> node_to_downest_left;
@@ -340,7 +331,7 @@ auto find_edges_to_fix(
     );
 }
 
-int get_other_neighbor_id(const UndirectedGraph& graph, const int node_id, const int neighbor_id) {
+int get_other_neighbor_id(const Graph& graph, const int node_id, const int neighbor_id) {
     optional<int> other;
     graph.for_each_neighbor(node_id, [&](int other_id) {
         if (other.has_value())
@@ -353,7 +344,7 @@ int get_other_neighbor_id(const UndirectedGraph& graph, const int node_id, const
 }
 
 void fix_edge(
-    UndirectedGraph& graph,
+    Graph& graph,
     int node_id,
     int other_node_id,
     Shape& shape,
@@ -376,9 +367,7 @@ void fix_edge(
 // at the moment, a node with degree > 4 doesn't have all its "ports" used,
 // this method takes some of its neighbors and places them in the unused
 // "ports"
-void fix_useless_green_blue_nodes(
-    UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape
-) {
+void fix_useless_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shape) {
     auto [node_to_leftest_up, node_to_leftest_down, node_to_downest_left, node_to_downest_right] =
         find_edges_to_fix(graph, shape, attributes);
     for (auto [node, leftest_up] : node_to_leftest_up)
@@ -391,7 +380,7 @@ void fix_useless_green_blue_nodes(
         fix_edge(graph, node, downest_right, shape, attributes, Direction::RIGHT);
 }
 
-void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape) {
+void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shape) {
     vector<int> nodes;
     graph.for_each_node([&](int node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
@@ -426,8 +415,8 @@ void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, S
     }
     auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
     auto ordering = equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
-    DirectedGraph& ordering_x = std::get<0>(ordering);
-    DirectedGraph& ordering_y = std::get<1>(ordering);
+    Graph& ordering_x = std::get<0>(ordering);
+    Graph& ordering_y = std::get<1>(ordering);
     vector<int> classes_x_ordering = *make_topological_ordering(ordering_x);
     vector<int> classes_y_ordering = *make_topological_ordering(ordering_y);
     int current_position_x = 0;
@@ -459,7 +448,7 @@ void add_green_blue_nodes(UndirectedGraph& graph, GraphAttributes& attributes, S
 void fix_inconsistency(
     const Cycle& cycle,
     GraphAttributes& attributes,
-    const UndirectedGraph& graph,
+    const Graph& graph,
     Shape& shape,
     const Color color_to_find
 ) {
@@ -493,12 +482,12 @@ void fix_inconsistency(
     attributes.change_node_color(colored_node_id, dark_color);
 }
 
-void find_inconsistencies(UndirectedGraph& graph, Shape& shape, GraphAttributes& attributes) {
+void find_inconsistencies(Graph& graph, Shape& shape, GraphAttributes& attributes) {
     auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
     auto [ordering_x, ordering_y, ordering_x_edge_to_graph_edge, ordering_y_edge_to_graph_edge] =
         equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
-    optional<Cycle> cycle_x = find_a_cycle_in_graph(ordering_x);
-    optional<Cycle> cycle_y = find_a_cycle_in_graph(ordering_y);
+    optional<Cycle> cycle_x = find_a_directed_cycle_in_graph(ordering_x);
+    optional<Cycle> cycle_y = find_a_directed_cycle_in_graph(ordering_y);
     if (cycle_x.has_value() || cycle_y.has_value()) {
         if (cycle_x.has_value()) {
             Cycle cycle = build_cycle_in_graph_from_cycle_in_ordering(
@@ -526,7 +515,7 @@ void find_inconsistencies(UndirectedGraph& graph, Shape& shape, GraphAttributes&
 template <typename Func>
 void shifting_order(
     const int node_id,
-    UndirectedGraph& graph,
+    Graph& graph,
     Shape& shape,
     vector<int>& nodes_at_direction,
     GraphAttributes& attributes,
@@ -575,7 +564,7 @@ enum class Axis { X, Y };
 
 void make_shifts(
     const int node_id,
-    UndirectedGraph& graph,
+    Graph& graph,
     Shape& shape,
     GraphAttributes& attributes,
     vector<int>& right_nodes,
@@ -662,7 +651,7 @@ void make_shifts(
     }
 }
 
-auto neighbors_at_each_direction(const UndirectedGraph& graph, int node_id, const Shape& shape) {
+auto neighbors_at_each_direction(const Graph& graph, int node_id, const Shape& shape) {
     unordered_map<Direction, vector<int>> nodes_at_direction;
     graph.for_each_neighbor(node_id, [&](int neighbor_id) {
         const Direction dir = *shape.get_direction(node_id, neighbor_id);
@@ -671,9 +660,7 @@ auto neighbors_at_each_direction(const UndirectedGraph& graph, int node_id, cons
     return nodes_at_direction;
 }
 
-void make_shifts_overlapped_edges(
-    UndirectedGraph& graph, GraphAttributes& attributes, Shape& shape
-) {
+void make_shifts_overlapped_edges(Graph& graph, GraphAttributes& attributes, Shape& shape) {
     vector<int> nodes;
     graph.for_each_node([&](int node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
@@ -725,7 +712,7 @@ void make_shifts_overlapped_edges(
     }
 }
 
-void fix_negative_positions(const UndirectedGraph& graph, GraphAttributes& attributes) {
+void fix_negative_positions(const Graph& graph, GraphAttributes& attributes) {
     if (graph.size() == 0)
         return;
     int min_x = std::numeric_limits<int>::max();

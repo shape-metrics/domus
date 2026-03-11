@@ -4,8 +4,10 @@
 #include <unordered_map>
 #include <utility>
 
-#include "domus/core/graph/graph.hpp"
-#include "domus/orthogonal/shape/shape.hpp"
+#include "domus/core/containers.hpp"
+#include "domus/orthogonal/shape/direction.hpp"
+
+class Graph;
 
 class VariablesHandler {
     int m_next_var = 1; // 0 is reserved for the empty clause
@@ -20,7 +22,7 @@ class VariablesHandler {
     void add_edge_variables(int i, int j);
 
   public:
-    explicit VariablesHandler(const UndirectedGraph& graph);
+    explicit VariablesHandler(const Graph& graph);
     int get_up_variable(int i, int j) const;
     int get_down_variable(int i, int j) const;
     int get_left_variable(int i, int j) const;

@@ -18,9 +18,7 @@
 
 using namespace std;
 
-Shape result_to_shape(
-    const UndirectedGraph& graph, const vector<int>& numbers, VariablesHandler& handler
-) {
+Shape result_to_shape(const Graph& graph, const vector<int>& numbers, VariablesHandler& handler) {
     for (const int var : numbers) {
         if (var > 0)
             handler.set_variable_value(var, true);
@@ -78,14 +76,11 @@ pair<int, int> find_edges_to_split(
 }
 
 optional<Shape> build_shape_or_add_corner(
-    UndirectedGraph& graph,
-    GraphAttributes& attributes,
-    vector<Cycle>& cycles,
-    std::mt19937& random_engine
+    Graph& graph, GraphAttributes& attributes, vector<Cycle>& cycles, std::mt19937& random_engine
 );
 
 Shape build_shape(
-    UndirectedGraph& graph, GraphAttributes& attributes, vector<Cycle>& cycles, const bool randomize
+    Graph& graph, GraphAttributes& attributes, vector<Cycle>& cycles, const bool randomize
 ) {
     const size_t seed = randomize ? std::random_device{}() : 42;
     std::mt19937 random_engine(seed);
@@ -98,11 +93,11 @@ Shape build_shape(
 void add_corner_inside_edge(
     const int from_id,
     const int to_id,
-    UndirectedGraph& graph,
+    Graph& graph,
     GraphAttributes& attributes,
     vector<Cycle>& cycles
 ) {
-    assert(graph.has_edge(from_id, to_id));
+    assert(graph.are_neighbors(from_id, to_id));
     const int new_node_id = graph.add_node();
     attributes.set_node_color(new_node_id, Color::RED);
     graph.remove_edge(from_id, to_id);
@@ -121,10 +116,7 @@ void add_corner_inside_edge(
 }
 
 optional<Shape> build_shape_or_add_corner(
-    UndirectedGraph& graph,
-    GraphAttributes& attributes,
-    vector<Cycle>& cycles,
-    std::mt19937& random_engine
+    Graph& graph, GraphAttributes& attributes, vector<Cycle>& cycles, std::mt19937& random_engine
 ) {
     VariablesHandler handler(graph);
     Cnf cnf{};

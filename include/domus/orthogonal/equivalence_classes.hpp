@@ -27,16 +27,16 @@ class EquivalenceClasses {
 };
 
 std::pair<const EquivalenceClasses, const EquivalenceClasses>
-build_equivalence_classes(const Shape& shape, const UndirectedGraph& graph);
+build_equivalence_classes(const Shape& shape, const Graph& graph);
 
 std::tuple<
-    DirectedGraph,
-    DirectedGraph,
+    Graph,
+    Graph,
     std::map<std::pair<int, int>, std::pair<int, int>>,
     std::map<std::pair<int, int>, std::pair<int, int>>>
 equivalence_classes_to_ordering(
     const EquivalenceClasses& equivalence_classes_x,
     const EquivalenceClasses& equivalence_classes_y,
-    const UndirectedGraph& graph,
+    const Graph& graph,
     const Shape& shape
 );

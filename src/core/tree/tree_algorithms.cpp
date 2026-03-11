@@ -8,7 +8,7 @@
 
 using namespace std;
 
-optional<Tree> build_spanning_tree(const UndirectedGraph& graph) {
+optional<Tree> build_spanning_tree(const Graph& graph) {
     NodesContainer visited;
     queue<int> queue;
     queue.push(graph.get_one_node_id());

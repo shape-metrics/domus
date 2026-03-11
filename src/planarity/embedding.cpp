@@ -8,7 +8,7 @@
 
 using namespace std;
 
-Embedding::Embedding(const UndirectedGraph& graph) {
+Embedding::Embedding(const Graph& graph) {
     graph.for_each_node([&](int node_id) { adjacency_list[node_id]; });
 }
 

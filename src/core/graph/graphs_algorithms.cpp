@@ -16,7 +16,7 @@
 
 using namespace std;
 
-bool is_graph_connected(const UndirectedGraph& graph) {
+bool is_graph_connected(const Graph& graph) {
     if (graph.size() == 0)
         return true;
     NodesContainer visited;
@@ -36,7 +36,7 @@ bool is_graph_connected(const UndirectedGraph& graph) {
 
 bool dfs_find_cycle(
     int node_id,
-    const DirectedGraph& graph,
+    const Graph& graph,
     Int_ToInt_HashMap& state,
     Int_ToInt_HashMap& parent,
     optional<int>& cycle_start,
@@ -60,7 +60,7 @@ bool dfs_find_cycle(
     return found_cycle;
 }
 
-optional<Cycle> find_a_cycle_in_graph(const DirectedGraph& graph) {
+optional<Cycle> find_a_directed_cycle_in_graph(const Graph& graph) {
     Int_ToInt_HashMap state;
     Int_ToInt_HashMap parent;
     optional<int> cycle_start = std::nullopt;
@@ -82,7 +82,7 @@ optional<Cycle> find_a_cycle_in_graph(const DirectedGraph& graph) {
     return cycle;
 }
 
-vector<Cycle> compute_cycle_basis(const UndirectedGraph& graph) {
+vector<Cycle> compute_cycle_basis(const Graph& graph) {
     assert(
         is_graph_connected(graph) && "Error in compute_cycle_basis: input graph is not connected"
     );
@@ -112,7 +112,7 @@ vector<Cycle> compute_cycle_basis(const UndirectedGraph& graph) {
     return cycles;
 }
 
-optional<vector<int>> make_topological_ordering(const DirectedGraph& graph) {
+optional<vector<int>> make_topological_ordering(const Graph& graph) {
     Int_ToInt_HashMap in_degree;
     graph.for_each_node([&](int node_id) {
         in_degree[node_id] = static_cast<int>(graph.get_in_degree_of_node(node_id));
@@ -139,22 +139,21 @@ optional<vector<int>> make_topological_ordering(const DirectedGraph& graph) {
     return topological_order;
 }
 
-vector<UndirectedGraph> compute_connected_components(const UndirectedGraph& graph) {
+vector<Graph> compute_connected_components(const Graph& graph) {
     NodesContainer visited;
-    vector<UndirectedGraph> components;
-    function<void(int, UndirectedGraph& component)> explore_component =
-        [&](int node_id, UndirectedGraph& component) {
-            visited.add_node(node_id);
-            graph.for_each_neighbor(node_id, [&](int neighbor_id) {
-                if (!component.has_node(neighbor_id))
-                    component.add_node(neighbor_id);
-                if (!component.has_edge(node_id, neighbor_id))
-                    component.add_edge(node_id, neighbor_id);
-                if (!visited.has_node(neighbor_id)) {
-                    explore_component(neighbor_id, component);
-                }
-            });
-        };
+    vector<Graph> components;
+    function<void(int, Graph& component)> explore_component = [&](int node_id, Graph& component) {
+        visited.add_node(node_id);
+        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
+            if (!component.has_node(neighbor_id))
+                component.add_node(neighbor_id);
+            if (!component.are_neighbors(node_id, neighbor_id))
+                component.add_edge(node_id, neighbor_id);
+            if (!visited.has_node(neighbor_id)) {
+                explore_component(neighbor_id, component);
+            }
+        });
+    };
     graph.for_each_node([&](int node_id) {
         if (!visited.has_node(node_id)) {
             components.emplace_back().add_node(node_id);
@@ -164,7 +163,7 @@ vector<UndirectedGraph> compute_connected_components(const UndirectedGraph& grap
     return components;
 }
 
-size_t compute_number_of_connected_components(const UndirectedGraph& graph) {
+size_t compute_number_of_connected_components(const Graph& graph) {
     NodesContainer visited;
     size_t components = 0;
     const function<void(int)> explore_component = [&](int start_node_id) {
@@ -192,7 +191,7 @@ size_t compute_number_of_connected_components(const UndirectedGraph& graph) {
 }
 
 void dfs_bic_com(
-    const UndirectedGraph& graph,
+    const Graph& graph,
     int node_id,
     Int_ToInt_HashMap& old_node_id_to_new_id,
     Int_ToInt_HashMap& prev_of_node,
@@ -200,16 +199,16 @@ void dfs_bic_com(
     Int_ToInt_HashMap& low_point,
     list<int>& stack_of_nodes,
     list<pair<int, int>>& stack_of_edges,
-    vector<UndirectedGraph>& components,
+    vector<Graph>& components,
     NodesContainer& cut_vertices
 );
 
-BiconnectedComponents compute_biconnected_components(const UndirectedGraph& graph) {
+BiconnectedComponents compute_biconnected_components(const Graph& graph) {
     Int_ToInt_HashMap old_node_id_to_new_id;
     Int_ToInt_HashMap prev_of_node;
     Int_ToInt_HashMap low_point;
     NodesContainer cut_vertices;
-    vector<UndirectedGraph> components;
+    vector<Graph> components;
     int next_id_to_assign = 0;
     list<int> stack_of_nodes{};
     list<pair<int, int>> stack_of_edges{};
@@ -236,9 +235,7 @@ BiconnectedComponents compute_biconnected_components(const UndirectedGraph& grap
     return result;
 }
 
-void build_component(
-    UndirectedGraph& component, const list<int>& nodes, const list<pair<int, int>>& edges
-) {
+void build_component(Graph& component, const list<int>& nodes, const list<pair<int, int>>& edges) {
     for (const int node : nodes)
         component.add_node(node);
     for (const auto& [from_id, to_id] : edges)
@@ -246,7 +243,7 @@ void build_component(
 }
 
 void dfs_bic_com(
-    const UndirectedGraph& graph,
+    const Graph& graph,
     int node_id,
     Int_ToInt_HashMap& old_node_id_to_new_id,
     Int_ToInt_HashMap& prev_of_node,
@@ -254,7 +251,7 @@ void dfs_bic_com(
     Int_ToInt_HashMap& low_point,
     list<int>& stack_of_nodes,
     list<pair<int, int>>& stack_of_edges,
-    vector<UndirectedGraph>& components,
+    vector<Graph>& components,
     NodesContainer& cut_vertices
 ) {
     old_node_id_to_new_id[node_id] = next_id_to_assign;
@@ -326,7 +323,7 @@ string BiconnectedComponents::to_string() const {
 
 void BiconnectedComponents::print() const { println("{}", to_string()); }
 
-bool bfs_bipartition(const UndirectedGraph& graph, int node_id, Bipartition& bipartition) {
+bool bfs_bipartition(const Graph& graph, int node_id, Bipartition& bipartition) {
     bipartition.set_side(node_id, false);
     queue<int> queue;
     queue.push(node_id);
@@ -347,7 +344,7 @@ bool bfs_bipartition(const UndirectedGraph& graph, int node_id, Bipartition& bip
     return is_bipartite;
 }
 
-optional<Bipartition> compute_bipartition(const UndirectedGraph& graph) {
+optional<Bipartition> compute_bipartition(const Graph& graph) {
     Bipartition bipartition{};
     bool is_bipartite = true;
     graph.for_each_node([&](int node_id) {
@@ -360,10 +357,10 @@ optional<Bipartition> compute_bipartition(const UndirectedGraph& graph) {
     return bipartition;
 }
 
-optional<Cycle> find_a_cycle_in_graph(const UndirectedGraph& graph) {
+std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
     NodesContainer visited;
     Int_ToInt_HashMap parent;
-    optional<Cycle> found_cycle;
+    std::optional<Cycle> found_cycle;
     std::function<void(int, int)> dfs = [&](int node_id, int parent_id) {
         if (found_cycle)
             return;
@@ -397,12 +394,10 @@ optional<Cycle> find_a_cycle_in_graph(const UndirectedGraph& graph) {
     return found_cycle;
 }
 
-const vector<UndirectedGraph>& BiconnectedComponents::get_components() const {
-    return m_components;
-}
+const vector<Graph>& BiconnectedComponents::get_components() const { return m_components; }
 
 BiconnectedComponents::BiconnectedComponents(
-    NodesContainer&& cutvertices, vector<UndirectedGraph>&& components
+    NodesContainer&& cutvertices, vector<Graph>&& components
 )
     : m_cutvertices(std::move(cutvertices)), m_components(std::move(components)) {}
 

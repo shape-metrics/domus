@@ -67,6 +67,7 @@ set(COMMON_SRCS
     src/sat/sat.cpp
     src/sat/cnf.cpp
     src/orthogonal/shape/shape.cpp
+    src/orthogonal/shape/direction.cpp
     src/orthogonal/shape/shape_builder.cpp
     src/orthogonal/shape/variables_handler.cpp
     src/orthogonal/shape/clauses_functions.cpp
