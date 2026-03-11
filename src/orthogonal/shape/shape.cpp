@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-int Shape::direction_to_int(Direction direction) const {
+size_t Shape::direction_to_size_t(Direction direction) const {
     switch (direction) {
     case Direction::LEFT:
         return 0;
@@ -13,12 +13,12 @@ int Shape::direction_to_int(Direction direction) const {
     case Direction::DOWN:
         return 3;
     default:
-        assert(false && "Invalid direction");
-        return -1;
+        assert(false && "Shape::direction_to_size_t: invalid direction");
+        return 4;
     }
 }
 
-Direction Shape::int_to_direction(int direction) const {
+Direction Shape::size_t_to_direction(size_t direction) const {
     switch (direction) {
     case 0:
         return Direction::LEFT;
@@ -29,54 +29,54 @@ Direction Shape::int_to_direction(int direction) const {
     case 3:
         return Direction::DOWN;
     default:
-        assert(false && "Invalid direction");
+        assert(false && "Shape::size_t_to_direction: invalid direction");
         return Direction::INVALID;
     }
 }
 
-void Shape::set_direction(const int node_id_1, const int node_id_2, const Direction direction) {
+void Shape::set_direction(size_t node_id_1, size_t node_id_2, const Direction direction) {
     assert(
         !m_shape.has(node_id_1, node_id_2) &&
         "Error in Shape::set_direction: direction already set for this pair"
     );
-    m_shape.add(node_id_1, node_id_2, direction_to_int(direction));
+    m_shape.add(node_id_1, node_id_2, direction_to_size_t(direction));
 }
 
-std::optional<Direction> Shape::get_direction(const int node_id_1, const int node_id_2) const {
+std::optional<Direction> Shape::get_direction(size_t node_id_1, size_t node_id_2) const {
     if (!m_shape.has(node_id_1, node_id_2))
         return std::nullopt;
-    return int_to_direction(m_shape.get(node_id_1, node_id_2));
+    return size_t_to_direction(m_shape.get(node_id_1, node_id_2));
 }
 
-bool Shape::contains(const int node_id_1, const int node_id_2) const {
+bool Shape::contains(size_t node_id_1, size_t node_id_2) const {
     return m_shape.has(node_id_1, node_id_2);
 }
 
-bool Shape::is_up(const int node_id_1, const int node_id_2) const {
+bool Shape::is_up(size_t node_id_1, size_t node_id_2) const {
     return get_direction(node_id_1, node_id_2) == Direction::UP;
 }
 
-bool Shape::is_down(const int node_id_1, const int node_id_2) const {
+bool Shape::is_down(size_t node_id_1, size_t node_id_2) const {
     return get_direction(node_id_1, node_id_2) == Direction::DOWN;
 }
 
-bool Shape::is_right(const int node_id_1, const int node_id_2) const {
+bool Shape::is_right(size_t node_id_1, size_t node_id_2) const {
     return get_direction(node_id_1, node_id_2) == Direction::RIGHT;
 }
 
-bool Shape::is_left(const int i, const int j) const {
-    return get_direction(i, j) == Direction::LEFT;
+bool Shape::is_left(size_t node_1_id, size_t node_2_id) const {
+    return get_direction(node_1_id, node_2_id) == Direction::LEFT;
 }
 
-bool Shape::is_horizontal(const int node_id_1, const int node_id_2) const {
+bool Shape::is_horizontal(size_t node_id_1, size_t node_id_2) const {
     return is_right(node_id_1, node_id_2) || is_left(node_id_1, node_id_2);
 }
 
-bool Shape::is_vertical(const int node_id_1, const int node_id_2) const {
+bool Shape::is_vertical(size_t node_id_1, size_t node_id_2) const {
     return is_up(node_id_1, node_id_2) || is_down(node_id_1, node_id_2);
 }
 
-void Shape::remove_direction(const int node_id_1, const int node_id_2) {
+void Shape::remove_direction(size_t node_id_1, size_t node_id_2) {
     assert(
         contains(node_id_1, node_id_2) &&
         "Error in Shape::remove_direction: direction does not exist for this pair"

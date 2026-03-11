@@ -18,12 +18,12 @@ using namespace std;
 
 auto build_index_to_nodes_map(const Graph& graph, const GraphAttributes& attributes) {
     auto [node_to_index_x, node_to_index_y] = compute_node_to_index_position(graph, attributes);
-    unordered_map<int, NodesContainer> index_x_to_nodes;
-    node_to_index_x.for_each([&index_x_to_nodes](int node_id, int index) {
+    unordered_map<size_t, NodesContainer> index_x_to_nodes;
+    node_to_index_x.for_each([&index_x_to_nodes](size_t node_id, size_t index) {
         index_x_to_nodes[index].add_node(node_id);
     });
-    unordered_map<int, NodesContainer> index_y_to_nodes;
-    node_to_index_y.for_each([&index_y_to_nodes](int node_id, int index) {
+    unordered_map<size_t, NodesContainer> index_y_to_nodes;
+    node_to_index_y.for_each([&index_y_to_nodes](size_t node_id, size_t index) {
         index_y_to_nodes[index].add_node(node_id);
     });
     return make_tuple(
@@ -36,24 +36,24 @@ auto build_index_to_nodes_map(const Graph& graph, const GraphAttributes& attribu
 
 bool can_move_to_prev_index(PairIntHashSet& prev, PairIntHashSet& to_shift) {
     assert(to_shift.size() == 1);
-    int to_shift_min = 0;
-    int to_shift_max = 0;
-    to_shift.for_each([&](int min, int max) {
+    size_t to_shift_min = 0;
+    size_t to_shift_max = 0;
+    to_shift.for_each([&](size_t min, size_t max) {
         to_shift_min = min;
         to_shift_max = max;
     });
     bool can_move = true;
-    prev.for_each([&](int prev_min, int prev_max) {
+    prev.for_each([&](size_t prev_min, size_t prev_max) {
         if (!(prev_min > to_shift_max || to_shift_min > prev_max))
             can_move = false;
     });
     return can_move;
 }
 
-int compute_shift_amount(
-    int index, unordered_map<int, PairIntHashSet>& index_to_min_max_coordinate
+size_t compute_shift_amount(
+    size_t index, unordered_map<size_t, PairIntHashSet>& index_to_min_max_coordinate
 ) {
-    int shift = 0;
+    size_t shift = 0;
     PairIntHashSet& to_shift = index_to_min_max_coordinate[index];
     while (true) {
         if (index - shift == 0)
@@ -68,14 +68,14 @@ int compute_shift_amount(
 }
 
 auto build_index_x_to_min_max_index_y(
-    unordered_map<int, NodesContainer>& index_x_to_nodes, Int_ToInt_HashMap& node_to_index_y
+    unordered_map<size_t, NodesContainer>& index_x_to_nodes, Int_ToInt_HashMap& node_to_index_y
 ) {
-    unordered_map<int, PairIntHashSet> index_to_min_max_y;
+    unordered_map<size_t, PairIntHashSet> index_to_min_max_y;
     for (const auto& [index, nodes] : index_x_to_nodes) {
-        int min_y = INT_MAX;
-        int max_y = 0;
-        nodes.for_each([&](int node_id) {
-            int y = node_to_index_y.get(node_id);
+        size_t min_y = INT_MAX;
+        size_t max_y = 0;
+        nodes.for_each([&](size_t node_id) {
+            size_t y = node_to_index_y.get(node_id);
             min_y = std::min(min_y, y);
             max_y = std::max(max_y, y);
         });
@@ -85,14 +85,14 @@ auto build_index_x_to_min_max_index_y(
 }
 
 auto build_index_y_to_min_max_index_x(
-    unordered_map<int, NodesContainer>& index_to_nodes, Int_ToInt_HashMap& node_to_index_x
+    unordered_map<size_t, NodesContainer>& index_to_nodes, Int_ToInt_HashMap& node_to_index_x
 ) {
-    unordered_map<int, PairIntHashSet> index_to_min_max_x;
+    unordered_map<size_t, PairIntHashSet> index_to_min_max_x;
     for (const auto& [index, nodes] : index_to_nodes) {
-        int min_x = INT_MAX;
-        int max_x = 0;
-        nodes.for_each([&](int node_id) {
-            int x = node_to_index_x.get(node_id);
+        size_t min_x = INT_MAX;
+        size_t max_x = 0;
+        nodes.for_each([&](size_t node_id) {
+            size_t x = node_to_index_x.get(node_id);
             min_x = std::min(min_x, x);
             max_x = std::max(max_x, x);
         });
@@ -106,19 +106,18 @@ void compact_area(const Graph& graph, GraphAttributes& attributes) {
         build_index_to_nodes_map(graph, attributes);
     // compacting x
     auto index_to_min_max_y = build_index_x_to_min_max_index_y(index_x_to_nodes, nodes_to_index_y);
-    int index = 0;
+    size_t index = 0;
     while (index_to_min_max_y.contains(index + 1)) {
         ++index;
-        int shift_amount = compute_shift_amount(index, index_to_min_max_y);
-        if (shift_amount == 0) {
+        size_t shift_amount = compute_shift_amount(index, index_to_min_max_y);
+        if (shift_amount == 0)
             continue;
-        }
-        index_x_to_nodes[index].for_each([&](int node_id) {
+        index_x_to_nodes[index].for_each([&](size_t node_id) {
             int old_x = attributes.get_position_x(node_id);
-            attributes.change_position_x(node_id, old_x - 100 * shift_amount);
+            attributes.change_position_x(node_id, old_x - 100 * static_cast<int>(shift_amount));
         });
         bool added = false;
-        index_to_min_max_y[index].for_each([&](int min, int max) {
+        index_to_min_max_y[index].for_each([&](size_t min, size_t max) {
             if (added)
                 return;
             index_to_min_max_y[index - shift_amount].add(min, max);
@@ -131,15 +130,15 @@ void compact_area(const Graph& graph, GraphAttributes& attributes) {
     index = 0;
     while (index_to_min_max_x.contains(index + 1)) {
         ++index;
-        int shift_amount = compute_shift_amount(index, index_to_min_max_x);
+        size_t shift_amount = compute_shift_amount(index, index_to_min_max_x);
         if (shift_amount == 0)
             continue;
-        index_y_to_nodes[index].for_each([&](int node_id) {
+        index_y_to_nodes[index].for_each([&](size_t node_id) {
             int old_y = attributes.get_position_y(node_id);
-            attributes.change_position_y(node_id, old_y - 100 * shift_amount);
+            attributes.change_position_y(node_id, old_y - 100 * static_cast<int>(shift_amount));
         });
         bool added = false;
-        index_to_min_max_x[index].for_each([&](int min, int max) {
+        index_to_min_max_x[index].for_each([&](size_t min, size_t max) {
             if (added)
                 return;
             index_to_min_max_x[index - shift_amount].add(min, max);

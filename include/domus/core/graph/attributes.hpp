@@ -32,19 +32,19 @@ class GraphAttributes {
     bool has_attribute(Attribute attribute) const;
     void add_attribute(Attribute attribute);
     void remove_attribute(Attribute attribute);
-    void remove_nodes_attribute(int node_id);
+    void remove_nodes_attribute(size_t node_id);
     // node color
-    void set_node_color(int node_id, Color color);
-    Color get_node_color(int node_id) const;
-    void change_node_color(int node_id, Color color);
+    void set_node_color(size_t node_id, Color color);
+    Color get_node_color(size_t node_id) const;
+    void change_node_color(size_t node_id, Color color);
     // position
-    void set_position(int node_id, int x, int y);
-    void change_position(int node_id, int x, int y);
-    void change_position_x(int node_id, int x);
-    void change_position_y(int node_id, int y);
-    int get_position_x(int node_id) const;
-    int get_position_y(int node_id) const;
-    bool has_position(int node_id) const;
-    void remove_position(int node_id);
+    void set_position(size_t node_id, int x, int y);
+    void change_position(size_t node_id, int x, int y);
+    void change_position_x(size_t node_id, int x);
+    void change_position_y(size_t node_id, int y);
+    int get_position_x(size_t node_id) const;
+    int get_position_y(size_t node_id) const;
+    bool has_position(size_t node_id) const;
+    void remove_position(size_t node_id);
     ~GraphAttributes();
 };

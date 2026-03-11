@@ -17,57 +17,67 @@
 
 using namespace std;
 
-vector<int> compute_edge_lengths(const Graph& graph, const GraphAttributes& attributes) {
-    auto [node_to_coordinate_x, node_to_coordinate_y] =
+vector<size_t> compute_edge_lengths(const Graph& graph, const GraphAttributes& attributes) {
+    const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
-    vector<int> edge_lengths;
+    vector<size_t> edge_lengths;
     NodesContainer visited;
-    graph.for_each_node([&](int node_id) {
+    graph.for_each_node([&](size_t node_id) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
             return;
-        function<void(int, int, int)> dfs =
-            [&](const int current_id, const int black_id, const int current_length) {
+        function<void(size_t, size_t, size_t)> dfs =
+            [&](size_t current_id, size_t black_id, size_t current_length) {
                 visited.add_node(current_id);
-                graph.for_each_neighbor(current_id, [&](int neighbor_id) {
+                graph.for_each_neighbor(current_id, [&](size_t neighbor_id) {
                     if (visited.has_node(neighbor_id))
                         return;
-                    const int x1 = node_to_coordinate_x.get(current_id);
-                    const int y1 = node_to_coordinate_y.get(current_id);
-                    const int x2 = node_to_coordinate_x.get(current_id);
-                    const int y2 = node_to_coordinate_y.get(current_id);
-                    const int length = abs(x1 - x2) + abs(y1 - y2);
-                    const Color neighbor_color = attributes.get_node_color(neighbor_id);
+                    size_t x1 = node_to_coordinate_x.get(current_id);
+                    size_t y1 = node_to_coordinate_y.get(current_id);
+                    size_t x2 = node_to_coordinate_x.get(current_id);
+                    size_t y2 = node_to_coordinate_y.get(current_id);
+                    if (x1 < x2) {
+                        size_t temp = x1;
+                        x1 = x2;
+                        x2 = temp;
+                    }
+                    if (y1 < y2) {
+                        size_t temp = y1;
+                        y1 = y2;
+                        y2 = temp;
+                    }
+                    size_t length = (x1 - x2) + (y1 - y2);
+                    Color neighbor_color = attributes.get_node_color(neighbor_id);
                     if (neighbor_color != Color::BLACK)
                         dfs(neighbor_id, black_id, current_length + length);
                     else {
                         if (black_id < neighbor_id) {
-                            int total_length = current_length + length;
+                            size_t total_length = current_length + length;
                             edge_lengths.push_back(total_length);
                         }
                     }
                 });
                 visited.erase(current_id);
             };
-        dfs(node_id, node_id, 0);
+        dfs(node_id, node_id, 0u);
     });
     return edge_lengths;
 }
 
-int compute_total_edge_length(const OrthogonalDrawing& result) {
+size_t compute_total_edge_length(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
-    const vector<int> edge_lengths = compute_edge_lengths(graph, result.attributes);
-    int total_edge_length = 0;
-    for (const int length : edge_lengths)
+    const vector<size_t> edge_lengths = compute_edge_lengths(graph, result.attributes);
+    size_t total_edge_length = 0;
+    for (size_t length : edge_lengths)
         total_edge_length += length;
     return total_edge_length;
 }
 
-int compute_max_edge_length(const OrthogonalDrawing& result) {
+size_t compute_max_edge_length(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
-    const vector<int> edge_lengths = compute_edge_lengths(graph, attributes);
-    int max_edge_length = 0;
-    for (const int length : edge_lengths)
+    const vector<size_t> edge_lengths = compute_edge_lengths(graph, attributes);
+    size_t max_edge_length = 0;
+    for (size_t length : edge_lengths)
         if (length > max_edge_length)
             max_edge_length = length;
     return max_edge_length;
@@ -76,22 +86,22 @@ int compute_max_edge_length(const OrthogonalDrawing& result) {
 double compute_edge_length_std_dev(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
-    const vector<int> edge_lengths = compute_edge_lengths(graph, attributes);
+    const vector<size_t> edge_lengths = compute_edge_lengths(graph, attributes);
     return compute_stddev(edge_lengths);
 }
 
-vector<int> compute_bends_counts(const Graph& graph, const GraphAttributes& attributes) {
-    auto [node_to_coordinate_x, node_to_coordinate_y] =
+vector<size_t> compute_bends_counts(const Graph& graph, const GraphAttributes& attributes) {
+    const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
-    vector<int> bends_counts;
-    graph.for_each_node([&](int node_id) {
+    vector<size_t> bends_counts;
+    graph.for_each_node([&](size_t node_id) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
             return;
         NodesContainer visited;
-        function<void(int, int, int, int)> dfs =
-            [&](int current, int black, int count, int previous_id) {
+        function<void(size_t, size_t, size_t, size_t)> dfs =
+            [&](size_t current, size_t black, size_t count, size_t previous_id) {
                 visited.add_node(current);
-                graph.for_each_neighbor(current, [&](int neighbor_id) {
+                graph.for_each_neighbor(current, [&](size_t neighbor_id) {
                     if (visited.has_node(neighbor_id))
                         return;
                     Color neighbor_color = attributes.get_node_color(neighbor_id);
@@ -119,22 +129,22 @@ vector<int> compute_bends_counts(const Graph& graph, const GraphAttributes& attr
     return bends_counts;
 }
 
-int compute_total_bends(const OrthogonalDrawing& result) {
+size_t compute_total_bends(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
-    const vector<int> bends_counts = compute_bends_counts(graph, attributes);
-    int total_bends = 0;
-    for (const int count : bends_counts)
+    const vector<size_t> bends_counts = compute_bends_counts(graph, attributes);
+    size_t total_bends = 0;
+    for (size_t count : bends_counts)
         total_bends += count;
     return total_bends;
 }
 
-int compute_max_bends_per_edge(const OrthogonalDrawing& result) {
+size_t compute_max_bends_per_edge(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
-    const vector<int> bends_counts = compute_bends_counts(graph, attributes);
-    int max_bends = 0;
-    for (const int count : bends_counts)
+    const vector<size_t> bends_counts = compute_bends_counts(graph, attributes);
+    size_t max_bends = 0;
+    for (size_t count : bends_counts)
         if (count > max_bends)
             max_bends = count;
     return max_bends;
@@ -146,41 +156,41 @@ double compute_bends_std_dev(const OrthogonalDrawing& result) {
     return compute_stddev(compute_bends_counts(graph, attributes));
 }
 
-int compute_total_area(const OrthogonalDrawing& result) {
+size_t compute_total_area(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
-    auto [node_to_coordinate_x, node_to_coordinate_y] =
+    const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, result.attributes);
-    int max_x = -INT_MAX;
-    int max_y = -INT_MAX;
-    int min_x = INT_MAX;
-    int min_y = INT_MAX;
-    graph.for_each_node([&](int node_id) {
-        const int x = node_to_coordinate_x.get(node_id);
-        const int y = node_to_coordinate_y.get(node_id);
+    size_t max_x = 0;
+    size_t max_y = 0;
+    size_t min_x = INT_MAX;
+    size_t min_y = INT_MAX;
+    graph.for_each_node([&](size_t node_id) {
+        size_t x = node_to_coordinate_x.get(node_id);
+        size_t y = node_to_coordinate_y.get(node_id);
         max_x = max(max_x, x);
         max_y = max(max_y, y);
         min_x = min(min_x, x);
         min_y = min(min_y, y);
     });
-    return (max_x - min_x + 1) * (max_y - min_y + 1);
+    return static_cast<size_t>((max_x - min_x + 1) * (max_y - min_y + 1));
 }
 
 bool do_edges_cross(
-    int i,
-    int j,
-    int k,
-    int l,
+    size_t i,
+    size_t j,
+    size_t k,
+    size_t l,
     const Int_ToInt_HashMap& node_to_coordinate_x,
     const Int_ToInt_HashMap& node_to_coordinate_y
 ) {
-    int i_pos_x = node_to_coordinate_x.get(i);
-    int i_pos_y = node_to_coordinate_y.get(i);
-    int j_pos_x = node_to_coordinate_x.get(j);
-    int j_pos_y = node_to_coordinate_y.get(j);
-    int k_pos_x = node_to_coordinate_x.get(k);
-    int k_pos_y = node_to_coordinate_y.get(k);
-    int l_pos_x = node_to_coordinate_x.get(l);
-    int l_pos_y = node_to_coordinate_y.get(l);
+    size_t i_pos_x = node_to_coordinate_x.get(i);
+    size_t i_pos_y = node_to_coordinate_y.get(i);
+    size_t j_pos_x = node_to_coordinate_x.get(j);
+    size_t j_pos_y = node_to_coordinate_y.get(j);
+    size_t k_pos_x = node_to_coordinate_x.get(k);
+    size_t k_pos_y = node_to_coordinate_y.get(k);
+    size_t l_pos_x = node_to_coordinate_x.get(l);
+    size_t l_pos_y = node_to_coordinate_y.get(l);
 
     bool is_i_j_horizontal = i_pos_y == j_pos_y;
     bool is_k_l_horizontal = k_pos_y == l_pos_y;
@@ -201,9 +211,7 @@ bool do_edges_cross(
     return true;
 }
 
-bool do_edges_cross(
-    const GraphAttributes& attributes, const int i, const int j, const int k, const int l
-) {
+bool do_edges_cross(const GraphAttributes& attributes, size_t i, size_t j, size_t k, size_t l) {
     int i_pos_x = attributes.get_position_x(i);
     int i_pos_y = attributes.get_position_y(i);
     int j_pos_x = attributes.get_position_x(j);
@@ -243,26 +251,26 @@ bool do_edges_cross(
     return true;
 }
 
-int compute_total_crossings(const OrthogonalDrawing& result) {
+size_t compute_total_crossings(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
-    auto [node_to_coordinate_x, node_to_coordinate_y] =
+    const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
-    int total_crossings = 0;
-    vector<pair<int, int>> edges;
-    graph.for_each_node([&](int node_id) {
-        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
+    size_t total_crossings = 0;
+    vector<pair<size_t, size_t>> edges;
+    graph.for_each_node([&](size_t node_id) {
+        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (neighbor_id < node_id)
                 return;
             edges.emplace_back(node_id, neighbor_id);
         });
     });
     for (size_t i = 0; i < edges.size(); ++i) {
-        int node_1_id = edges[i].first;
-        int node_2_id = edges[i].second;
+        size_t node_1_id = edges[i].first;
+        size_t node_2_id = edges[i].second;
         for (size_t j = i + 1; j < edges.size(); ++j) {
-            int node_3_id = edges[j].first;
-            int node_4_id = edges[j].second;
+            size_t node_3_id = edges[j].first;
+            size_t node_4_id = edges[j].second;
             if (node_1_id == node_3_id || node_1_id == node_4_id || node_2_id == node_3_id ||
                 node_2_id == node_4_id)
                 continue;

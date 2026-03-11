@@ -9,6 +9,6 @@ class Graph;
 
 std::optional<Tree> build_spanning_tree(const Graph& graph);
 
-std::vector<int> get_path_from_root(const Tree& tree, int node);
+std::vector<size_t> get_path_from_root(const Tree& tree, size_t node);
 
-int compute_common_ancestor(const Tree& tree, int node1, int node2);
+size_t compute_common_ancestor(const Tree& tree, size_t node1, size_t node2);

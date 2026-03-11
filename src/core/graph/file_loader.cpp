@@ -26,11 +26,11 @@ expected<Graph, string> load_graph_from_txt_file(path path) {
         } else if (!line.empty()) {
             std::istringstream iss(line);
             if (section == NODES) {
-                int node_id;
+                size_t node_id;
                 if (iss >> node_id)
                     graph.add_node(node_id);
             } else if (section == EDGES) {
-                int from, to;
+                size_t from, to;
                 if (iss >> from >> to)
                     graph.add_edge(from, to);
             }
@@ -47,10 +47,10 @@ std::expected<void, std::string> save_graph_to_file(const Graph& graph, path pat
         return std::unexpected(error);
     }
     outfile << "nodes:\n";
-    graph.for_each_node([&outfile](int node_id) { outfile << node_id << '\n'; });
+    graph.for_each_node([&outfile](size_t node_id) { outfile << node_id << '\n'; });
     outfile << "edges:\n";
-    graph.for_each_node([&](int node_id) {
-        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
+    graph.for_each_node([&](size_t node_id) {
+        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (neighbor_id > node_id)
                 outfile << node_id << ' ' << neighbor_id << '\n';
         });
@@ -82,7 +82,7 @@ void save_to_graphml(std::ostream& os, const Graph& graph, const GraphAttributes
     }
     os << "\n";
     os << "  <graph id=\"G\" edgedefault=\"undirected\">\n";
-    graph.for_each_node([&](int node_id) {
+    graph.for_each_node([&](size_t node_id) {
         os << "    <node id=\"n" << node_id << "\">\n";
         if (attributes.has_attribute(Attribute::NODES_COLOR)) {
             const Color color = attributes.get_node_color(node_id);
@@ -94,8 +94,8 @@ void save_to_graphml(std::ostream& os, const Graph& graph, const GraphAttributes
         }
         os << "    </node>\n";
     });
-    graph.for_each_node([&](int node_id) {
-        graph.for_each_neighbor(node_id, [node_id, &os](int neighbor_id) {
+    graph.for_each_node([&](size_t node_id) {
+        graph.for_each_neighbor(node_id, [node_id, &os](size_t neighbor_id) {
             if (neighbor_id > node_id)
                 return;
             os << "    <source=\"n" << node_id << "\" target=\"n" << neighbor_id << "\">\n";

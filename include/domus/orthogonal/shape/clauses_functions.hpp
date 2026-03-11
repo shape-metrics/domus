@@ -18,7 +18,7 @@ void add_clause_at_least_one_in_direction(
     const Graph& graph,
     Cnf& cnf_builder,
     const VariablesHandler& handler,
-    int node_id,
+    size_t node_id,
     Direction direction
 );
 
@@ -28,7 +28,7 @@ void add_one_edge_per_direction_clauses(
     Cnf& cnf_builder,
     const VariablesHandler& handler,
     Direction direction,
-    int node_id
+    size_t node_id
 );
 
 void add_nodes_constraints(const Graph& graph, Cnf& cnf_builder, const VariablesHandler& handler);

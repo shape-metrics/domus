@@ -9,27 +9,27 @@
 using namespace std;
 
 class GraphAttributesImpl {
-    std::unordered_map<Attribute, std::unordered_map<int, std::any>> mattribute_to_node;
-    bool has_attribute_by_id(Attribute attribute, int id) const;
+    std::unordered_map<Attribute, std::unordered_map<size_t, std::any>> mattribute_to_node;
+    bool has_attribute_by_id(Attribute attribute, size_t id) const;
 
   public:
     bool has_attribute(Attribute attribute) const;
     void add_attribute(Attribute attribute);
     void remove_attribute(Attribute attribute);
-    void remove_nodes_attribute(int node_id);
+    void remove_nodes_attribute(size_t node_id);
     // node color
-    void set_node_color(int node_id, Color color);
-    Color get_node_color(int node_id) const;
-    void change_node_color(int node_id, Color color);
+    void set_node_color(size_t node_id, Color color);
+    Color get_node_color(size_t node_id) const;
+    void change_node_color(size_t node_id, Color color);
     // position
-    void set_position(int node_id, int x, int y);
-    void change_position(int node_id, int x, int y);
-    void change_position_x(int node_id, int x);
-    void change_position_y(int node_id, int y);
-    int get_position_x(int node_id) const;
-    int get_position_y(int node_id) const;
-    bool has_position(int node_id) const;
-    void remove_position(int node_id);
+    void set_position(size_t node_id, int x, int y);
+    void change_position(size_t node_id, int x, int y);
+    void change_position_x(size_t node_id, int x);
+    void change_position_y(size_t node_id, int y);
+    int get_position_x(size_t node_id) const;
+    int get_position_y(size_t node_id) const;
+    bool has_position(size_t node_id) const;
+    void remove_position(size_t node_id);
 };
 
 string attribute_to_string(Attribute attribute) {
@@ -69,19 +69,19 @@ void GraphAttributesImpl::remove_attribute(const Attribute attribute) {
     mattribute_to_node.erase(attribute);
 }
 
-void GraphAttributesImpl::remove_nodes_attribute(const int node_id) {
+void GraphAttributesImpl::remove_nodes_attribute(size_t node_id) {
     for (auto nodes_attributes : mattribute_to_node | std::views::values)
         nodes_attributes.erase(node_id);
 }
 
-bool GraphAttributesImpl::has_attribute_by_id(const Attribute attribute, const int id) const {
+bool GraphAttributesImpl::has_attribute_by_id(const Attribute attribute, size_t id) const {
     assert(
         has_attribute(attribute) && "GraphAttributes::has_attribute_by_id: does not have attribute"
     );
     return mattribute_to_node.at(attribute).contains(id);
 }
 
-void GraphAttributesImpl::set_node_color(const int node_id, const Color color) {
+void GraphAttributesImpl::set_node_color(size_t node_id, const Color color) {
     assert(
         !has_attribute_by_id(Attribute::NODES_COLOR, node_id) &&
         "GraphAttributes::set_node_color: the node does not have a color"
@@ -89,7 +89,7 @@ void GraphAttributesImpl::set_node_color(const int node_id, const Color color) {
     mattribute_to_node.at(Attribute::NODES_COLOR)[node_id] = color;
 }
 
-Color GraphAttributesImpl::get_node_color(const int node_id) const {
+Color GraphAttributesImpl::get_node_color(size_t node_id) const {
     assert(
         has_attribute_by_id(Attribute::NODES_COLOR, node_id) &&
         "GraphAttributes::get_node_color: the node does not have a color"
@@ -97,7 +97,7 @@ Color GraphAttributesImpl::get_node_color(const int node_id) const {
     return std::any_cast<Color>(mattribute_to_node.at(Attribute::NODES_COLOR).at(node_id));
 }
 
-void GraphAttributesImpl::change_node_color(const int node_id, const Color color) {
+void GraphAttributesImpl::change_node_color(size_t node_id, const Color color) {
     assert(
         has_attribute_by_id(Attribute::NODES_COLOR, node_id) &&
         "GraphAttributes::change_node_color: the node does not have a color"
@@ -105,7 +105,7 @@ void GraphAttributesImpl::change_node_color(const int node_id, const Color color
     mattribute_to_node.at(Attribute::NODES_COLOR)[node_id] = color;
 }
 
-void GraphAttributesImpl::change_position(const int node_id, const int x, const int y) {
+void GraphAttributesImpl::change_position(size_t node_id, const int x, const int y) {
     assert(
         has_attribute(Attribute::NODES_POSITION) &&
         "GraphAttributes::change_position: does not have NODES_POSITION attribute"
@@ -119,7 +119,7 @@ void GraphAttributesImpl::change_position(const int node_id, const int x, const 
     position.y_m = y;
 }
 
-void GraphAttributesImpl::change_position_x(const int node_id, const int x) {
+void GraphAttributesImpl::change_position_x(size_t node_id, const int x) {
     assert(
         has_attribute(Attribute::NODES_POSITION) &&
         "GraphAttributes::change_position_x: does not have NODES_POSITION attribute"
@@ -132,7 +132,7 @@ void GraphAttributesImpl::change_position_x(const int node_id, const int x) {
     position.x_m = x;
 }
 
-void GraphAttributesImpl::change_position_y(const int node_id, const int y) {
+void GraphAttributesImpl::change_position_y(size_t node_id, const int y) {
     assert(
         has_attribute(Attribute::NODES_POSITION) &&
         "GraphAttributes::change_position_y: does not have NODES_POSITION attribute"
@@ -145,7 +145,7 @@ void GraphAttributesImpl::change_position_y(const int node_id, const int y) {
     position.y_m = y;
 }
 
-void GraphAttributesImpl::set_position(const int node_id, const int x, const int y) {
+void GraphAttributesImpl::set_position(size_t node_id, const int x, const int y) {
     assert(
         !has_position(node_id) && "GraphAttributes::set_position_x: node already has a position"
     );
@@ -156,7 +156,7 @@ void GraphAttributesImpl::set_position(const int node_id, const int x, const int
     mattribute_to_node[Attribute::NODES_POSITION][node_id] = NodePosition(x, y);
 }
 
-int GraphAttributesImpl::get_position_x(const int node_id) const {
+int GraphAttributesImpl::get_position_x(size_t node_id) const {
     assert(
         has_attribute(Attribute::NODES_POSITION) &&
         "GraphAttributes::get_position_x: does not have NODES_POSITION attribute"
@@ -168,7 +168,7 @@ int GraphAttributesImpl::get_position_x(const int node_id) const {
         .x_m;
 }
 
-int GraphAttributesImpl::get_position_y(const int node_id) const {
+int GraphAttributesImpl::get_position_y(size_t node_id) const {
     assert(
         has_attribute(Attribute::NODES_POSITION) &&
         "GraphAttributes::get_position_y: does not have NODES_POSITION attribute"
@@ -180,7 +180,7 @@ int GraphAttributesImpl::get_position_y(const int node_id) const {
         .y_m;
 }
 
-bool GraphAttributesImpl::has_position(const int node_id) const {
+bool GraphAttributesImpl::has_position(size_t node_id) const {
     assert(
         has_attribute(Attribute::NODES_POSITION) &&
         "GraphAttributes::has_position: does not have NODES_POSITION attribute"
@@ -188,7 +188,7 @@ bool GraphAttributesImpl::has_position(const int node_id) const {
     return mattribute_to_node.at(Attribute::NODES_POSITION).contains(node_id);
 }
 
-void GraphAttributesImpl::remove_position(const int node_id) {
+void GraphAttributesImpl::remove_position(size_t node_id) {
     assert(
         has_attribute(Attribute::NODES_POSITION) &&
         "GraphAttributes::remove_position: does not have NODES_POSITION attribute"
@@ -217,52 +217,54 @@ void GraphAttributes::remove_attribute(Attribute attribute) {
     m_graph_attributes->remove_attribute(attribute);
 }
 
-void GraphAttributes::remove_nodes_attribute(int node_id) {
+void GraphAttributes::remove_nodes_attribute(size_t node_id) {
     m_graph_attributes->remove_nodes_attribute(node_id);
 }
 
 // node color
-void GraphAttributes::set_node_color(int node_id, Color color) {
+void GraphAttributes::set_node_color(size_t node_id, Color color) {
     m_graph_attributes->set_node_color(node_id, color);
 }
 
-Color GraphAttributes::get_node_color(int node_id) const {
+Color GraphAttributes::get_node_color(size_t node_id) const {
     return m_graph_attributes->get_node_color(node_id);
 }
 
-void GraphAttributes::change_node_color(int node_id, Color color) {
+void GraphAttributes::change_node_color(size_t node_id, Color color) {
     m_graph_attributes->change_node_color(node_id, color);
 }
 
 // position
-void GraphAttributes::set_position(int node_id, int x, int y) {
+void GraphAttributes::set_position(size_t node_id, int x, int y) {
     m_graph_attributes->set_position(node_id, x, y);
 }
 
-void GraphAttributes::change_position(int node_id, int x, int y) {
+void GraphAttributes::change_position(size_t node_id, int x, int y) {
     m_graph_attributes->change_position(node_id, x, y);
 }
 
-void GraphAttributes::change_position_x(int node_id, int x) {
+void GraphAttributes::change_position_x(size_t node_id, int x) {
     m_graph_attributes->change_position_x(node_id, x);
 }
 
-void GraphAttributes::change_position_y(int node_id, int y) {
+void GraphAttributes::change_position_y(size_t node_id, int y) {
     m_graph_attributes->change_position_y(node_id, y);
 }
 
-int GraphAttributes::get_position_x(int node_id) const {
+int GraphAttributes::get_position_x(size_t node_id) const {
     return m_graph_attributes->get_position_x(node_id);
 }
 
-int GraphAttributes::get_position_y(int node_id) const {
+int GraphAttributes::get_position_y(size_t node_id) const {
     return m_graph_attributes->get_position_y(node_id);
 }
 
-bool GraphAttributes::has_position(int node_id) const {
+bool GraphAttributes::has_position(size_t node_id) const {
     return m_graph_attributes->has_position(node_id);
 }
 
-void GraphAttributes::remove_position(int node_id) { m_graph_attributes->remove_position(node_id); }
+void GraphAttributes::remove_position(size_t node_id) {
+    m_graph_attributes->remove_position(node_id);
+}
 
 GraphAttributes::~GraphAttributes() = default;

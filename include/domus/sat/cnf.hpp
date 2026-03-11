@@ -16,17 +16,17 @@ struct CnfRow {
 };
 
 class Cnf {
-    int m_num_vars = 0;
-    int m_num_clauses = 0;
+    size_t m_num_vars = 0;
+    size_t m_num_clauses = 0;
     std::vector<CnfRow> m_rows;
 
   public:
     void add_clause(std::vector<int> clause);
     void add_comment(const std::string& comment);
-    int get_number_of_variables() const;
-    int get_number_of_clauses() const;
+    size_t get_number_of_variables() const;
+    size_t get_number_of_clauses() const;
     std::expected<void, std::string> save_to_file(const std::string& file_path) const;
-    const std::string to_string() const;
+    std::string to_string() const;
     const std::vector<CnfRow>& get_rows() const;
     void print() const;
 };

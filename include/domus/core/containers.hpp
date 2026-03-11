@@ -15,12 +15,12 @@ class PairIntHashSet {
     PairIntHashSet(PairIntHashSet&&) noexcept;
     PairIntHashSet& operator=(PairIntHashSet&&) noexcept;
 
-    void add(int value_1, int value_2);
-    bool has(int value_1, int value_2) const;
+    void add(size_t value_1, size_t value_2);
+    bool has(size_t value_1, size_t value_2) const;
     size_t size() const;
     bool empty() const;
-    void erase(int value_1, int value_2);
-    void for_each(std::function<void(int, int)> func) const;
+    void erase(size_t value_1, size_t value_2);
+    void for_each(std::function<void(size_t, size_t)> func) const;
     void clear();
 };
 
@@ -36,12 +36,12 @@ class IntPair_ToInt_HashMap {
     IntPair_ToInt_HashMap(IntPair_ToInt_HashMap&&) noexcept;
     IntPair_ToInt_HashMap& operator=(IntPair_ToInt_HashMap&&) noexcept;
 
-    void add(int key_1, int key_2, int value);
-    bool has(int key_1, int key_2) const;
-    int get(int key_1, int key_2) const;
+    void add(size_t key_1, size_t key_2, size_t value);
+    bool has(size_t key_1, size_t key_2) const;
+    size_t get(size_t key_1, size_t key_2) const;
     size_t size() const;
     bool empty() const;
-    void erase(int key_1, int key_2);
+    void erase(size_t key_1, size_t key_2);
 };
 
 class I_IntHashSet;
@@ -56,13 +56,13 @@ class IntHashSet {
     IntHashSet(IntHashSet&&) noexcept;
     IntHashSet& operator=(IntHashSet&&) noexcept;
 
-    void add(int value);
-    bool has(int value) const;
-    int get_one_int() const;
+    void add(size_t value);
+    bool has(size_t value) const;
+    size_t get_one_int() const;
     size_t size() const;
     bool empty() const;
-    void erase(int value);
-    void for_each(std::function<void(int)> func) const;
+    void erase(size_t value);
+    void for_each(std::function<void(size_t)> func) const;
 };
 
 class I_Int_ToIntContainer_HashMap;
@@ -76,13 +76,13 @@ class Int_ToIntContainer_HashMap {
     ~Int_ToIntContainer_HashMap();
     Int_ToIntContainer_HashMap(Int_ToIntContainer_HashMap&&) noexcept;
     Int_ToIntContainer_HashMap& operator=(Int_ToIntContainer_HashMap&&) noexcept;
-    void add(int key, int value);
-    bool has(int key, int value) const;
-    const IntHashSet& get(int key) const;
-    IntHashSet& get(int key);
-    void erase(int key, int value);
-    void erase(int key);
-    void for_each(std::function<void(int, const IntHashSet&)> func) const;
+    void add(size_t key, size_t value);
+    bool has(size_t key, size_t value) const;
+    const IntHashSet& get(size_t key) const;
+    IntHashSet& get(size_t key);
+    void erase(size_t key, size_t value);
+    void erase(size_t key);
+    void for_each(std::function<void(size_t, const IntHashSet&)> func) const;
 };
 
 class I_Int_ToInt_HashMap;
@@ -96,12 +96,12 @@ class Int_ToInt_HashMap {
     ~Int_ToInt_HashMap();
     Int_ToInt_HashMap(Int_ToInt_HashMap&&) noexcept;
     Int_ToInt_HashMap& operator=(Int_ToInt_HashMap&&) noexcept;
-    void add(int key, int value);
-    void update(int key, int value);
-    bool has(int key) const;
-    int get(int key) const;
-    void erase(int key);
-    void for_each(std::function<void(int, int)> func) const;
+    void add(size_t key, size_t value);
+    void update(size_t key, size_t value);
+    bool has(size_t key) const;
+    size_t get(size_t key) const;
+    void erase(size_t key);
+    void for_each(std::function<void(size_t, size_t)> func) const;
     void clear();
-    int& operator[](int key);
+    size_t& operator[](size_t key);
 };

@@ -8,20 +8,20 @@
 
 class Shape {
     IntPair_ToInt_HashMap m_shape;
-    int direction_to_int(Direction direction) const;
-    Direction int_to_direction(int direction) const;
+    size_t direction_to_size_t(Direction direction) const;
+    Direction size_t_to_direction(size_t direction) const;
 
   public:
-    void set_direction(int node_id_1, int node_id_2, Direction direction);
-    std::optional<Direction> get_direction(int node_id_1, int node_id_2) const;
-    bool contains(int node_id_1, int node_id_2) const;
-    bool is_up(int node_id_1, int node_id_2) const;
-    bool is_down(int node_id_1, int node_id_2) const;
-    bool is_right(int node_id_1, int node_id_2) const;
-    bool is_left(int i, int j) const;
-    bool is_horizontal(int node_id_1, int node_id_2) const;
-    bool is_vertical(int node_id_1, int node_id_2) const;
-    void remove_direction(int node_id_1, int node_id_2);
+    void set_direction(size_t node_id_1, size_t node_id_2, Direction direction);
+    std::optional<Direction> get_direction(size_t node_id_1, size_t node_id_2) const;
+    bool contains(size_t node_id_1, size_t node_id_2) const;
+    bool is_up(size_t node_id_1, size_t node_id_2) const;
+    bool is_down(size_t node_id_1, size_t node_id_2) const;
+    bool is_right(size_t node_id_1, size_t node_id_2) const;
+    bool is_left(size_t node_id_1, size_t node_id_2) const;
+    bool is_horizontal(size_t node_id_1, size_t node_id_2) const;
+    bool is_vertical(size_t node_id_1, size_t node_id_2) const;
+    void remove_direction(size_t node_id_1, size_t node_id_2);
     std::string to_string() const;
     void print() const;
 };

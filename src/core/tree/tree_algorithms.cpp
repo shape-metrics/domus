@@ -10,14 +10,14 @@ using namespace std;
 
 optional<Tree> build_spanning_tree(const Graph& graph) {
     NodesContainer visited;
-    queue<int> queue;
+    queue<size_t> queue;
     queue.push(graph.get_one_node_id());
     Tree tree(queue.front());
     visited.add_node(queue.front());
     while (!queue.empty()) {
-        int node_id = queue.front();
+        size_t node_id = queue.front();
         queue.pop();
-        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
+        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (!visited.has_node(neighbor_id)) {
                 visited.add_node(neighbor_id);
                 tree.add_node(neighbor_id, node_id);
@@ -30,20 +30,20 @@ optional<Tree> build_spanning_tree(const Graph& graph) {
     return tree;
 }
 
-vector<int> get_path_from_root(const Tree& tree, int node_id) {
-    vector<int> path;
+vector<size_t> get_path_from_root(const Tree& tree, size_t node_id) {
+    vector<size_t> path;
     path.push_back(node_id);
     while (!tree.is_root(node_id)) { // while the node has a parent
-        node_id = *tree.get_parent(node_id);
+        node_id = tree.get_parent(node_id);
         path.push_back(node_id);
     }
     ranges::reverse(path);
     return path;
 }
 
-int compute_common_ancestor(const Tree& tree, int node1, int node2) {
-    vector<int> path1 = get_path_from_root(tree, node1);
-    vector<int> path2 = get_path_from_root(tree, node2);
+size_t compute_common_ancestor(const Tree& tree, size_t node1, size_t node2) {
+    vector<size_t> path1 = get_path_from_root(tree, node1);
+    vector<size_t> path2 = get_path_from_root(tree, node2);
     size_t i = 0;
     while (i < path1.size() && i < path2.size() && path1[i] == path2[i])
         ++i;

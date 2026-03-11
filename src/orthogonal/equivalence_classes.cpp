@@ -10,9 +10,9 @@
 
 using namespace std;
 
-bool EquivalenceClasses::has_class(int class_id) const { return m_all_classes.has(class_id); }
+bool EquivalenceClasses::has_class(size_t class_id) const { return m_all_classes.has(class_id); }
 
-void EquivalenceClasses::set_class(int elem, int class_id) {
+void EquivalenceClasses::set_class(size_t elem, size_t class_id) {
     assert(
         !has_elem_a_class(elem) &&
         "EquivalenceClasses::set_class elem already has an assigned class"
@@ -22,14 +22,14 @@ void EquivalenceClasses::set_class(int elem, int class_id) {
     m_class_to_elems.add(class_id, elem);
 }
 
-bool EquivalenceClasses::has_elem_a_class(int elem) const { return m_elem_to_class.has(elem); }
+bool EquivalenceClasses::has_elem_a_class(size_t elem) const { return m_elem_to_class.has(elem); }
 
-int EquivalenceClasses::get_class_of_elem(int elem) const {
+size_t EquivalenceClasses::get_class_of_elem(size_t elem) const {
     assert(has_elem_a_class(elem) && "EquivalenceClasses::get_class elem does not have a class");
     return m_elem_to_class.get(elem);
 }
 
-const IntHashSet& EquivalenceClasses::get_elems_of_class(int class_id) const {
+const IntHashSet& EquivalenceClasses::get_elems_of_class(size_t class_id) const {
     assert(has_class(class_id) && "EquivalenceClasses::get_elems class does not exist");
     return m_class_to_elems.get(class_id);
 }
@@ -39,13 +39,13 @@ const IntHashSet& EquivalenceClasses::get_all_classes() const { return m_all_cla
 void directional_node_expander(
     const Shape& shape,
     const Graph& graph,
-    int node_id,
-    int class_id,
+    size_t node_id,
+    size_t class_id,
     EquivalenceClasses& equivalence_classes,
-    const function<bool(const Shape&, int, int)>& is_direction_wrong
+    const function<bool(const Shape&, size_t, size_t)>& is_direction_wrong
 ) {
     equivalence_classes.set_class(node_id, class_id);
-    graph.for_each_neighbor(node_id, [&](int neighbor_id) {
+    graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
         if (equivalence_classes.has_elem_a_class(neighbor_id))
             return;
         if (is_direction_wrong(shape, node_id, neighbor_id))
@@ -64,11 +64,13 @@ void directional_node_expander(
 void horizontal_node_expander(
     const Shape& shape,
     const Graph& graph,
-    int node_id,
-    const int class_id,
+    size_t node_id,
+    size_t class_id,
     EquivalenceClasses& equivalence_classes
 ) {
-    auto is_direction_wrong = [](const Shape& s, int i, int j) { return s.is_vertical(i, j); };
+    auto is_direction_wrong = [](const Shape& s, size_t i, size_t j) {
+        return s.is_vertical(i, j);
+    };
     directional_node_expander(
         shape,
         graph,
@@ -82,11 +84,13 @@ void horizontal_node_expander(
 void vertical_node_expander(
     const Shape& shape,
     const Graph& graph,
-    int node_id,
-    const int class_id,
+    size_t node_id,
+    size_t class_id,
     EquivalenceClasses& equivalence_classes
 ) {
-    auto is_direction_wrong = [](const Shape& s, int i, int j) { return s.is_horizontal(i, j); };
+    auto is_direction_wrong = [](const Shape& s, size_t i, size_t j) {
+        return s.is_horizontal(i, j);
+    };
     directional_node_expander(
         shape,
         graph,
@@ -101,15 +105,15 @@ pair<const EquivalenceClasses, const EquivalenceClasses>
 build_equivalence_classes(const Shape& shape, const Graph& graph) {
     EquivalenceClasses equivalence_classes_x;
     EquivalenceClasses equivalence_classes_y;
-    int next_class_x = 0;
-    int next_class_y = 0;
-    graph.for_each_node([&](int node_id) {
+    size_t next_class_x = 0;
+    size_t next_class_y = 0;
+    graph.for_each_node([&](size_t node_id) {
         if (!equivalence_classes_y.has_elem_a_class(node_id))
             horizontal_node_expander(shape, graph, node_id, next_class_y++, equivalence_classes_y);
         if (!equivalence_classes_x.has_elem_a_class(node_id))
             vertical_node_expander(shape, graph, node_id, next_class_x++, equivalence_classes_x);
     });
-    graph.for_each_node([&](int node_id) {
+    graph.for_each_node([&](size_t node_id) {
         if (!equivalence_classes_x.has_elem_a_class(node_id))
             equivalence_classes_x.set_class(node_id, next_class_x++);
         if (!equivalence_classes_y.has_elem_a_class(node_id))
@@ -118,7 +122,11 @@ build_equivalence_classes(const Shape& shape, const Graph& graph) {
     return make_pair(std::move(equivalence_classes_x), std::move(equivalence_classes_y));
 }
 
-tuple<Graph, Graph, map<pair<int, int>, pair<int, int>>, map<pair<int, int>, pair<int, int>>>
+tuple<
+    Graph,
+    Graph,
+    map<pair<size_t, size_t>, pair<size_t, size_t>>,
+    map<pair<size_t, size_t>, pair<size_t, size_t>>>
 equivalence_classes_to_ordering(
     const EquivalenceClasses& equivalence_classes_x,
     const EquivalenceClasses& equivalence_classes_y,
@@ -128,20 +136,20 @@ equivalence_classes_to_ordering(
     Graph ordering_x;
     Graph ordering_y;
 
-    equivalence_classes_x.get_all_classes().for_each([&ordering_x](int class_id) {
+    equivalence_classes_x.get_all_classes().for_each([&ordering_x](size_t class_id) {
         ordering_x.add_node(class_id);
     });
-    equivalence_classes_y.get_all_classes().for_each([&ordering_y](int class_id) {
+    equivalence_classes_y.get_all_classes().for_each([&ordering_y](size_t class_id) {
         ordering_y.add_node(class_id);
     });
-    map<pair<int, int>, pair<int, int>> ordering_x_edge_to_graph_edge;
-    map<pair<int, int>, pair<int, int>> ordering_y_edge_to_graph_edge;
+    map<pair<size_t, size_t>, pair<size_t, size_t>> ordering_x_edge_to_graph_edge;
+    map<pair<size_t, size_t>, pair<size_t, size_t>> ordering_y_edge_to_graph_edge;
 
-    graph.for_each_node([&](int node_id) {
-        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
+    graph.for_each_node([&](size_t node_id) {
+        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (shape.is_right(node_id, neighbor_id)) {
-                const int node_class_x = equivalence_classes_x.get_class_of_elem(node_id);
-                const int neighbor_class_x = equivalence_classes_x.get_class_of_elem(neighbor_id);
+                size_t node_class_x = equivalence_classes_x.get_class_of_elem(node_id);
+                size_t neighbor_class_x = equivalence_classes_x.get_class_of_elem(neighbor_id);
                 if (ordering_x.has_edge(node_class_x, neighbor_class_x))
                     return;
                 ordering_x.add_edge(node_class_x, neighbor_class_x);
@@ -150,8 +158,8 @@ equivalence_classes_to_ordering(
                     neighbor_id
                 };
             } else if (shape.is_up(node_id, neighbor_id)) {
-                const int node_class_y = equivalence_classes_y.get_class_of_elem(node_id);
-                const int neighbor_class_y = equivalence_classes_y.get_class_of_elem(neighbor_id);
+                size_t node_class_y = equivalence_classes_y.get_class_of_elem(node_id);
+                size_t neighbor_class_y = equivalence_classes_y.get_class_of_elem(neighbor_id);
                 if (ordering_y.has_edge(node_class_y, neighbor_class_y))
                     return;
                 ordering_y.add_edge(node_class_y, neighbor_class_y);

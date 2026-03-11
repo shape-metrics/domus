@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <fstream>
-// #include <unistd.h>
 
 using namespace std;
 
@@ -31,17 +30,19 @@ expected<vector<string>, string> collect_txt_files(std::filesystem::path folder_
     return txt_files;
 }
 
-double compute_stddev(const vector<int>& values) {
+double compute_stddev(const vector<size_t>& values) {
     if (values.size() <= 1)
         return 0.0;
-    double mean = 0;
-    for (const int value : values)
-        mean += value;
+    size_t sum = 0;
+    for (size_t value : values)
+        sum += value;
     const auto size = static_cast<double>(values.size());
-    mean /= size;
+    double mean = static_cast<double>(sum) / size;
     double variance = 0.0;
-    for (const int value : values)
-        variance += (value - mean) * (value - mean);
-    variance /= size - 1.0;
+    for (size_t value : values) {
+        double v = static_cast<double>(value);
+        variance += (v - mean) * (v - mean);
+    }
+    variance /= (size - 1.0);
     return std::sqrt(variance);
 }

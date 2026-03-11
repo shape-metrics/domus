@@ -5,7 +5,7 @@
 
 #include "domus/core/graph/graph.hpp"
 
-void VariablesHandler::add_variable(int i, int j, const Direction direction) {
+void VariablesHandler::add_variable(size_t i, size_t j, const Direction direction) {
     variable_to_edge[m_next_var] = std::make_pair(i, j);
     variable_to_direction[m_next_var] = direction;
     switch (direction) {
@@ -26,13 +26,13 @@ void VariablesHandler::add_variable(int i, int j, const Direction direction) {
         m_edge_left_variable.add(j, i, m_next_var);
         break;
     case Direction::INVALID:
-        assert(false && "Invalid direction");
+        assert(false && "VariablesHandler::add_variable: invalid direction");
         break;
     }
     m_next_var++;
 }
 
-void VariablesHandler::add_edge_variables(const int i, const int j) {
+void VariablesHandler::add_edge_variables(size_t i, size_t j) {
     add_variable(i, j, Direction::UP);
     add_variable(i, j, Direction::DOWN);
     add_variable(i, j, Direction::LEFT);
@@ -40,8 +40,8 @@ void VariablesHandler::add_edge_variables(const int i, const int j) {
 }
 
 VariablesHandler::VariablesHandler(const Graph& graph) {
-    graph.for_each_node([&](int node_id) {
-        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
+    graph.for_each_node([&](size_t node_id) {
+        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (node_id > neighbor_id)
                 return;
             add_edge_variables(node_id, neighbor_id);
@@ -49,21 +49,23 @@ VariablesHandler::VariablesHandler(const Graph& graph) {
     });
 }
 
-int VariablesHandler::get_up_variable(int i, int j) const { return m_edge_up_variable.get(i, j); }
+size_t VariablesHandler::get_up_variable(size_t i, size_t j) const {
+    return m_edge_up_variable.get(i, j);
+}
 
-int VariablesHandler::get_down_variable(int i, int j) const {
+size_t VariablesHandler::get_down_variable(size_t i, size_t j) const {
     return m_edge_down_variable.get(i, j);
 }
 
-int VariablesHandler::get_left_variable(int i, int j) const {
+size_t VariablesHandler::get_left_variable(size_t i, size_t j) const {
     return m_edge_left_variable.get(i, j);
 }
 
-int VariablesHandler::get_right_variable(int i, int j) const {
+size_t VariablesHandler::get_right_variable(size_t i, size_t j) const {
     return m_edge_right_variable.get(i, j);
 }
 
-int VariablesHandler::get_variable(int i, int j, Direction direction) const {
+size_t VariablesHandler::get_variable(size_t i, size_t j, Direction direction) const {
     if (direction == Direction::UP)
         return get_up_variable(i, j);
     if (direction == Direction::DOWN)
@@ -73,14 +75,14 @@ int VariablesHandler::get_variable(int i, int j, Direction direction) const {
     if (direction == Direction::RIGHT)
         return get_right_variable(i, j);
     assert(false && "Invalid direction");
-    return -1;
+    return 0;
 }
 
-const std::pair<int, int>& VariablesHandler::get_edge_of_variable(const int variable) const {
+const std::pair<size_t, size_t>& VariablesHandler::get_edge_of_variable(size_t variable) const {
     return variable_to_edge.at(variable);
 }
 
-Direction VariablesHandler::get_direction_of_edge(int i, int j) const {
+Direction VariablesHandler::get_direction_of_edge(size_t i, size_t j) const {
     if (get_variable_value(get_up_variable(i, j)))
         return Direction::UP;
     if (get_variable_value(get_down_variable(i, j)))
@@ -93,12 +95,12 @@ Direction VariablesHandler::get_direction_of_edge(int i, int j) const {
     return Direction::UP;
 }
 
-void VariablesHandler::set_variable_value(int variable, bool value) {
+void VariablesHandler::set_variable_value(size_t variable, bool value) {
     assert(!variable_to_value.contains(variable) && "variable value is already set");
     variable_to_value[variable] = value;
 }
 
-bool VariablesHandler::get_variable_value(int variable) const {
+bool VariablesHandler::get_variable_value(size_t variable) const {
     assert(variable_to_value.contains(variable) && "variable does not have a set value");
     return variable_to_value.at(variable);
 }

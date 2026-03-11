@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <cstdlib>
 #include <optional>
 #include <random>
@@ -26,8 +27,8 @@ Shape result_to_shape(const Graph& graph, const vector<int>& numbers, VariablesH
             handler.set_variable_value(-var, false);
     }
     Shape shape;
-    graph.for_each_node([&](int node_id) {
-        graph.for_each_neighbor(node_id, [&](int neighbor_id) {
+    graph.for_each_node([&](size_t node_id) {
+        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             shape.set_direction(
                 node_id,
                 neighbor_id,
@@ -38,11 +39,11 @@ Shape result_to_shape(const Graph& graph, const vector<int>& numbers, VariablesH
     return shape;
 }
 
-pair<int, int> find_edges_to_split(
+pair<size_t, size_t> find_edges_to_split(
     const vector<string>& proof_lines,
     std::mt19937& random_engine,
     const VariablesHandler& handler,
-    int number_of_variables
+    size_t number_of_variables
 ) {
     vector<int> unit_clauses;
     for (size_t i = proof_lines.size(); i > 0; i--) {
@@ -64,7 +65,7 @@ pair<int, int> find_edges_to_split(
         assert(token == "0");
         if (tokens.size() == 1) {
             int unit_clause = tokens[0];
-            if (std::abs(unit_clause) <= number_of_variables)
+            if (static_cast<size_t>(std::abs(unit_clause)) <= number_of_variables)
                 unit_clauses.push_back(unit_clause);
         }
     }
@@ -91,14 +92,10 @@ Shape build_shape(
 }
 
 void add_corner_inside_edge(
-    const int from_id,
-    const int to_id,
-    Graph& graph,
-    GraphAttributes& attributes,
-    vector<Cycle>& cycles
+    size_t from_id, size_t to_id, Graph& graph, GraphAttributes& attributes, vector<Cycle>& cycles
 ) {
     assert(graph.are_neighbors(from_id, to_id));
-    const int new_node_id = graph.add_node();
+    size_t new_node_id = graph.add_node();
     attributes.set_node_color(new_node_id, Color::RED);
     graph.remove_edge(from_id, to_id);
     graph.add_edge(from_id, new_node_id);
