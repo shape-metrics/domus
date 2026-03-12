@@ -14,16 +14,14 @@
 
 using json = nlohmann::json;
 
-using namespace std;
-using namespace std::filesystem;
-
-expected<void, string> save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, path path) {
+std::expected<void, std::string>
+save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, std::filesystem::path path) {
     json data;
     const Graph& graph = result.augmented_graph;
-    vector<size_t> nodes;
+    std::vector<size_t> nodes;
     graph.for_each_node([&nodes](size_t node_id) { nodes.push_back(node_id); });
     data["nodes"] = nodes;
-    vector<std::pair<size_t, size_t>> edges;
+    std::vector<std::pair<size_t, size_t>> edges;
     graph.for_each_node([&graph, &edges](size_t node_id) {
         graph.for_each_neighbor(node_id, [&edges, node_id](size_t neighbor_id) {
             if (neighbor_id < node_id)
@@ -35,7 +33,7 @@ expected<void, string> save_orthogonal_drawing_to_file(const OrthogonalDrawing& 
     const GraphAttributes& attributes = result.attributes;
 
     graph.for_each_node([&data, &attributes](size_t node_id) {
-        string s_id = std::to_string(node_id);
+        std::string s_id = std::to_string(node_id);
         data["node_colors"][s_id] = color_to_string(attributes.get_node_color(node_id));
         data["node_positions"][s_id] = {
             attributes.get_position_x(node_id),
@@ -43,7 +41,7 @@ expected<void, string> save_orthogonal_drawing_to_file(const OrthogonalDrawing& 
         };
     });
     json shape_array = json::array();
-    optional<string> error_msg;
+    std::optional<std::string> error_msg;
     graph.for_each_node([&](size_t node_id) {
         if (error_msg.has_value())
             return;
@@ -54,7 +52,7 @@ expected<void, string> save_orthogonal_drawing_to_file(const OrthogonalDrawing& 
                 return;
             const auto direction = result.shape.get_direction(node_id, neighbor_id);
             if (!direction) {
-                string error = "Error in save_orthogonal_drawing_to_file: ";
+                std::string error = "Error in save_orthogonal_drawing_to_file: ";
                 error += "direction not set for edge (";
                 error += std::to_string(node_id);
                 error += ", ";
@@ -74,15 +72,16 @@ expected<void, string> save_orthogonal_drawing_to_file(const OrthogonalDrawing& 
         file << data.dump(4);
         return {};
     }
-    string error = "Error in save_orthogonal_drawing_to_file: could not open file ";
+    std::string error = "Error in save_orthogonal_drawing_to_file: could not open file ";
     error += path.string();
     return std::unexpected(error);
 }
 
-expected<OrthogonalDrawing, string> load_orthogonal_drawing_from_file(path path) {
+std::expected<OrthogonalDrawing, std::string>
+load_orthogonal_drawing_from_file(std::filesystem::path path) {
     std::ifstream file(path);
     if (!file.is_open()) {
-        string error_msg = "Error in load_orthogonal_drawing_from_file: could not open file ";
+        std::string error_msg = "Error in load_orthogonal_drawing_from_file: could not open file ";
         error_msg += path.string();
         return std::unexpected(error_msg);
     }
@@ -111,7 +110,8 @@ expected<OrthogonalDrawing, string> load_orthogonal_drawing_from_file(path path)
     return result;
 }
 
-expected<void, string> make_svg(const Graph& graph, const GraphAttributes& attributes, path path) {
+std::expected<void, std::string>
+make_svg(const Graph& graph, const GraphAttributes& attributes, std::filesystem::path path) {
     int max_x = -INT_MAX;
     int max_y = -INT_MAX;
     graph.for_each_node([&](size_t node_id) {
@@ -124,20 +124,12 @@ expected<void, string> make_svg(const Graph& graph, const GraphAttributes& attri
         min_x = std::min(min_x, attributes.get_position_x(node_id));
         min_y = std::min(min_y, attributes.get_position_y(node_id));
     });
-    size_t nodes_size = 25;
-    graph.for_each_node([&](size_t node_id) {
-        if (graph.get_degree_of_node(node_id) <= 4)
-            return;
-        const size_t side = 25 + 3 * (graph.get_degree_of_node(node_id) - 4);
-        if (side > nodes_size)
-            nodes_size = side;
-    });
     const int width = max_x - min_x;
     const int height = max_y - min_y;
     SvgDrawer drawer{width, height};
     auto scale_x = ScaleLinear(min_x - 100, max_x + 100, 0, width);
     auto scale_y = ScaleLinear(min_y - 100, max_y + 100, 0, height);
-    unordered_map<size_t, Point2D> points;
+    std::unordered_map<size_t, Point2D> points;
     graph.for_each_node([&](size_t node_id) {
         const double x = scale_x.map(attributes.get_position_x(node_id));
         const double y = scale_y.map(attributes.get_position_y(node_id));
@@ -150,7 +142,7 @@ expected<void, string> make_svg(const Graph& graph, const GraphAttributes& attri
         });
     });
     graph.for_each_node([&](size_t node_id) {
-        const Color color = attributes.get_node_color(node_id);
+        Color color = attributes.get_node_color(node_id);
         if (color == Color::RED)
             return;
         if (color == Color::GREEN)
@@ -163,7 +155,7 @@ expected<void, string> make_svg(const Graph& graph, const GraphAttributes& attri
             return;
         if (color == Color::GREEN_DARK)
             return;
-        const size_t side =
+        size_t side =
             graph.get_degree_of_node(node_id) <= 4
                 ? 25
                 : static_cast<size_t>(
@@ -178,25 +170,25 @@ expected<void, string> make_svg(const Graph& graph, const GraphAttributes& attri
     return drawer.save_to_file(path);
 }
 
-int min_coordinate(unordered_map<int, NodesContainer>& coordinate_to_nodes) {
+int min_coordinate(std::unordered_map<int, NodesContainer>& coordinate_to_nodes) {
     int min_c = INT_MAX;
-    for (const int coord : coordinate_to_nodes | std::views::keys)
+    for (int coord : coordinate_to_nodes | std::views::keys)
         if (coord < min_c)
             min_c = coord;
     return min_c;
 }
 
-pair<Int_ToInt_HashMap, Int_ToInt_HashMap>
+std::pair<Int_ToInt_HashMap, Int_ToInt_HashMap>
 compute_node_to_index_position(const Graph& graph, const GraphAttributes& attributes) {
     constexpr int THRESHOLD = 45;
-    unordered_map<int, NodesContainer> coordinate_y_to_nodes;
+    std::unordered_map<int, NodesContainer> coordinate_y_to_nodes;
     graph.for_each_node([&](size_t node_id) {
-        const int y = attributes.get_position_y(node_id);
+        int y = attributes.get_position_y(node_id);
         coordinate_y_to_nodes[y].add_node(node_id);
     });
-    unordered_map<int, NodesContainer> coordinate_x_to_nodes;
+    std::unordered_map<int, NodesContainer> coordinate_x_to_nodes;
     graph.for_each_node([&](size_t node_id) {
-        const int x = attributes.get_position_x(node_id);
+        int x = attributes.get_position_x(node_id);
         coordinate_x_to_nodes[x].add_node(node_id);
     });
     size_t y_index = 0;
@@ -224,10 +216,10 @@ compute_node_to_index_position(const Graph& graph, const GraphAttributes& attrib
         coordinate_x_to_nodes.erase(min_x);
         if (coordinate_x_to_nodes.empty())
             break;
-        const int next_min_x = min_coordinate(coordinate_x_to_nodes);
+        int next_min_x = min_coordinate(coordinate_x_to_nodes);
         if (next_min_x - min_x >= THRESHOLD)
             ++x_index;
         min_x = next_min_x;
     }
-    return make_pair(std::move(node_to_coordinate_x), std::move(node_to_coordinate_y));
+    return std::make_pair(std::move(node_to_coordinate_x), std::move(node_to_coordinate_y));
 }

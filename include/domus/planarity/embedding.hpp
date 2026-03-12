@@ -8,7 +8,10 @@
 #include "domus/core/containers.hpp"
 #include "domus/core/graph/graph.hpp"
 
+class EmbeddingImpl;
+
 class Embedding {
+
     std::unordered_map<size_t, CircularSequence> adjacency_list;
     size_t number_of_edges_m = 0;
     PairIntHashSet m_edges;

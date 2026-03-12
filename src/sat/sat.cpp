@@ -3,14 +3,16 @@
 #include <print>
 
 std::string SatSolverResult::to_string() const {
-    std::string r = result == SatSolverResultType::SAT ? "SAT" : "UNSAT";
-    std::string numbers_str = "Numbers: ";
+    std::string result_str;
+    auto out = std::back_inserter(result_str);
+    std::format_to(out, "{}\n", (result == SatSolverResultType::SAT ? "SAT" : "UNSAT"));
+    std::format_to(out, "Numbers: ");
     for (int num : numbers)
-        numbers_str += std::to_string(num) + " ";
-    std::string proof_str = "Proof:\n";
-    for (const std::string& line : proof_lines)
-        proof_str += line + "\n";
-    return r + "\n" + numbers_str + "\n" + proof_str;
+        std::format_to(out, "{} ", num);
+    std::format_to(out, "\nProof:\n");
+    for (const auto& line : proof_lines)
+        std::format_to(out, "{}\n", line);
+    return result_str;
 }
 
 void SatSolverResult::print() const { std::print("{}", to_string()); }

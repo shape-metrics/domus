@@ -29,10 +29,8 @@ struct OrthogonalStats {
     double edge_length_stddev;
     size_t max_bends_per_edge;
     double bends_stddev;
+    std::string to_string() const;
+    void print() const;
 };
 
 OrthogonalStats compute_all_orthogonal_stats(const OrthogonalDrawing& result);
-
-std::string orthogonal_stats_to_string(const OrthogonalStats& stats);
-
-void print_orthogonal_stats(const OrthogonalStats& stats);

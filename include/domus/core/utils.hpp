@@ -6,7 +6,7 @@
 #include <vector>
 
 std::expected<void, std::string>
-save_string_to_file(const std::string& filename, const std::string& content);
+save_string_to_file(std::filesystem::path path, const std::string_view content);
 
 std::expected<std::vector<std::string>, std::string>
 collect_txt_files(std::filesystem::path folder_path);

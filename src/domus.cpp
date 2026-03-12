@@ -3,6 +3,7 @@
 #include <string>
 
 #include "domus/core/graph/file_loader.hpp"
+#include "domus/core/graph/graph.hpp"
 #include "domus/orthogonal/drawing.hpp"
 #include "domus/orthogonal/drawing_builder.hpp"
 #include "domus/orthogonal/drawing_stats.hpp"
@@ -10,8 +11,6 @@
 #include "domus/planarity/embedding.hpp"
 
 using namespace std;
-
-class UndirectedGraph;
 
 int planarity() {
     const auto graph = load_graph_from_txt_file("graph.txt");
@@ -38,14 +37,14 @@ int main() {
         println("{}", graph.error());
         return 1;
     }
+    graph->print();
     const auto result = make_orthogonal_drawing(*graph);
     if (!result) {
         println("{}", result.error());
         return 1;
     }
     make_svg(result->drawing.augmented_graph, result->drawing.attributes, svg_filename).value();
-    const OrthogonalStats stats = compute_all_orthogonal_stats(result->drawing);
-    print_orthogonal_stats(stats);
+    compute_all_orthogonal_stats(result->drawing).print();
     println("Initial number of cycles: {}", result->initial_number_of_cycles);
     println("Number of added cycles: {}", result->number_of_added_cycles);
     println("Number of useless bends: {}", result->number_of_useless_bends);

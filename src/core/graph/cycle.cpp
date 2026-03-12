@@ -5,10 +5,6 @@
 #include <format>
 #include <print>
 
-using namespace std;
-
-void Cycle::clear() { m_nodes_ids.clear(); }
-
 bool Cycle::empty() const { return m_nodes_ids.empty(); }
 
 size_t Cycle::size() const { return m_nodes_ids.size(); }
@@ -47,9 +43,5 @@ size_t Cycle::next_of_node(size_t node_id) const { return m_nodes_ids.next_eleme
 bool Cycle::has_node(size_t node_id) const { return m_nodes_ids.has_element(node_id); }
 
 size_t Cycle::node_position(size_t node_id) const { return *m_nodes_ids.element_position(node_id); }
-
-void Cycle::reverse() { m_nodes_ids.reverse(); }
-
-size_t Cycle::next_index(size_t index) const { return m_nodes_ids.next_index(index); }
 
 void Cycle::for_each(std::function<void(size_t)> func) const { m_nodes_ids.for_each(func); }

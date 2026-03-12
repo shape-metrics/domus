@@ -12,7 +12,8 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/segment.hpp"
-#include "domus/planarity/interlacement.hpp"
+
+#include "interlacement.hpp"
 
 using namespace std;
 

@@ -15,7 +15,7 @@ std::string color_to_string(const Color color) {
     case Color::RED_SPECIAL:
         return "darkred";
     default:
-        assert(false && "Invalid color");
+        assert(false && "color_to_string: invalid color");
         return "Invalid color";
     }
 }
@@ -29,6 +29,6 @@ Color string_to_color(const std::string_view color) {
         return Color::GREEN;
     if (color == "black")
         return Color::BLACK;
-    assert(false && "Invalid color string");
+    assert(false && "string_to_color: invalid color string");
     return Color::BLACK;
 }

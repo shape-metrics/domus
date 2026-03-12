@@ -1,4 +1,4 @@
-#include "domus/orthogonal/shape/clauses_functions.hpp"
+#include "clauses_functions.hpp"
 
 #include <cassert>
 #include <cstddef>
@@ -6,10 +6,9 @@
 
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
-#include "domus/orthogonal/shape/variables_handler.hpp"
 #include "domus/sat/cnf.hpp"
 
-using namespace std;
+#include "variables_handler.hpp"
 
 void add_constraints_at_most_one_is_true(
     Cnf& cnf_builder, int var_1, int var_2, int var_3, int var_4
@@ -55,7 +54,7 @@ void add_clause_at_least_one_in_direction(
     size_t node_id,
     Direction direction
 ) {
-    vector<int> clause;
+    std::vector<int> clause;
     graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
         size_t variable = handler.get_variable(node_id, neighbor_id, direction);
         clause.push_back(static_cast<int>(variable));
@@ -74,7 +73,7 @@ void add_one_edge_per_direction_clauses(
     if (degree == 4) {
         add_clause_at_least_one_in_direction(graph, cnf_builder, handler, node_id, direction);
     } else if (degree == 3) {
-        vector<int> variables;
+        std::vector<int> variables;
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             size_t variable = handler.get_variable(node_id, neighbor_id, direction);
             variables.push_back(static_cast<int>(variable));
@@ -84,7 +83,7 @@ void add_one_edge_per_direction_clauses(
         cnf_builder.add_clause({-variables[0], -variables[2]});
         cnf_builder.add_clause({-variables[1], -variables[2]});
     } else if (degree == 2) {
-        vector<int> clause;
+        std::vector<int> clause;
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             size_t variable = handler.get_variable(node_id, neighbor_id, direction);
             clause.push_back(-static_cast<int>(variable));
@@ -97,13 +96,13 @@ void add_one_edge_per_direction_clauses(
 }
 
 void add_cycles_constraints(
-    Cnf& cnf_builder, const vector<Cycle>& cycles, const VariablesHandler& handler
+    Cnf& cnf_builder, const std::vector<Cycle>& cycles, const VariablesHandler& handler
 ) {
     for (const Cycle& cycle : cycles) {
-        vector<int> at_least_one_down{};
-        vector<int> at_least_one_up{};
-        vector<int> at_least_one_right{};
-        vector<int> at_least_one_left{};
+        std::vector<int> at_least_one_down{};
+        std::vector<int> at_least_one_up{};
+        std::vector<int> at_least_one_right{};
+        std::vector<int> at_least_one_left{};
         cycle.for_each([&](size_t cycle_node) {
             size_t next_cycle_node = cycle.next_of_node(cycle_node);
             at_least_one_down.push_back(

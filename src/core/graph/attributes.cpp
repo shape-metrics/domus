@@ -6,8 +6,6 @@
 #include <ranges>
 #include <unordered_map>
 
-using namespace std;
-
 class GraphAttributesImpl {
     std::unordered_map<Attribute, std::unordered_map<size_t, std::any>> mattribute_to_node;
     bool has_attribute_by_id(Attribute attribute, size_t id) const;
@@ -32,7 +30,7 @@ class GraphAttributesImpl {
     void remove_position(size_t node_id);
 };
 
-string attribute_to_string(Attribute attribute) {
+std::string attribute_to_string(Attribute attribute) {
     switch (attribute) {
     case Attribute::NODES_COLOR:
         return "NODES_COLOR";

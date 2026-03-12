@@ -6,11 +6,9 @@
 
 #include "domus/core/graph/graph.hpp"
 
-using namespace std;
-
-optional<Tree> build_spanning_tree(const Graph& graph) {
+std::optional<Tree> build_spanning_tree(const Graph& graph) {
     NodesContainer visited;
-    queue<size_t> queue;
+    std::queue<size_t> queue;
     queue.push(graph.get_one_node_id());
     Tree tree(queue.front());
     visited.add_node(queue.front());
@@ -30,20 +28,20 @@ optional<Tree> build_spanning_tree(const Graph& graph) {
     return tree;
 }
 
-vector<size_t> get_path_from_root(const Tree& tree, size_t node_id) {
-    vector<size_t> path;
+std::vector<size_t> get_path_from_root(const Tree& tree, size_t node_id) {
+    std::vector<size_t> path;
     path.push_back(node_id);
     while (!tree.is_root(node_id)) { // while the node has a parent
         node_id = tree.get_parent(node_id);
         path.push_back(node_id);
     }
-    ranges::reverse(path);
+    std::ranges::reverse(path);
     return path;
 }
 
 size_t compute_common_ancestor(const Tree& tree, size_t node1, size_t node2) {
-    vector<size_t> path1 = get_path_from_root(tree, node1);
-    vector<size_t> path2 = get_path_from_root(tree, node2);
+    std::vector<size_t> path1 = get_path_from_root(tree, node1);
+    std::vector<size_t> path2 = get_path_from_root(tree, node2);
     size_t i = 0;
     while (i < path1.size() && i < path2.size() && path1[i] == path2[i])
         ++i;

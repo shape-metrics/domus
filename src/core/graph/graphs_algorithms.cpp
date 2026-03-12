@@ -1,5 +1,6 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <functional>
 #include <list>
@@ -14,13 +15,11 @@
 #include "domus/core/tree/tree.hpp"
 #include "domus/core/tree/tree_algorithms.hpp"
 
-using namespace std;
-
 bool is_graph_connected(const Graph& graph) {
     if (graph.size() == 0)
         return true;
     NodesContainer visited;
-    vector<size_t> stack;
+    std::vector<size_t> stack;
     stack.push_back(graph.get_one_node_id());
     while (!stack.empty()) {
         const size_t node_id = stack.back();
@@ -39,8 +38,8 @@ bool dfs_find_cycle(
     const Graph& graph,
     Int_ToInt_HashMap& state,
     Int_ToInt_HashMap& parent,
-    optional<size_t>& cycle_start,
-    optional<size_t>& cycle_end
+    std::optional<size_t>& cycle_start,
+    std::optional<size_t>& cycle_end
 ) {
     state.add(node_id, 1); // mark as visiting (gray)
     bool found_cycle = false;
@@ -60,34 +59,34 @@ bool dfs_find_cycle(
     return found_cycle;
 }
 
-optional<Cycle> find_a_directed_cycle_in_graph(const Graph& graph) {
+std::optional<Cycle> find_a_directed_cycle_in_graph(const Graph& graph) {
     Int_ToInt_HashMap state;
     Int_ToInt_HashMap parent;
-    optional<size_t> cycle_start = std::nullopt;
-    optional<size_t> cycle_end = std::nullopt;
-    optional<Cycle> cycle;
+    std::optional<size_t> cycle_start = std::nullopt;
+    std::optional<size_t> cycle_end = std::nullopt;
+    std::optional<Cycle> cycle;
     graph.for_each_node([&](size_t node_id) {
         if (cycle.has_value())
             return;
         if (!state.has(node_id))
             if (dfs_find_cycle(node_id, graph, state, parent, cycle_start, cycle_end)) {
-                vector<size_t> cycle_vec;
+                std::vector<size_t> cycle_vec;
                 for (size_t v = cycle_end.value(); v != cycle_start; v = parent.get(v))
                     cycle_vec.push_back(v);
                 cycle_vec.push_back(cycle_start.value());
-                ranges::reverse(cycle_vec.begin(), cycle_vec.end());
+                std::ranges::reverse(cycle_vec.begin(), cycle_vec.end());
                 cycle.emplace(cycle_vec);
             }
     });
     return cycle;
 }
 
-vector<Cycle> compute_cycle_basis(const Graph& graph) {
+std::vector<Cycle> compute_cycle_basis(const Graph& graph) {
     assert(
         is_graph_connected(graph) && "Error in compute_cycle_basis: input graph is not connected"
     );
     const Tree spanning = *build_spanning_tree(graph);
-    vector<Cycle> cycles;
+    std::vector<Cycle> cycles;
     graph.for_each_node([&](size_t node_id) {
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (node_id > neighbor_id)
@@ -95,15 +94,15 @@ vector<Cycle> compute_cycle_basis(const Graph& graph) {
             if (spanning.has_edge(node_id, neighbor_id))
                 return;
             size_t common_ancestor = compute_common_ancestor(spanning, node_id, neighbor_id);
-            vector<size_t> path1 = get_path_from_root(spanning, node_id);
-            vector<size_t> path2 = get_path_from_root(spanning, neighbor_id);
-            ranges::reverse(path1.begin(), path1.end());
-            ranges::reverse(path2.begin(), path2.end());
+            std::vector<size_t> path1 = get_path_from_root(spanning, node_id);
+            std::vector<size_t> path2 = get_path_from_root(spanning, neighbor_id);
+            std::ranges::reverse(path1.begin(), path1.end());
+            std::ranges::reverse(path2.begin(), path2.end());
             while (path1.back() != common_ancestor)
                 path1.pop_back();
             while (path2.back() != common_ancestor)
                 path2.pop_back();
-            ranges::reverse(path1.begin(), path1.end());
+            std::ranges::reverse(path1.begin(), path1.end());
             path1.insert(path1.end(), path2.begin(), path2.end());
             path1.pop_back();
             cycles.emplace_back(path1);
@@ -112,17 +111,17 @@ vector<Cycle> compute_cycle_basis(const Graph& graph) {
     return cycles;
 }
 
-optional<vector<size_t>> make_topological_ordering(const Graph& graph) {
+std::optional<std::vector<size_t>> make_topological_ordering(const Graph& graph) {
     Int_ToInt_HashMap in_degree;
     graph.for_each_node([&](size_t node_id) {
         in_degree[node_id] = graph.get_in_degree_of_node(node_id);
     });
-    queue<size_t> queue;
+    std::queue<size_t> queue;
     graph.for_each_node([&](size_t node_id) {
         if (in_degree[node_id] == 0)
             queue.push(node_id);
     });
-    vector<size_t> topological_order;
+    std::vector<size_t> topological_order;
     size_t count = 0;
     while (!queue.empty()) {
         size_t node_id = queue.front();
@@ -139,11 +138,11 @@ optional<vector<size_t>> make_topological_ordering(const Graph& graph) {
     return topological_order;
 }
 
-vector<Graph> compute_connected_components(const Graph& graph) {
+std::vector<Graph> compute_connected_components(const Graph& graph) {
     NodesContainer visited;
-    vector<Graph> components;
-    function<void(size_t, Graph& component)> explore_component = [&](size_t node_id,
-                                                                     Graph& component) {
+    std::vector<Graph> components;
+    std::function<void(size_t, Graph& component)> explore_component = [&](size_t node_id,
+                                                                          Graph& component) {
         visited.add_node(node_id);
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (!component.has_node(neighbor_id))
@@ -167,8 +166,8 @@ vector<Graph> compute_connected_components(const Graph& graph) {
 size_t compute_number_of_connected_components(const Graph& graph) {
     NodesContainer visited;
     size_t components = 0;
-    const function<void(size_t)> explore_component = [&](size_t start_node_id) {
-        stack<size_t> stack;
+    const std::function<void(size_t)> explore_component = [&](size_t start_node_id) {
+        std::stack<size_t> stack;
         stack.push(start_node_id);
         while (!stack.empty()) {
             size_t node_id = stack.top();
@@ -198,9 +197,9 @@ void dfs_bic_com(
     Int_ToInt_HashMap& prev_of_node,
     size_t& next_id_to_assign,
     Int_ToInt_HashMap& low_point,
-    list<size_t>& stack_of_nodes,
-    list<pair<size_t, size_t>>& stack_of_edges,
-    vector<Graph>& components,
+    std::list<size_t>& stack_of_nodes,
+    std::list<Edge>& stack_of_edges,
+    std::vector<Graph>& components,
     NodesContainer& cut_vertices
 );
 
@@ -209,10 +208,10 @@ BiconnectedComponents compute_biconnected_components(const Graph& graph) {
     Int_ToInt_HashMap prev_of_node;
     Int_ToInt_HashMap low_point;
     NodesContainer cut_vertices;
-    vector<Graph> components;
+    std::vector<Graph> components;
     size_t next_id_to_assign = 0;
-    list<size_t> stack_of_nodes{};
-    list<pair<size_t, size_t>> stack_of_edges{};
+    std::list<size_t> stack_of_nodes{};
+    std::list<Edge> stack_of_edges{};
     graph.for_each_node([&](size_t node_id) {
         if (old_node_id_to_new_id.has(node_id)) // node visited
             return;
@@ -237,7 +236,7 @@ BiconnectedComponents compute_biconnected_components(const Graph& graph) {
 }
 
 void build_component(
-    Graph& component, const list<size_t>& nodes, const list<pair<size_t, size_t>>& edges
+    Graph& component, const std::list<size_t>& nodes, const std::list<Edge>& edges
 ) {
     for (const size_t node : nodes)
         component.add_node(node);
@@ -252,9 +251,9 @@ void dfs_bic_com(
     Int_ToInt_HashMap& prev_of_node,
     size_t& next_id_to_assign,
     Int_ToInt_HashMap& low_point,
-    list<size_t>& stack_of_nodes,
-    list<pair<size_t, size_t>>& stack_of_edges,
-    vector<Graph>& components,
+    std::list<size_t>& stack_of_nodes,
+    std::list<Edge>& stack_of_edges,
+    std::vector<Graph>& components,
     NodesContainer& cut_vertices
 ) {
     old_node_id_to_new_id[node_id] = next_id_to_assign;
@@ -265,8 +264,8 @@ void dfs_bic_com(
         if (prev_of_node.has(node_id) && prev_of_node[node_id] == neighbor_id)
             return;
         if (!old_node_id_to_new_id.has(neighbor_id)) { // means the node is not visited
-            list<size_t> new_stack_of_nodes{};
-            list<pair<size_t, size_t>> new_stack_of_edges{};
+            std::list<size_t> new_stack_of_nodes{};
+            std::list<Edge> new_stack_of_edges{};
             ++children_number;
             prev_of_node[neighbor_id] = node_id;
             new_stack_of_nodes.push_back(neighbor_id);
@@ -314,8 +313,8 @@ void dfs_bic_com(
     }
 }
 
-string BiconnectedComponents::to_string() const {
-    string result = "Biconnected Components:\n";
+std::string BiconnectedComponents::to_string() const {
+    std::string result = "Biconnected Components:\n";
     result += "Cut vertices: ";
     m_cutvertices.for_each([&result](size_t cv) { result += std::to_string(cv) + " "; });
     result += "\nComponents:\n";
@@ -328,7 +327,7 @@ void BiconnectedComponents::print() const { println("{}", to_string()); }
 
 bool bfs_bipartition(const Graph& graph, size_t node_id, Bipartition& bipartition) {
     bipartition.set_side(node_id, false);
-    queue<size_t> queue;
+    std::queue<size_t> queue;
     queue.push(node_id);
     bool is_bipartite = true;
     while (!queue.empty()) {
@@ -347,7 +346,7 @@ bool bfs_bipartition(const Graph& graph, size_t node_id, Bipartition& bipartitio
     return is_bipartite;
 }
 
-optional<Bipartition> compute_bipartition(const Graph& graph) {
+std::optional<Bipartition> compute_bipartition(const Graph& graph) {
     Bipartition bipartition{};
     bool is_bipartite = true;
     graph.for_each_node([&](size_t node_id) {
@@ -376,7 +375,7 @@ std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
                 return;
             if (visited.has_node(neighbor_id)) {
                 // reconstruct cycle from u to v
-                vector<size_t> cycle_vec;
+                std::vector<size_t> cycle_vec;
                 size_t curr = node_id;
                 while (curr != neighbor_id) {
                     cycle_vec.push_back(curr);
@@ -397,10 +396,10 @@ std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
     return found_cycle;
 }
 
-const vector<Graph>& BiconnectedComponents::get_components() const { return m_components; }
+const std::vector<Graph>& BiconnectedComponents::get_components() const { return m_components; }
 
 BiconnectedComponents::BiconnectedComponents(
-    NodesContainer&& cutvertices, vector<Graph>&& components
+    NodesContainer&& cutvertices, std::vector<Graph>&& components
 )
     : m_cutvertices(std::move(cutvertices)), m_components(std::move(components)) {}
 

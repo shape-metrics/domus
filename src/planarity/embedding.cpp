@@ -6,8 +6,6 @@
 #include <print>
 #include <stack>
 
-using namespace std;
-
 Embedding::Embedding(const Graph& graph) {
     graph.for_each_node([&](size_t node_id) { adjacency_list[node_id]; });
 }
@@ -34,25 +32,28 @@ void Embedding::add_edge(size_t from_id, size_t to_id) {
 
 bool Embedding::is_consistent() const { return m_edges_to_add.empty(); }
 
-string Embedding::to_string() const {
-    string result;
-    // for (const auto& [node_id, neighbors] : adjacency_list) {
-    //     result += "Node " + std::to_string(node_id) + " neighbors:";
-    //     for (size_t neighbor_id : neighbors)
-    //         result += " " + std::to_string(neighbor_id);
-    //     result += "\n";
-    // }
+std::string Embedding::to_string() const {
+    std::string result;
+    auto out = std::back_inserter(result);
+    std::format_to(out, "Embedding:\n");
+    for_each_node([&](size_t node_id) {
+        std::format_to(out, "{}: [ ", node_id);
+        for_each_neighbor(node_id, [&](size_t neighbor_id) {
+            std::format_to(out, "{} ", neighbor_id);
+        });
+        std::format_to(out, "]\n");
+    });
     return result;
 }
 
 size_t Embedding::size() const { return adjacency_list.size(); }
 
-void Embedding::for_each_node(function<void(size_t)> func) const {
+void Embedding::for_each_node(std::function<void(size_t)> func) const {
     for (const auto& [node_id, neighbors] : adjacency_list)
         func(node_id);
 }
 
-void Embedding::for_each_neighbor(size_t node_id, function<void(size_t)> func) const {
+void Embedding::for_each_neighbor(size_t node_id, std::function<void(size_t)> func) const {
     adjacency_list.at(node_id).for_each(func);
 }
 
@@ -98,8 +99,8 @@ size_t compute_number_of_connected_components(const Embedding& embedding) {
     );
     NodesContainer visited;
     size_t components = 0;
-    const function<void(size_t)> explore_component = [&](size_t start_node_id) {
-        stack<size_t> stack;
+    const std::function<void(size_t)> explore_component = [&](size_t start_node_id) {
+        std::stack<size_t> stack;
         stack.push(start_node_id);
         while (!stack.empty()) {
             size_t node_id = stack.top();

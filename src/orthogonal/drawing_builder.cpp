@@ -18,12 +18,12 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/nlohmann/json.hpp"
 #include "domus/orthogonal/area_compacter.hpp"
-#include "domus/orthogonal/equivalence_classes.hpp"
 #include "domus/orthogonal/shape/shape.hpp"
 #include "domus/orthogonal/shape/shape_builder.hpp"
 
+#include "equivalence_classes.hpp"
+
 using namespace std;
-using namespace std::filesystem;
 
 vector<size_t>
 path_in_class(const Graph& graph, size_t from, size_t to, const Shape& shape, bool go_horizontal) {
@@ -727,7 +727,7 @@ void fix_negative_positions(const Graph& graph, GraphAttributes& attributes) {
 using json = nlohmann::json;
 
 expected<void, string>
-save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, path path) {
+save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, std::filesystem::path path) {
     auto saved = save_orthogonal_drawing_to_file(result.drawing, path);
     if (!saved) {
         string error_msg = "Error in save_shape_metrics_drawing_to_file: " + saved.error();
@@ -747,7 +747,8 @@ save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, path path)
     return {};
 }
 
-expected<ShapeMetricsDrawing, string> load_shape_metrics_drawing_from_file(path path) {
+expected<ShapeMetricsDrawing, string>
+load_shape_metrics_drawing_from_file(std::filesystem::path path) {
     auto drawing = load_orthogonal_drawing_from_file(path);
     if (!drawing) {
         string error_msg = "Error in load_shape_metrics_drawing_from_file: " + drawing.error();

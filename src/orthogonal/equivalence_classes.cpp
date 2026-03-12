@@ -1,4 +1,4 @@
-#include "domus/orthogonal/equivalence_classes.hpp"
+#include "equivalence_classes.hpp"
 
 #include <cassert>
 #include <functional>
@@ -8,8 +8,6 @@
 #include "domus/core/containers.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/shape/shape.hpp"
-
-using namespace std;
 
 bool EquivalenceClasses::has_class(size_t class_id) const { return m_all_classes.has(class_id); }
 
@@ -43,7 +41,7 @@ void directional_node_expander(
     size_t node_id,
     size_t class_id,
     EquivalenceClasses& equivalence_classes,
-    const function<bool(const Shape&, size_t, size_t)>& is_direction_wrong
+    const std::function<bool(const Shape&, size_t, size_t)>& is_direction_wrong
 ) {
     equivalence_classes.set_class(node_id, class_id);
     graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
@@ -102,7 +100,7 @@ void vertical_node_expander(
     );
 }
 
-pair<const EquivalenceClasses, const EquivalenceClasses>
+std::pair<const EquivalenceClasses, const EquivalenceClasses>
 build_equivalence_classes(const Shape& shape, const Graph& graph) {
     EquivalenceClasses equivalence_classes_x;
     EquivalenceClasses equivalence_classes_y;
@@ -120,10 +118,14 @@ build_equivalence_classes(const Shape& shape, const Graph& graph) {
         if (!equivalence_classes_y.has_elem_a_class(node_id))
             equivalence_classes_y.set_class(node_id, next_class_y++);
     });
-    return make_pair(std::move(equivalence_classes_x), std::move(equivalence_classes_y));
+    return std::make_pair(std::move(equivalence_classes_x), std::move(equivalence_classes_y));
 }
 
-tuple<Graph, Graph, unordered_map<Edge, Edge, edge_hash>, unordered_map<Edge, Edge, edge_hash>>
+std::tuple<
+    Graph,
+    Graph,
+    std::unordered_map<Edge, Edge, edge_hash>,
+    std::unordered_map<Edge, Edge, edge_hash>>
 equivalence_classes_to_ordering(
     const EquivalenceClasses& equivalence_classes_x,
     const EquivalenceClasses& equivalence_classes_y,

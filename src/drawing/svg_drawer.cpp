@@ -6,9 +6,6 @@
 
 #include "domus/drawing/polygon.hpp"
 
-using namespace std;
-using namespace std::filesystem;
-
 SvgDrawer::SvgDrawer(int width, int height)
     : m_width(width), m_height(height), m_scale_y(0, height, height, 0) {
     m_svg << "<svg height=\"" << m_height << "\" width=\"" << m_width << "\" ";
@@ -40,20 +37,20 @@ void SvgDrawer::add(Square2D& square, int corner_radious) {
     }
 }
 
-void SvgDrawer::add(Line2D& line, string color) {
+void SvgDrawer::add(Line2D& line, const std::string_view color) {
     m_svg << "<line x1=\"" << line.p1_m.x_m << "\" y1=\"" << m_scale_y.map(line.p1_m.y_m) << "\" ";
     m_svg << "x2=\"" << line.p2_m.x_m << "\" y2=\"" << m_scale_y.map(line.p2_m.y_m) << "\" ";
     m_svg << "style=\"stroke:" << color << ";stroke-width:2\" />" << std::endl;
 }
 
-void SvgDrawer::add(Polygon2D& polygon, string color) {
+void SvgDrawer::add(Polygon2D& polygon, const std::string_view color) {
     m_svg << "<polygon points=\"";
     for (const Point2D& point : polygon.getPoints())
         m_svg << point.x_m << "," << m_scale_y.map(point.y_m) << " ";
     m_svg << "\" style=\"fill:white;stroke:" << color << ";stroke-width:2\" />" << std::endl;
 }
 
-void SvgDrawer::add(const Path2D& path, string color) {
+void SvgDrawer::add(const Path2D& path, const std::string_view color) {
     m_svg << "<path d=\"";
     for (size_t i = 0; i < path.points.size(); i++) {
         if (i == 0)
@@ -64,7 +61,7 @@ void SvgDrawer::add(const Path2D& path, string color) {
     m_svg << "\" style=\"fill:none;stroke:" << color << ";stroke-width:1\" />" << std::endl;
 }
 
-void SvgDrawer::add_and_smooth(Path2D& path, string color) {
+void SvgDrawer::add_and_smooth(Path2D& path, const std::string_view color) {
     m_svg << "<path d=\"";
     for (size_t i = 0; i < path.points.size(); i++) {
         if (i == 0)
@@ -75,10 +72,10 @@ void SvgDrawer::add_and_smooth(Path2D& path, string color) {
     m_svg << "\" style=\"fill:none;stroke:" << color << ";stroke-width:1\" />" << std::endl;
 }
 
-expected<void, string> SvgDrawer::save_to_file(path path) {
+std::expected<void, std::string> SvgDrawer::save_to_file(std::filesystem::path path) {
     std::ofstream svgFile(path);
     if (!svgFile.is_open()) {
-        string error_msg = "Error in SvgDrawer::save_to_file: could not open file ";
+        std::string error_msg = "Error in SvgDrawer::save_to_file: could not open file ";
         error_msg += path.string();
         return std::unexpected(error_msg);
     }

@@ -22,9 +22,9 @@ class SvgDrawer {
     SvgDrawer(int width, int height);
     void add(Square2D& square, int corner_radious = 0);
     void add(Circle2D& circle);
-    void add(Line2D& line, std::string color = "black");
-    void add(Polygon2D& polygon, std::string color = "black");
-    void add(const Path2D& path, std::string color);
-    void add_and_smooth(Path2D& path, std::string color = "black");
+    void add(Line2D& line, const std::string_view color = "black");
+    void add(Polygon2D& polygon, const std::string_view color = "black");
+    void add(const Path2D& path, const std::string_view color);
+    void add_and_smooth(Path2D& path, const std::string_view color = "black");
     std::expected<void, std::string> save_to_file(std::filesystem::path path);
 };

@@ -4,13 +4,10 @@
 #include <fstream>
 #include <sstream>
 
-using namespace std;
-using namespace std::filesystem;
-
-vector<string> parse_csv_line(const string& line, char delimiter) {
-    vector<string> tokens;
-    string token;
-    istringstream token_stream(line);
+std::vector<std::string> parse_csv_line(const std::string_view line, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream token_stream(line.data());
     bool in_quotes = false;
     while (std::getline(token_stream, token, delimiter)) {
         // Handle quoted fields that might contain delimiters
@@ -22,7 +19,7 @@ vector<string> parse_csv_line(const string& line, char delimiter) {
                 // Multi-part quoted token
                 in_quotes = true;
                 token = token.substr(1);
-                string rest;
+                std::string rest;
                 while (in_quotes && std::getline(token_stream, rest, delimiter)) {
                     token += delimiter + rest;
                     if (!rest.empty() && rest.back() == '"') {
@@ -40,19 +37,19 @@ vector<string> parse_csv_line(const string& line, char delimiter) {
 std::expected<CSVData, std::string> parse_csv(std::filesystem::path path) {
     char delimiter = ',';
     CSVData data;
-    ifstream file(path);
+    std::ifstream file(path);
     if (!file.is_open()) {
-        string error = "Error parsing csv: could not open file <" + path.string() + ">";
+        std::string error = "Error parsing csv: could not open file <" + path.string() + ">";
         return std::unexpected(error);
     }
-    string line;
+    std::string line;
     if (std::getline(file, line))
         data.headers = parse_csv_line(line, delimiter);
     const size_t header_size = data.headers.size();
     while (std::getline(file, line)) {
         auto tokens = parse_csv_line(line, delimiter);
         if (tokens.size() != header_size) {
-            string error = "Error parsing csv: inconsistent table size";
+            std::string error = "Error parsing csv: inconsistent table size";
             return std::unexpected(error);
         }
         data.rows.push_back(tokens);

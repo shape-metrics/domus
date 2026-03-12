@@ -5,10 +5,9 @@
 
 #include "domus/core/circular_sequence.hpp"
 
+class CycleImpl;
 class Cycle {
     CircularSequence m_nodes_ids;
-    size_t next_index(size_t index) const;
-    void reverse();
 
   public:
     Cycle(std::ranges::input_range auto&& nodes_ids) : m_nodes_ids(nodes_ids) {}
@@ -22,7 +21,6 @@ class Cycle {
         }
         return *this;
     }
-    void clear();
     bool empty() const;
     size_t size() const;
     void insert(size_t index, size_t node_id);

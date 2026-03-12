@@ -1,36 +1,37 @@
 #include "domus/core/utils.hpp"
 
 #include <cmath>
+#include <format>
 #include <fstream>
 
-using namespace std;
-
-expected<void, string> save_string_to_file(const string& filename, const string& content) {
-    std::ofstream outfile(filename);
+std::expected<void, std::string>
+save_string_to_file(std::filesystem::path path, const std::string_view content) {
+    std::ofstream outfile(path);
     if (outfile.is_open()) {
         outfile << content;
         outfile.close();
         return {};
     }
-    string error_msg = "Error in save_string_to_file: ";
-    error_msg += "Failed to open file for writing: " + filename;
-    return unexpected(error_msg);
+    return std::unexpected(
+        std::format("save_string_to_file: failed to open file for writing: {}", path.c_str())
+    );
 }
 
-expected<vector<string>, string> collect_txt_files(std::filesystem::path folder_path) {
-    vector<string> txt_files;
-    if (!filesystem::exists(folder_path)) {
-        string error_msg = "Error in collect_txt_files: ";
+std::expected<std::vector<std::string>, std::string>
+collect_txt_files(std::filesystem::path folder_path) {
+    std::vector<std::string> txt_files;
+    if (!std::filesystem::exists(folder_path)) {
+        std::string error_msg = "Error in collect_txt_files: ";
         error_msg += "Folder does not exist: " + folder_path.string();
-        return unexpected(error_msg);
+        return std::unexpected(error_msg);
     }
-    for (const auto& entry : filesystem::recursive_directory_iterator(folder_path))
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(folder_path))
         if (entry.is_regular_file() && entry.path().extension() == ".txt")
             txt_files.push_back(entry.path().string());
     return txt_files;
 }
 
-double compute_stddev(const vector<size_t>& values) {
+double compute_stddev(const std::vector<size_t>& values) {
     if (values.size() <= 1)
         return 0.0;
     size_t sum = 0;

@@ -12,14 +12,15 @@
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
-#include "domus/orthogonal/shape/clauses_functions.hpp"
-#include "domus/orthogonal/shape/variables_handler.hpp"
 #include "domus/sat/cnf.hpp"
 #include "domus/sat/sat.hpp"
 
-using namespace std;
+#include "clauses_functions.hpp"
+#include "variables_handler.hpp"
 
-Shape result_to_shape(const Graph& graph, const vector<int>& numbers, VariablesHandler& handler) {
+Shape result_to_shape(
+    const Graph& graph, const std::vector<int>& numbers, VariablesHandler& handler
+) {
     for (const int var : numbers) {
         if (var > 0)
             handler.set_variable_value(static_cast<size_t>(var), true);
@@ -40,17 +41,17 @@ Shape result_to_shape(const Graph& graph, const vector<int>& numbers, VariablesH
 }
 
 Edge find_edges_to_split(
-    const vector<string>& proof_lines,
+    const std::vector<std::string>& proof_lines,
     std::mt19937& random_engine,
     const VariablesHandler& handler,
     size_t number_of_variables
 ) {
-    vector<int> unit_clauses;
+    std::vector<int> unit_clauses;
     for (size_t i = proof_lines.size(); i > 0; i--) {
-        const string& line = proof_lines[i - 1];
+        const std::string& line = proof_lines[i - 1];
         // split line based on " "
-        vector<int> tokens;
-        string token;
+        std::vector<int> tokens;
+        std::string token;
         for (char c : line) {
             if (c == 'd')
                 continue;
@@ -71,28 +72,36 @@ Edge find_edges_to_split(
     }
     assert(!unit_clauses.empty()); // Could not find the edge to remove
     // pick one of the first two unit clauses
-    size_t random_index = random_engine() % min(unit_clauses.size(), static_cast<size_t>(2));
+    size_t random_index = random_engine() % std::min(unit_clauses.size(), static_cast<size_t>(2));
     size_t variable = static_cast<size_t>(std::abs(unit_clauses[random_index]));
     return handler.get_edge_of_variable(variable);
 }
 
-optional<Shape> build_shape_or_add_corner(
-    Graph& graph, GraphAttributes& attributes, vector<Cycle>& cycles, std::mt19937& random_engine
+std::optional<Shape> build_shape_or_add_corner(
+    Graph& graph,
+    GraphAttributes& attributes,
+    std::vector<Cycle>& cycles,
+    std::mt19937& random_engine
 );
 
 Shape build_shape(
-    Graph& graph, GraphAttributes& attributes, vector<Cycle>& cycles, const bool randomize
+    Graph& graph, GraphAttributes& attributes, std::vector<Cycle>& cycles, const bool randomize
 ) {
     const size_t seed = randomize ? std::random_device{}() : 42;
     std::mt19937 random_engine(seed);
-    optional<Shape> shape = build_shape_or_add_corner(graph, attributes, cycles, random_engine);
+    std::optional<Shape> shape =
+        build_shape_or_add_corner(graph, attributes, cycles, random_engine);
     while (!shape.has_value())
         shape = build_shape_or_add_corner(graph, attributes, cycles, random_engine);
     return std::move(shape.value());
 }
 
 void add_corner_inside_edge(
-    size_t from_id, size_t to_id, Graph& graph, GraphAttributes& attributes, vector<Cycle>& cycles
+    size_t from_id,
+    size_t to_id,
+    Graph& graph,
+    GraphAttributes& attributes,
+    std::vector<Cycle>& cycles
 ) {
     assert(graph.are_neighbors(from_id, to_id));
     size_t new_node_id = graph.add_node();
@@ -112,8 +121,11 @@ void add_corner_inside_edge(
     }
 }
 
-optional<Shape> build_shape_or_add_corner(
-    Graph& graph, GraphAttributes& attributes, vector<Cycle>& cycles, std::mt19937& random_engine
+std::optional<Shape> build_shape_or_add_corner(
+    Graph& graph,
+    GraphAttributes& attributes,
+    std::vector<Cycle>& cycles,
+    std::mt19937& random_engine
 ) {
     VariablesHandler handler(graph);
     Cnf cnf{};

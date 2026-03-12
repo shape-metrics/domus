@@ -1,13 +1,10 @@
 #include "domus/core/graph/segment.hpp"
 
 #include <print>
-#include <utility>
 
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
-
-using namespace std;
 
 Segment::Segment() {
     this->segment = {};
@@ -26,14 +23,13 @@ bool Segment::has_attachment(const size_t attachment_id) const {
 
 void Segment::add_attachment(const size_t attachment_id) { attachments.add_node(attachment_id); }
 
-string Segment::to_string() const {
-    string result = "Segment:\n";
-    result += segment.to_string();
-    result += "Attachments: ";
-    attachments.for_each([&result](size_t attachment_id) {
-        result += std::to_string(attachment_id) + " ";
-    });
-    result += "\n";
+std::string Segment::to_string() const {
+    std::string result = "Segment:\n";
+    auto out = std::back_inserter(result);
+    result.append(segment.to_string());
+    std::format_to(out, "Attachments: ");
+    attachments.for_each([&](size_t attachment_id) { std::format_to(out, "{} ", attachment_id); });
+    result.push_back('\n');
     return result;
 }
 
@@ -52,11 +48,11 @@ bool is_segment_a_path(const Segment& segment) {
     return is_path;
 }
 
-deque<size_t> compute_path_between_attachments(
+std::deque<size_t> compute_path_between_attachments(
     const Segment& segment, const size_t attachment_1, const size_t attachment_2
 ) {
     Int_ToInt_HashMap prev_of_node;
-    deque<size_t> queue{};
+    std::deque<size_t> queue{};
     queue.push_back(attachment_1);
     while (!queue.empty()) {
         const size_t node_id = queue.front();
@@ -81,7 +77,7 @@ deque<size_t> compute_path_between_attachments(
         if (prev_of_node.has(attachment_2))
             keep_exploring = false;
     }
-    deque<size_t> path;
+    std::deque<size_t> path;
     size_t crawl = attachment_2;
     while (crawl != attachment_1) {
         path.push_front(crawl);
@@ -95,9 +91,9 @@ void dfs_find_segments(
     const Graph& graph,
     const size_t node_id,
     NodesContainer& is_node_visited,
-    vector<size_t>& nodes_in_segment,
+    std::vector<size_t>& nodes_in_segment,
     const Cycle& cycle,
-    vector<pair<size_t, size_t>>& edges_in_segment
+    std::vector<Edge>& edges_in_segment
 ) {
     nodes_in_segment.push_back(node_id);
     is_node_visited.add_node(node_id);
@@ -127,9 +123,8 @@ void add_cycle_edges(const Cycle& cycle, Segment& segment) {
     });
 }
 
-Segment build_segment(
-    const vector<size_t>& nodes, vector<pair<size_t, size_t>>& edges, const Cycle& cycle
-) {
+Segment
+build_segment(const std::vector<size_t>& nodes, std::vector<Edge>& edges, const Cycle& cycle) {
     Segment segment;
     cycle.for_each([&](size_t node_id) { segment.get_segment().add_node(node_id); });
     for (const size_t node_id : nodes)
@@ -148,7 +143,7 @@ Segment build_segment(
     return segment;
 }
 
-void find_segments(const Graph& graph, const Cycle& cycle, vector<Segment>& segments) {
+void find_segments(const Graph& graph, const Cycle& cycle, std::vector<Segment>& segments) {
     NodesContainer visited;
     graph.for_each_node([&](size_t node_id) {
         if (cycle.has_node(node_id))
@@ -156,8 +151,8 @@ void find_segments(const Graph& graph, const Cycle& cycle, vector<Segment>& segm
     });
     graph.for_each_node([&](size_t node_id) {
         if (!visited.has_node(node_id)) {
-            vector<size_t> nodes;               // does NOT contain cycle nodes
-            vector<pair<size_t, size_t>> edges; // does NOT contain edges of the cycle
+            std::vector<size_t> nodes; // does NOT contain cycle nodes
+            std::vector<Edge> edges;   // does NOT contain edges of the cycle
             dfs_find_segments(graph, node_id, visited, nodes, cycle, edges);
             segments.push_back(build_segment(nodes, edges, cycle));
         }
@@ -175,7 +170,7 @@ Segment build_chord(const size_t attachment_1, const size_t attachment_2, const 
     return chord;
 }
 
-void find_chords(const Graph& graph, const Cycle& cycle, vector<Segment>& segments) {
+void find_chords(const Graph& graph, const Cycle& cycle, std::vector<Segment>& segments) {
     cycle.for_each([&](size_t node_id) {
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (node_id < neighbor_id)
@@ -189,8 +184,8 @@ void find_chords(const Graph& graph, const Cycle& cycle, vector<Segment>& segmen
     });
 }
 
-vector<Segment> compute_segments(const Graph& graph, const Cycle& cycle) {
-    vector<Segment> segments;
+std::vector<Segment> compute_segments(const Graph& graph, const Cycle& cycle) {
+    std::vector<Segment> segments;
     find_segments(graph, cycle, segments);
     find_chords(graph, cycle, segments);
     return segments;

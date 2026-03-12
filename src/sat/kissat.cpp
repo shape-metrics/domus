@@ -11,22 +11,20 @@ extern "C" {
 #include "kissat/src/proof.h"
 }
 
-#include "domus/core/memory_file.hpp"
+#include "../core/memory_file.hpp"
 #include "domus/sat/cnf.hpp"
-
-using namespace std;
 
 class KissatSolver {
   private:
     kissat* m_solver = nullptr;
-    string m_proof{};
+    std::string m_proof{};
     KissatSolver(kissat* solver) : m_solver(solver) {}
 
   public:
-    static expected<KissatSolver, string> create() {
+    static std::expected<KissatSolver, std::string> create() {
         kissat* solver = kissat_init();
         if (!solver)
-            return unexpected("Failed to initialize Kissat solver");
+            return std::unexpected("Failed to initialize Kissat solver");
         return KissatSolver(solver);
     }
 
@@ -35,13 +33,13 @@ class KissatSolver {
             kissat_release(m_solver);
     }
 
-    void add_clause(const vector<int>& clause) {
+    void add_clause(const std::vector<int>& clause) {
         for (int lit : clause)
             kissat_add(m_solver, lit);
         kissat_add(m_solver, 0); // terminate clause
     }
 
-    expected<bool, string> solve() {
+    std::expected<bool, std::string> solve() {
         file proof_file;
         MemoryFile memory_file = MemoryFile::create().value();
         proof_file.file = memory_file.get_file();
@@ -58,12 +56,12 @@ class KissatSolver {
             return true;
         if (res == 20)
             return false;
-        return unexpected("Kissat solver returned UNKNOWN");
+        return std::unexpected("Kissat solver returned UNKNOWN");
     }
 
     bool value(int lit) const { return kissat_value(m_solver, lit) > 0; }
 
-    const string& get_proof() const { return m_proof; }
+    const std::string& get_proof() const { return m_proof; }
 };
 
 SatSolverResult create_result(bool is_sat, KissatSolver& solver, const Cnf& cnf) {
@@ -78,17 +76,18 @@ SatSolverResult create_result(bool is_sat, KissatSolver& solver, const Cnf& cnf)
         }
     } else {
         result.result = SatSolverResultType::UNSAT;
-        const string proof_str = solver.get_proof();
+        const std::string proof_str = solver.get_proof();
         std::istringstream iss(proof_str);
-        string line;
+        std::string line;
         while (std::getline(iss, line))
             result.proof_lines.push_back(line);
     }
     return result;
 }
-expected<SatSolverResult, string> launch_kissat(const Cnf& cnf) {
+
+std::expected<SatSolverResult, std::string> launch_kissat(const Cnf& cnf) {
     return KissatSolver::create().and_then(
-        [&cnf](KissatSolver solver) -> expected<SatSolverResult, string> {
+        [&cnf](KissatSolver solver) -> std::expected<SatSolverResult, std::string> {
             for (const CnfRow& row : cnf.get_rows())
                 if (row.m_type == CnfRowType::CLAUSE)
                     solver.add_clause(row.m_clause);

@@ -1,4 +1,4 @@
-#include "domus/planarity/interlacement.hpp"
+#include "interlacement.hpp"
 
 #include <cassert>
 #include <stddef.h>
@@ -7,10 +7,8 @@
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/segment.hpp"
 
-using namespace std;
-
-unordered_map<size_t, int> compute_cycle_labels(const Segment& segment, const Cycle& cycle) {
-    unordered_map<size_t, int> cycle_labels;
+std::unordered_map<size_t, int> compute_cycle_labels(const Segment& segment, const Cycle& cycle) {
+    std::unordered_map<size_t, int> cycle_labels;
     int found_attachments = 0;
     const int total_attachments = static_cast<int>(segment.get_attachments().size());
     cycle.for_each([&](size_t node_id) {
@@ -25,15 +23,15 @@ unordered_map<size_t, int> compute_cycle_labels(const Segment& segment, const Cy
 }
 
 void compute_conflicts(
-    const vector<Segment>& segments, const Cycle& cycle, Graph& interlacement_graph
+    const std::vector<Segment>& segments, const Cycle& cycle, Graph& interlacement_graph
 ) {
     if (segments.size() <= 1)
         return;
     for (size_t i = 0; i < segments.size() - 1; ++i) {
         const Segment& segment = segments[i];
-        unordered_map<size_t, int> cycle_labels = compute_cycle_labels(segment, cycle);
+        std::unordered_map<size_t, int> cycle_labels = compute_cycle_labels(segment, cycle);
         const size_t number_of_labels = 2 * segment.get_attachments().size();
-        vector<int> labels(number_of_labels);
+        std::vector<int> labels(number_of_labels);
         for (size_t j = i + 1; j < segments.size(); ++j) {
             const Segment& other_segment = segments[j];
             for (size_t k = 0; k < number_of_labels; ++k)
@@ -63,7 +61,7 @@ void compute_conflicts(
     }
 }
 
-Graph compute_interlacement_graph(const vector<Segment>& segments, const Cycle& cycle) {
+Graph compute_interlacement_graph(const std::vector<Segment>& segments, const Cycle& cycle) {
     Graph interlacement_graph;
     for (size_t i = 0; i < segments.size(); ++i)
         interlacement_graph.add_node(i);

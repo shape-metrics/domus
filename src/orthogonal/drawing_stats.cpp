@@ -4,7 +4,6 @@
 #include <climits>
 #include <cmath>
 #include <print>
-#include <sstream>
 #include <stdlib.h>
 #include <utility>
 #include <vector>
@@ -15,17 +14,15 @@
 #include "domus/core/utils.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
-using namespace std;
-
-vector<size_t> compute_edge_lengths(const Graph& graph, const GraphAttributes& attributes) {
+std::vector<size_t> compute_edge_lengths(const Graph& graph, const GraphAttributes& attributes) {
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
-    vector<size_t> edge_lengths;
+    std::vector<size_t> edge_lengths;
     NodesContainer visited;
     graph.for_each_node([&](size_t node_id) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
             return;
-        function<void(size_t, size_t, size_t)> dfs =
+        std::function<void(size_t, size_t, size_t)> dfs =
             [&](size_t current_id, size_t black_id, size_t current_length) {
                 visited.add_node(current_id);
                 graph.for_each_neighbor(current_id, [&](size_t neighbor_id) {
@@ -65,7 +62,7 @@ vector<size_t> compute_edge_lengths(const Graph& graph, const GraphAttributes& a
 
 size_t compute_total_edge_length(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
-    const vector<size_t> edge_lengths = compute_edge_lengths(graph, result.attributes);
+    const std::vector<size_t> edge_lengths = compute_edge_lengths(graph, result.attributes);
     size_t total_edge_length = 0;
     for (size_t length : edge_lengths)
         total_edge_length += length;
@@ -75,7 +72,7 @@ size_t compute_total_edge_length(const OrthogonalDrawing& result) {
 size_t compute_max_edge_length(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
-    const vector<size_t> edge_lengths = compute_edge_lengths(graph, attributes);
+    const std::vector<size_t> edge_lengths = compute_edge_lengths(graph, attributes);
     size_t max_edge_length = 0;
     for (size_t length : edge_lengths)
         if (length > max_edge_length)
@@ -86,19 +83,19 @@ size_t compute_max_edge_length(const OrthogonalDrawing& result) {
 double compute_edge_length_std_dev(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
-    const vector<size_t> edge_lengths = compute_edge_lengths(graph, attributes);
+    const std::vector<size_t> edge_lengths = compute_edge_lengths(graph, attributes);
     return compute_stddev(edge_lengths);
 }
 
-vector<size_t> compute_bends_counts(const Graph& graph, const GraphAttributes& attributes) {
+std::vector<size_t> compute_bends_counts(const Graph& graph, const GraphAttributes& attributes) {
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
-    vector<size_t> bends_counts;
+    std::vector<size_t> bends_counts;
     graph.for_each_node([&](size_t node_id) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
             return;
         NodesContainer visited;
-        function<void(size_t, size_t, size_t, size_t)> dfs =
+        std::function<void(size_t, size_t, size_t, size_t)> dfs =
             [&](size_t current, size_t black, size_t count, size_t previous_id) {
                 visited.add_node(current);
                 graph.for_each_neighbor(current, [&](size_t neighbor_id) {
@@ -132,7 +129,7 @@ vector<size_t> compute_bends_counts(const Graph& graph, const GraphAttributes& a
 size_t compute_total_bends(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
-    const vector<size_t> bends_counts = compute_bends_counts(graph, attributes);
+    const std::vector<size_t> bends_counts = compute_bends_counts(graph, attributes);
     size_t total_bends = 0;
     for (size_t count : bends_counts)
         total_bends += count;
@@ -142,7 +139,7 @@ size_t compute_total_bends(const OrthogonalDrawing& result) {
 size_t compute_max_bends_per_edge(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
-    const vector<size_t> bends_counts = compute_bends_counts(graph, attributes);
+    const std::vector<size_t> bends_counts = compute_bends_counts(graph, attributes);
     size_t max_bends = 0;
     for (size_t count : bends_counts)
         if (count > max_bends)
@@ -167,10 +164,10 @@ size_t compute_total_area(const OrthogonalDrawing& result) {
     graph.for_each_node([&](size_t node_id) {
         size_t x = node_to_coordinate_x.get(node_id);
         size_t y = node_to_coordinate_y.get(node_id);
-        max_x = max(max_x, x);
-        max_y = max(max_y, y);
-        min_x = min(min_x, x);
-        min_y = min(min_y, y);
+        max_x = std::max(max_x, x);
+        max_y = std::max(max_y, y);
+        min_x = std::min(min_x, x);
+        min_y = std::min(min_y, y);
     });
     return static_cast<size_t>((max_x - min_x + 1) * (max_y - min_y + 1));
 }
@@ -204,9 +201,9 @@ bool do_edges_cross(
     if (i_pos_x == k_pos_x || i_pos_x == l_pos_x || j_pos_x == k_pos_x || j_pos_x == l_pos_x ||
         i_pos_y == k_pos_y || i_pos_y == l_pos_y || j_pos_y == k_pos_y || j_pos_y == l_pos_y)
         return false;
-    if (k_pos_x < min(i_pos_x, j_pos_x) || k_pos_x > max(i_pos_x, j_pos_x))
+    if (k_pos_x < std::min(i_pos_x, j_pos_x) || k_pos_x > std::max(i_pos_x, j_pos_x))
         return false;
-    if (i_pos_y < min(k_pos_y, l_pos_y) || i_pos_y > max(k_pos_y, l_pos_y))
+    if (i_pos_y < std::min(k_pos_y, l_pos_y) || i_pos_y > std::max(k_pos_y, l_pos_y))
         return false;
     return true;
 }
@@ -244,9 +241,9 @@ bool do_edges_cross(const GraphAttributes& attributes, size_t i, size_t j, size_
     }
     if (!is_i_j_horizontal)
         return do_edges_cross(attributes, k, l, i, j);
-    if (k_pos_x < min(i_pos_x, j_pos_x) || k_pos_x > max(i_pos_x, j_pos_x))
+    if (k_pos_x < std::min(i_pos_x, j_pos_x) || k_pos_x > std::max(i_pos_x, j_pos_x))
         return false;
-    if (i_pos_y < min(k_pos_y, l_pos_y) || i_pos_y > max(k_pos_y, l_pos_y))
+    if (i_pos_y < std::min(k_pos_y, l_pos_y) || i_pos_y > std::max(k_pos_y, l_pos_y))
         return false;
     return true;
 }
@@ -257,7 +254,7 @@ size_t compute_total_crossings(const OrthogonalDrawing& result) {
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     size_t total_crossings = 0;
-    vector<pair<size_t, size_t>> edges;
+    std::vector<Edge> edges;
     graph.for_each_node([&](size_t node_id) {
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (neighbor_id < node_id)
@@ -266,11 +263,11 @@ size_t compute_total_crossings(const OrthogonalDrawing& result) {
         });
     });
     for (size_t i = 0; i < edges.size(); ++i) {
-        size_t node_1_id = edges[i].first;
-        size_t node_2_id = edges[i].second;
+        size_t node_1_id = edges[i].from_id;
+        size_t node_2_id = edges[i].to_id;
         for (size_t j = i + 1; j < edges.size(); ++j) {
-            size_t node_3_id = edges[j].first;
-            size_t node_4_id = edges[j].second;
+            size_t node_3_id = edges[j].from_id;
+            size_t node_4_id = edges[j].to_id;
             if (node_1_id == node_3_id || node_1_id == node_4_id || node_2_id == node_3_id ||
                 node_2_id == node_4_id)
                 continue;
@@ -294,19 +291,25 @@ OrthogonalStats compute_all_orthogonal_stats(const OrthogonalDrawing& result) {
     };
 }
 
-string orthogonal_stats_to_string(const OrthogonalStats& stats) {
-    stringstream ss;
-    ss << "Area: " << stats.area << "\n"
-       << "Crossings: " << stats.crossings << "\n"
-       << "Bends: " << stats.bends << "\n"
-       << "Total edge length: " << stats.total_edge_length << "\n"
-       << "Max edge length: " << stats.max_edge_length << "\n"
-       << "Edge length stddev: " << stats.edge_length_stddev << "\n"
-       << "Max bends per edge: " << stats.max_bends_per_edge << "\n"
-       << "Bends stddev: " << stats.bends_stddev << "\n";
-    return ss.str();
+std::string OrthogonalStats::to_string() const {
+    return std::format(
+        "Area: {}\n"
+        "Crossings: {}\n"
+        "Bends: {}\n"
+        "Total edge length: {}\n"
+        "Max edge length: {}\n"
+        "Edge length stddev: {}\n"
+        "Max bends per edge: {}\n"
+        "Bends stddev: {}\n",
+        area,
+        crossings,
+        bends,
+        total_edge_length,
+        max_edge_length,
+        edge_length_stddev,
+        max_bends_per_edge,
+        bends_stddev
+    );
 }
 
-void print_orthogonal_stats(const OrthogonalStats& stats) {
-    print("{}", orthogonal_stats_to_string(stats));
-}
+void OrthogonalStats::print() const { std::print("{}", to_string()); }

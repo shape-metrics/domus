@@ -14,15 +14,13 @@
 
 class Graph;
 
-using namespace std;
-
 auto build_index_to_nodes_map(const Graph& graph, const GraphAttributes& attributes) {
     auto [node_to_index_x, node_to_index_y] = compute_node_to_index_position(graph, attributes);
-    unordered_map<size_t, NodesContainer> index_x_to_nodes;
+    std::unordered_map<size_t, NodesContainer> index_x_to_nodes;
     node_to_index_x.for_each([&index_x_to_nodes](size_t node_id, size_t index) {
         index_x_to_nodes[index].add_node(node_id);
     });
-    unordered_map<size_t, NodesContainer> index_y_to_nodes;
+    std::unordered_map<size_t, NodesContainer> index_y_to_nodes;
     node_to_index_y.for_each([&index_y_to_nodes](size_t node_id, size_t index) {
         index_y_to_nodes[index].add_node(node_id);
     });
@@ -51,7 +49,7 @@ bool can_move_to_prev_index(PairIntHashSet& prev, PairIntHashSet& to_shift) {
 }
 
 size_t compute_shift_amount(
-    size_t index, unordered_map<size_t, PairIntHashSet>& index_to_min_max_coordinate
+    size_t index, std::unordered_map<size_t, PairIntHashSet>& index_to_min_max_coordinate
 ) {
     size_t shift = 0;
     PairIntHashSet& to_shift = index_to_min_max_coordinate[index];
@@ -68,9 +66,9 @@ size_t compute_shift_amount(
 }
 
 auto build_index_x_to_min_max_index_y(
-    unordered_map<size_t, NodesContainer>& index_x_to_nodes, Int_ToInt_HashMap& node_to_index_y
+    std::unordered_map<size_t, NodesContainer>& index_x_to_nodes, Int_ToInt_HashMap& node_to_index_y
 ) {
-    unordered_map<size_t, PairIntHashSet> index_to_min_max_y;
+    std::unordered_map<size_t, PairIntHashSet> index_to_min_max_y;
     for (const auto& [index, nodes] : index_x_to_nodes) {
         size_t min_y = INT_MAX;
         size_t max_y = 0;
@@ -85,9 +83,9 @@ auto build_index_x_to_min_max_index_y(
 }
 
 auto build_index_y_to_min_max_index_x(
-    unordered_map<size_t, NodesContainer>& index_to_nodes, Int_ToInt_HashMap& node_to_index_x
+    std::unordered_map<size_t, NodesContainer>& index_to_nodes, Int_ToInt_HashMap& node_to_index_x
 ) {
-    unordered_map<size_t, PairIntHashSet> index_to_min_max_x;
+    std::unordered_map<size_t, PairIntHashSet> index_to_min_max_x;
     for (const auto& [index, nodes] : index_to_nodes) {
         size_t min_x = INT_MAX;
         size_t max_x = 0;

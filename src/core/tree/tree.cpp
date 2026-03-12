@@ -4,11 +4,14 @@
 #include <cassert>
 #include <print>
 
-using namespace std;
-
 Tree::Tree(const size_t root_id) : m_root_id(root_id) { m_node_ids.add_node(root_id); }
 
-const NodesContainer& Tree::get_nodes() const { return m_node_ids; }
+void Tree::for_each_node(std::function<void(size_t)> f) const { m_node_ids.for_each(f); }
+
+void Tree::for_each_child(size_t node_id, std::function<void(size_t)> f) const {
+    assert(has_node(node_id) && "Node does not exist");
+    m_nodeid_to_childrenid.get_neighbors_of_node(node_id).for_each(f);
+}
 
 bool Tree::is_root(size_t node_id) const {
     if (!has_node(node_id))
@@ -19,8 +22,8 @@ bool Tree::is_root(size_t node_id) const {
 bool Tree::has_edge(size_t node_id_1, size_t node_id_2) const {
     if (!has_node(node_id_1) || !has_node(node_id_2))
         return false;
-    return get_children(node_id_1).has_node(node_id_2) ||
-           get_children(node_id_2).has_node(node_id_1);
+    return m_nodeid_to_childrenid.get_neighbors_of_node(node_id_1).has_node(node_id_2) ||
+           m_nodeid_to_childrenid.get_neighbors_of_node(node_id_2).has_node(node_id_1);
 }
 
 size_t Tree::get_parent(size_t node_id) const {
@@ -46,28 +49,22 @@ size_t Tree::add_node(size_t parent_id) {
     return m_next_node_id++;
 }
 
-const NodesContainer& Tree::get_children(size_t node_id) const {
-    assert(has_node(node_id) && "Node does not exist");
-    return m_nodeid_to_childrenid.get_neighbors_of_node(node_id);
-}
-
 size_t Tree::size() const { return m_node_ids.size(); }
 
-string Tree::to_string() const {
-    string str = "Tree\n";
-    get_nodes().for_each([&](size_t node_id) {
+std::string Tree::to_string() const {
+    std::string result;
+    auto out = std::back_inserter(result);
+    std::format_to(out, "Tree\n");
+    for_each_node([&](size_t node_id) {
         if (is_root(node_id))
-            str += "Node " + std::to_string(node_id) + " is root\n";
+            std::format_to(out, "Node {} is root\n", node_id);
         else
-            str += "Node " + std::to_string(node_id) + " has parent " +
-                   std::to_string(get_parent(node_id)) + "\n";
-        str += "Children of node " + std::to_string(node_id) + ":";
-        get_children(node_id).for_each([&str](size_t child_id) {
-            str += "  " + std::to_string(child_id);
-        });
-        str += "\n";
+            std::format_to(out, "Node {} has parent {}\n", node_id, get_parent(node_id));
+        std::format_to(out, "Children of node {}:", node_id);
+        for_each_child(node_id, [&](size_t child_id) { std::format_to(out, "  {}", child_id); });
+        std::format_to(out, "\n");
     });
-    return str;
+    return result;
 }
 
 void Tree::print() const { println("{}", to_string()); }

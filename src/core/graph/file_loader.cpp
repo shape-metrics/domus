@@ -6,17 +6,14 @@
 
 #include "domus/core/graph/attributes.hpp"
 
-using namespace std;
-using namespace std::filesystem;
-
-expected<Graph, string> load_graph_from_txt_file(path path) {
+std::expected<Graph, std::string> load_graph_from_txt_file(std::filesystem::path path) {
     Graph graph;
     std::ifstream infile(path);
     if (!infile) {
-        string error = "Could not load graph from file.\nCannot open: " + path.string();
+        std::string error = "Could not load graph from file.\nCannot open: " + path.string();
         return std::unexpected(error);
     }
-    string line;
+    std::string line;
     enum Section { NONE, NODES, EDGES } section = NONE;
     while (std::getline(infile, line)) {
         if (line == "nodes:") {
@@ -39,10 +36,11 @@ expected<Graph, string> load_graph_from_txt_file(path path) {
     return graph;
 }
 
-std::expected<void, std::string> save_graph_to_file(const Graph& graph, path path) {
+std::expected<void, std::string>
+save_graph_to_file(const Graph& graph, std::filesystem::path path) {
     std::ofstream outfile(path);
     if (!outfile) {
-        string error = "Could not save graph to file.\n";
+        std::string error = "Could not save graph to file.\n";
         error += "could not write to file: " + path.string();
         return std::unexpected(error);
     }
@@ -58,7 +56,7 @@ std::expected<void, std::string> save_graph_to_file(const Graph& graph, path pat
     return {};
 }
 
-void write_data_tag(std::ostream& os, string key_id, string value) {
+void write_data_tag(std::ostream& os, std::string key_id, std::string value) {
     os << "    <data key=\"" << key_id << "\">" << value << "</data>\n";
 }
 
@@ -107,11 +105,12 @@ void save_to_graphml(std::ostream& os, const Graph& graph, const GraphAttributes
     os << "</graphml>\n";
 }
 
-std::expected<void, std::string>
-save_graph_to_graphml_file(const Graph& graph, const GraphAttributes& attributes, path path) {
+std::expected<void, std::string> save_graph_to_graphml_file(
+    const Graph& graph, const GraphAttributes& attributes, std::filesystem::path path
+) {
     std::ofstream outfile(path);
     if (!outfile) {
-        string error = "Could not save graph to file.\n";
+        std::string error = "Could not save graph to file.\n";
         error += "could not write to file: " + path.string();
         return std::unexpected(error);
     }
