@@ -6,8 +6,9 @@
 #include "domus/core/graph/graph.hpp"
 
 void VariablesHandler::add_variable(size_t i, size_t j, const Direction direction) {
-    variable_to_edge[m_next_var] = std::make_pair(i, j);
-    variable_to_direction[m_next_var] = direction;
+    variable_to_edge.push_back({i, j});
+    variable_to_direction.push_back(direction);
+    variable_to_value.push_back(-1);
     switch (direction) {
     case Direction::UP:
         m_edge_up_variable.add(i, j, m_next_var);
@@ -40,6 +41,9 @@ void VariablesHandler::add_edge_variables(size_t i, size_t j) {
 }
 
 VariablesHandler::VariablesHandler(const Graph& graph) {
+    variable_to_edge.push_back({0, 0});
+    variable_to_direction.push_back(Direction::INVALID);
+    variable_to_value.push_back(-1);
     graph.for_each_node([&](size_t node_id) {
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (node_id > neighbor_id)
@@ -78,7 +82,7 @@ size_t VariablesHandler::get_variable(size_t i, size_t j, Direction direction) c
     return 0;
 }
 
-const std::pair<size_t, size_t>& VariablesHandler::get_edge_of_variable(size_t variable) const {
+const Edge& VariablesHandler::get_edge_of_variable(size_t variable) const {
     return variable_to_edge.at(variable);
 }
 
@@ -96,20 +100,27 @@ Direction VariablesHandler::get_direction_of_edge(size_t i, size_t j) const {
 }
 
 void VariablesHandler::set_variable_value(size_t variable, bool value) {
-    assert(!variable_to_value.contains(variable) && "variable value is already set");
+    assert(
+        variable_to_value.at(variable) == -1 &&
+        "VariablesHandler::set_variable_value: variable value is already set"
+    );
     variable_to_value[variable] = value;
 }
 
 bool VariablesHandler::get_variable_value(size_t variable) const {
-    assert(variable_to_value.contains(variable) && "variable does not have a set value");
+    assert(
+        variable_to_value.at(variable) != -1 &&
+        "VariablesHandler::get_variable_value: variable does not have a set value"
+    );
     return variable_to_value.at(variable);
 }
 
 std::string VariablesHandler::to_string() const {
     std::string result = "VariablesHandler:\n";
-    for (const auto& [variable, edge] : variable_to_edge) {
+    for (size_t variable = 1; variable < variable_to_edge.size(); variable++) {
+        const Edge& edge = variable_to_edge.at(variable);
         result +=
-            ("(" + std::to_string(edge.first) + " -> " + std::to_string(edge.second) +
+            ("(" + std::to_string(edge.from_id) + " -> " + std::to_string(edge.to_id) +
              "): " + std::to_string(variable) + ", " +
              direction_to_string(variable_to_direction.at(variable)) + "\n");
     }

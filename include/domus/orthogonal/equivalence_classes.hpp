@@ -1,12 +1,12 @@
 #pragma once
 
-#include <map>
 #include <string>
 #include <tuple>
 #include <utility>
 
 #include "domus/core/containers.hpp"
 #include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 
 class Shape;
 
@@ -32,8 +32,8 @@ build_equivalence_classes(const Shape& shape, const Graph& graph);
 std::tuple<
     Graph,
     Graph,
-    std::map<std::pair<size_t, size_t>, std::pair<size_t, size_t>>,
-    std::map<std::pair<size_t, size_t>, std::pair<size_t, size_t>>>
+    std::unordered_map<Edge, Edge, edge_hash>,
+    std::unordered_map<Edge, Edge, edge_hash>>
 equivalence_classes_to_ordering(
     const EquivalenceClasses& equivalence_classes_x,
     const EquivalenceClasses& equivalence_classes_y,

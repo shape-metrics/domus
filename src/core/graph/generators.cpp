@@ -23,13 +23,13 @@ Graph generate_connected_random_graph_degree_max_4(
         graph.add_node(i);
     size_t added_edges = 0;
     while (added_edges < number_of_edges) {
-        const int i = rand() % static_cast<int>(number_of_nodes);
-        const int j = rand() % static_cast<int>(number_of_nodes);
+        size_t i = static_cast<size_t>(rand()) % number_of_nodes;
+        size_t j = static_cast<size_t>(rand()) % number_of_nodes;
         if (i == j || graph.are_neighbors(i, j))
             continue;
-        if (graph.get_degree_of_node(i) >= 4)
+        if (graph.get_degree_of_node(i) >= 4u)
             continue;
-        if (graph.get_degree_of_node(j) >= 4)
+        if (graph.get_degree_of_node(j) >= 4u)
             continue;
         graph.add_edge(i, j);
         ++added_edges;
@@ -49,8 +49,8 @@ Graph generate_connected_random_graph(size_t number_of_nodes, size_t number_of_e
         graph.add_node(i);
     size_t added_edges = 0;
     while (added_edges < number_of_edges) {
-        int i = rand() % static_cast<int>(number_of_nodes);
-        int j = rand() % static_cast<int>(number_of_nodes);
+        size_t i = static_cast<size_t>(rand()) % number_of_nodes;
+        size_t j = static_cast<size_t>(rand()) % number_of_nodes;
         if (i == j || graph.are_neighbors(i, j))
             continue;
         graph.add_edge(i, j);

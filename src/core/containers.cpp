@@ -7,9 +7,9 @@
 
 struct int_pair_hash {
     size_t operator()(const std::pair<size_t, size_t>& p) const {
-        const size_t h1 = static_cast<size_t>(std::hash<size_t>{}(p.first));
-        const size_t h2 = static_cast<size_t>(std::hash<size_t>{}(p.second));
-        const size_t mult = h2 * static_cast<size_t>(0x9e3779b9);
+        size_t h1 = std::hash<size_t>{}(p.first);
+        size_t h2 = std::hash<size_t>{}(p.second);
+        size_t mult = h2 * 0x9e3779b9;
         return h1 ^ (mult + (h1 << 6) + (h1 >> 2));
     }
 };

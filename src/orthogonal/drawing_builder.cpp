@@ -60,7 +60,7 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
     const Graph& graph,
     const Shape& shape,
     const Cycle& cycle_in_ordering,
-    const map<pair<size_t, size_t>, pair<size_t, size_t>>& ordering_edge_to_graph_edge,
+    const unordered_map<Edge, Edge, edge_hash>& ordering_edge_to_graph_edge,
     const bool go_horizontal
 ) {
     vector<size_t> cycle;

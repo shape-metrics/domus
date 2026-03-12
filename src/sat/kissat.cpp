@@ -70,7 +70,7 @@ SatSolverResult create_result(bool is_sat, KissatSolver& solver, const Cnf& cnf)
     SatSolverResult result;
     if (is_sat) {
         result.result = SatSolverResultType::SAT;
-        for (int var = 1; var <= cnf.get_number_of_variables(); ++var) {
+        for (int var = 1; var <= static_cast<int>(cnf.get_number_of_variables()); ++var) {
             if (solver.value(var))
                 result.numbers.push_back(var);
             else

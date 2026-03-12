@@ -1,6 +1,7 @@
 #include "domus/orthogonal/shape/clauses_functions.hpp"
 
 #include <cassert>
+#include <cstddef>
 #include <stddef.h>
 
 #include "domus/core/graph/cycle.hpp"
@@ -11,7 +12,7 @@
 using namespace std;
 
 void add_constraints_at_most_one_is_true(
-    Cnf& cnf_builder, const int var_1, const int var_2, const int var_3, const int var_4
+    Cnf& cnf_builder, int var_1, int var_2, int var_3, int var_4
 ) {
     // at most one is true (at least three are false)
     // for every possible pair, at least one is false
@@ -34,14 +35,14 @@ void add_constraints_one_direction_per_edge(
     const Graph& graph, Cnf& cnf_builder, const VariablesHandler& handler
 ) {
 
-    graph.for_each_node([&](size_t node_id) {
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            if (node_id > neighbor_id)
+    graph.for_each_node([&](size_t node_id_1) {
+        graph.for_each_neighbor(node_id_1, [&](size_t node_id_2) {
+            if (node_id_1 > node_id_2)
                 return;
-            const int up = handler.get_up_variable(node_id, neighbor_id);
-            const int down = handler.get_down_variable(node_id, neighbor_id);
-            const int right = handler.get_right_variable(node_id, neighbor_id);
-            const int left = handler.get_left_variable(node_id, neighbor_id);
+            int up = static_cast<int>(handler.get_up_variable(node_id_1, node_id_2));
+            int down = static_cast<int>(handler.get_down_variable(node_id_1, node_id_2));
+            int right = static_cast<int>(handler.get_right_variable(node_id_1, node_id_2));
+            int left = static_cast<int>(handler.get_left_variable(node_id_1, node_id_2));
             add_constraints_one_direction_per_edge(cnf_builder, up, down, right, left);
         });
     });
@@ -56,7 +57,8 @@ void add_clause_at_least_one_in_direction(
 ) {
     vector<int> clause;
     graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-        clause.push_back(handler.get_variable(node_id, neighbor_id, direction));
+        size_t variable = handler.get_variable(node_id, neighbor_id, direction);
+        clause.push_back(static_cast<int>(variable));
     });
     cnf_builder.add_clause(clause);
 }
@@ -74,7 +76,8 @@ void add_one_edge_per_direction_clauses(
     } else if (degree == 3) {
         vector<int> variables;
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            variables.push_back(handler.get_variable(node_id, neighbor_id, direction));
+            size_t variable = handler.get_variable(node_id, neighbor_id, direction);
+            variables.push_back(static_cast<int>(variable));
         });
         // at most one is true (at least 2 are false)
         cnf_builder.add_clause({-variables[0], -variables[1]});
@@ -83,7 +86,8 @@ void add_one_edge_per_direction_clauses(
     } else if (degree == 2) {
         vector<int> clause;
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            clause.push_back(-handler.get_variable(node_id, neighbor_id, direction));
+            size_t variable = handler.get_variable(node_id, neighbor_id, direction);
+            clause.push_back(-static_cast<int>(variable));
         });
         // at most one is true (at least 1 is false)
         cnf_builder.add_clause(clause);
@@ -102,10 +106,18 @@ void add_cycles_constraints(
         vector<int> at_least_one_left{};
         cycle.for_each([&](size_t cycle_node) {
             size_t next_cycle_node = cycle.next_of_node(cycle_node);
-            at_least_one_down.push_back(handler.get_down_variable(cycle_node, next_cycle_node));
-            at_least_one_up.push_back(handler.get_up_variable(cycle_node, next_cycle_node));
-            at_least_one_right.push_back(handler.get_right_variable(cycle_node, next_cycle_node));
-            at_least_one_left.push_back(handler.get_left_variable(cycle_node, next_cycle_node));
+            at_least_one_down.push_back(
+                static_cast<int>(handler.get_down_variable(cycle_node, next_cycle_node))
+            );
+            at_least_one_up.push_back(
+                static_cast<int>(handler.get_up_variable(cycle_node, next_cycle_node))
+            );
+            at_least_one_right.push_back(
+                static_cast<int>(handler.get_right_variable(cycle_node, next_cycle_node))
+            );
+            at_least_one_left.push_back(
+                static_cast<int>(handler.get_left_variable(cycle_node, next_cycle_node))
+            );
         });
         cnf_builder.add_clause(at_least_one_down);
         cnf_builder.add_clause(at_least_one_up);

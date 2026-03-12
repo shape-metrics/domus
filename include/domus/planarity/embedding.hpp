@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ranges>
+#include <functional>
 #include <string>
 #include <unordered_map>
 
@@ -18,10 +18,9 @@ class Embedding {
     explicit Embedding(const Graph& graph);
     void add_edge(size_t from_id, size_t to_id);
     const CircularSequence& get_adjacency_list(size_t node_id) const;
-    auto get_nodes_ids() const {
-        return adjacency_list |
-               std::views::transform([](const auto& pair) -> size_t { return pair.first; });
-    }
+    size_t next_element_in_adjacency_list(size_t node_id, size_t element) const;
+    void for_each_node(std::function<void(size_t)> func) const;
+    void for_each_neighbor(size_t node_id, std::function<void(size_t)> func) const;
     std::string to_string() const;
     size_t size() const;
     size_t total_number_of_edges() const;

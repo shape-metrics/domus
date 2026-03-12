@@ -22,9 +22,9 @@ using namespace std;
 Shape result_to_shape(const Graph& graph, const vector<int>& numbers, VariablesHandler& handler) {
     for (const int var : numbers) {
         if (var > 0)
-            handler.set_variable_value(var, true);
+            handler.set_variable_value(static_cast<size_t>(var), true);
         else
-            handler.set_variable_value(-var, false);
+            handler.set_variable_value(static_cast<size_t>(-var), false);
     }
     Shape shape;
     graph.for_each_node([&](size_t node_id) {
@@ -39,7 +39,7 @@ Shape result_to_shape(const Graph& graph, const vector<int>& numbers, VariablesH
     return shape;
 }
 
-pair<size_t, size_t> find_edges_to_split(
+Edge find_edges_to_split(
     const vector<string>& proof_lines,
     std::mt19937& random_engine,
     const VariablesHandler& handler,
@@ -72,7 +72,7 @@ pair<size_t, size_t> find_edges_to_split(
     assert(!unit_clauses.empty()); // Could not find the edge to remove
     // pick one of the first two unit clauses
     size_t random_index = random_engine() % min(unit_clauses.size(), static_cast<size_t>(2));
-    const int variable = std::abs(unit_clauses[random_index]);
+    size_t variable = static_cast<size_t>(std::abs(unit_clauses[random_index]));
     return handler.get_edge_of_variable(variable);
 }
 

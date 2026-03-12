@@ -2,7 +2,7 @@
 #include "domus/core/graph/graph_utilities.hpp"
 
 #include <cassert>
-#include <functional>
+#include <cstddef>
 #include <print>
 #include <stack>
 
@@ -12,8 +12,16 @@ Embedding::Embedding(const Graph& graph) {
     graph.for_each_node([&](size_t node_id) { adjacency_list[node_id]; });
 }
 
+size_t Embedding::next_element_in_adjacency_list(size_t node_id, size_t element) const {
+    return adjacency_list.at(node_id).next_element(element);
+}
+
+const CircularSequence& Embedding::get_adjacency_list(size_t node_id) const {
+    return adjacency_list.at(node_id);
+}
+
 void Embedding::add_edge(size_t from_id, size_t to_id) {
-    assert(!m_edges.has(from_id, to_id) && "Edge already exists");
+    assert(!m_edges.has(from_id, to_id) && "Embedding::add_edge: edge already exists");
     m_edges.add(from_id, to_id);
     if (m_edges_to_add.has(from_id, to_id)) {
         m_edges_to_add.erase(from_id, to_id);
@@ -25,10 +33,6 @@ void Embedding::add_edge(size_t from_id, size_t to_id) {
 }
 
 bool Embedding::is_consistent() const { return m_edges_to_add.empty(); }
-
-const CircularSequence& Embedding::get_adjacency_list(size_t node_id) const {
-    return adjacency_list.at(node_id);
-}
 
 string Embedding::to_string() const {
     string result;
@@ -43,6 +47,15 @@ string Embedding::to_string() const {
 
 size_t Embedding::size() const { return adjacency_list.size(); }
 
+void Embedding::for_each_node(function<void(size_t)> func) const {
+    for (const auto& [node_id, neighbors] : adjacency_list)
+        func(node_id);
+}
+
+void Embedding::for_each_neighbor(size_t node_id, function<void(size_t)> func) const {
+    adjacency_list.at(node_id).for_each(func);
+}
+
 size_t Embedding::total_number_of_edges() const { return number_of_edges_m; }
 
 void Embedding::print() const { std::print("{}", to_string()); }
@@ -50,8 +63,8 @@ void Embedding::print() const { std::print("{}", to_string()); }
 size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
     size_t number_of_faces = 0;
     PairIntHashSet visited_edges; // visited oriented edges
-    for (size_t node_id : embedding.get_nodes_ids()) {
-        embedding.get_adjacency_list(node_id).for_each([&](size_t neighbor_id) {
+    embedding.for_each_node([&](size_t node_id) {
+        embedding.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (visited_edges.has(node_id, neighbor_id))
                 return;
             ++number_of_faces;
@@ -60,7 +73,7 @@ size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
             visited_edges.add(node_id, neighbor_id);
             while (true) {
                 size_t successor =
-                    embedding.get_adjacency_list(next_node).next_element(current_node);
+                    embedding.next_element_in_adjacency_list(next_node, current_node);
                 if (visited_edges.has(next_node, successor))
                     break;
                 visited_edges.add(next_node, successor);
@@ -70,7 +83,7 @@ size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
                     break;
             }
         });
-    }
+    });
     return number_of_faces;
 }
 
@@ -79,7 +92,10 @@ bool is_embedding_planar(const Embedding& embedding) {
 }
 
 size_t compute_number_of_connected_components(const Embedding& embedding) {
-    assert(embedding.is_consistent() && "Embedding is not fully undirected");
+    assert(
+        embedding.is_consistent() &&
+        "compute_number_of_connected_components: embedding is not fully undirected"
+    );
     NodesContainer visited;
     size_t components = 0;
     const function<void(size_t)> explore_component = [&](size_t start_node_id) {
@@ -98,11 +114,12 @@ size_t compute_number_of_connected_components(const Embedding& embedding) {
             }
         }
     };
-    for (size_t node_id : embedding.get_nodes_ids())
+    embedding.for_each_node([&](size_t node_id) {
         if (!visited.has_node(node_id)) {
             components++;
             explore_component(node_id);
         }
+    });
     return components;
 }
 

@@ -26,7 +26,7 @@ Embedding merge_biconnected_components(
         const Embedding& embedding = embeddings[i];
         const Graph& component = biconnected_components.get_components()[i];
         component.for_each_node([&](size_t node_id) {
-            embedding.get_adjacency_list(node_id).for_each([&](size_t component_neighbor_id) {
+            embedding.for_each_neighbor(node_id, [&](size_t component_neighbor_id) {
                 output.add_edge(node_id, component_neighbor_id);
             });
         });
@@ -146,7 +146,7 @@ vector<bool> are_embeddings_inside_clockwise_cycle(
             segment.get_attachments().get_one_node_id(); // any attachment is good
         size_t next = cycle.next_of_node(attachment_id);
         size_t prev = cycle.prev_of_node(attachment_id);
-        is_inside[i] = embedding.get_adjacency_list(attachment_id).next_element(next) != prev;
+        is_inside[i] = embedding.next_element_in_adjacency_list(attachment_id, next) != prev;
     }
     return is_inside;
 }
@@ -232,7 +232,7 @@ vector<size_t> compute_order(
 void add_middle_edges(
     const Embedding& embedding,
     size_t cycle_node_id,
-    const bool compatible,
+    bool compatible,
     Embedding& output,
     const Cycle& cycle
 ) {
@@ -241,7 +241,7 @@ void add_middle_edges(
     vector<size_t> neighbors_to_add;
     size_t current = prev_cycle_node_id;
     for (size_t i = 1; i < embedding.get_adjacency_list(cycle_node_id).size(); ++i) {
-        current = embedding.get_adjacency_list(cycle_node_id).next_element(current);
+        current = embedding.next_element_in_adjacency_list(cycle_node_id, current);
         if (next_cycle_node_id == current)
             continue;
         if (prev_cycle_node_id == current)
@@ -330,7 +330,7 @@ void add_edges_not_incident_to_cycle(
             if (cycle.has_node(node_id))
                 return;
             vector<size_t> neighbors_to_add;
-            embedding.get_adjacency_list(node_id).for_each([&neighbors_to_add](size_t neighbor_id) {
+            embedding.for_each_neighbor(node_id, [&neighbors_to_add](size_t neighbor_id) {
                 neighbors_to_add.push_back(neighbor_id);
             });
             if (is_segment_inside.get_side(i) == is_embedding_inside[i])

@@ -2,10 +2,11 @@
 
 #include <cassert>
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include <utility>
 
 #include "domus/core/containers.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/shape/shape.hpp"
 
 using namespace std;
@@ -122,11 +123,7 @@ build_equivalence_classes(const Shape& shape, const Graph& graph) {
     return make_pair(std::move(equivalence_classes_x), std::move(equivalence_classes_y));
 }
 
-tuple<
-    Graph,
-    Graph,
-    map<pair<size_t, size_t>, pair<size_t, size_t>>,
-    map<pair<size_t, size_t>, pair<size_t, size_t>>>
+tuple<Graph, Graph, unordered_map<Edge, Edge, edge_hash>, unordered_map<Edge, Edge, edge_hash>>
 equivalence_classes_to_ordering(
     const EquivalenceClasses& equivalence_classes_x,
     const EquivalenceClasses& equivalence_classes_y,
@@ -142,8 +139,8 @@ equivalence_classes_to_ordering(
     equivalence_classes_y.get_all_classes().for_each([&ordering_y](size_t class_id) {
         ordering_y.add_node(class_id);
     });
-    map<pair<size_t, size_t>, pair<size_t, size_t>> ordering_x_edge_to_graph_edge;
-    map<pair<size_t, size_t>, pair<size_t, size_t>> ordering_y_edge_to_graph_edge;
+    std::unordered_map<Edge, Edge, edge_hash> ordering_x_edge_to_graph_edge;
+    std::unordered_map<Edge, Edge, edge_hash> ordering_y_edge_to_graph_edge;
 
     graph.for_each_node([&](size_t node_id) {
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
