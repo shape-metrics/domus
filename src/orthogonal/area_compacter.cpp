@@ -1,7 +1,6 @@
 #include "domus/orthogonal/area_compacter.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <limits.h>
 #include <tuple>
 #include <unordered_map>
@@ -11,6 +10,8 @@
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/drawing.hpp"
+
+#include "../core/domus_assert.hpp"
 
 class Graph;
 
@@ -33,7 +34,10 @@ auto build_index_to_nodes_map(const Graph& graph, const GraphAttributes& attribu
 }
 
 bool can_move_to_prev_index(PairIntHashSet& prev, PairIntHashSet& to_shift) {
-    assert(to_shift.size() == 1);
+    DOMUS_ASSERT(
+        to_shift.size() == 1,
+        "can_move_to_prev_index: internal error happened during area compaction"
+    );
     size_t to_shift_min = 0;
     size_t to_shift_max = 0;
     to_shift.for_each([&](size_t min, size_t max) {

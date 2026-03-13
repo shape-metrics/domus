@@ -77,6 +77,7 @@ set(COMMON_SRCS
     src/drawing/polygon.cpp
     src/core/config.cpp
     src/core/color.cpp
+    src/core/circular_sequence.cpp
     src/core/graph/graphs_algorithms.cpp
     src/core/containers.cpp
     src/core/graph/graph.cpp

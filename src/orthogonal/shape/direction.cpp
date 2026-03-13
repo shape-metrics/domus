@@ -1,6 +1,6 @@
 #include "domus/orthogonal/shape/direction.hpp"
 
-#include <cassert>
+#include "../../core/domus_assert.hpp"
 
 std::string direction_to_string(const Direction direction) {
     switch (direction) {
@@ -13,7 +13,7 @@ std::string direction_to_string(const Direction direction) {
     case Direction::DOWN:
         return "down";
     default:
-        assert(false && "Invalid direction");
+        DOMUS_ASSERT(false, "direction_to_string: invalid direction");
         return "Invalid direction";
     }
 }
@@ -27,7 +27,7 @@ Direction string_to_direction(const std::string& direction) {
         return Direction::UP;
     if (direction == "down")
         return Direction::DOWN;
-    assert(false && "Error in string_to_direction: invalid direction string");
+    DOMUS_ASSERT(false, "string_to_direction: invalid direction string");
     return Direction::INVALID;
 }
 
@@ -42,7 +42,7 @@ Direction opposite_direction(const Direction direction) {
     case Direction::DOWN:
         return Direction::UP;
     default:
-        assert(false && "Invalid direction");
+        DOMUS_ASSERT(false, "opposite_direction: invalid direction");
         return Direction::INVALID;
     }
 }
@@ -58,7 +58,7 @@ Direction rotate_90_degrees(const Direction direction) {
     case Direction::DOWN:
         return Direction::LEFT;
     default:
-        assert(false && "Invalid direction");
+        DOMUS_ASSERT(false, "rotate_90_degrees: invalid direction");
         return Direction::INVALID;
     }
 }

@@ -1,7 +1,6 @@
 #include "domus/planarity/auslander_parter.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <deque>
 #include <stddef.h>
 #include <tuple>
@@ -13,6 +12,7 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/segment.hpp"
 
+#include "../core/domus_assert.hpp"
 #include "interlacement.hpp"
 
 using namespace std;
@@ -42,7 +42,7 @@ Embedding base_case_graph(const Graph& graph) {
             embedding.add_edge(node_id, neighbor_id);
         });
     });
-    assert(is_embedding_planar(embedding) && "base_case_graph: output embedding is not planar");
+    DOMUS_ASSERT(is_embedding_planar(embedding), "base_case_graph: output embedding is not planar");
     return embedding;
 }
 
@@ -55,12 +55,12 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
             });
             return;
         }
-        assert(
-            component.get_degree_of_node(node_id) == 3 &&
+        DOMUS_ASSERT(
+            component.get_degree_of_node(node_id) == 3,
             "base_case_component: node has degree different from 3"
         );
-        assert(
-            cycle.has_node(node_id) &&
+        DOMUS_ASSERT(
+            cycle.has_node(node_id),
             "base_case_component: cycle does not contain the node with degree 3"
         );
         optional<size_t> neighbor_in_between;
@@ -77,7 +77,10 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
         embedding.add_edge(node_id, neighbor_in_between.value());
         embedding.add_edge(node_id, cycle.prev_of_node(node_id));
     });
-    assert(is_embedding_planar(embedding) && "base_case_component: output embedding is not planar");
+    DOMUS_ASSERT(
+        is_embedding_planar(embedding),
+        "base_case_component: output embedding is not planar"
+    );
     return embedding;
 }
 
@@ -215,7 +218,8 @@ vector<size_t> compute_order(
             max_segments.push_back(seg_index);
             continue;
         }
-        assert(!middle_segment.has_value());
+        max_segments.push_back(seg_index);
+        DOMUS_ASSERT(!middle_segment.has_value(), "compute_order: internal errors");
         middle_segment = seg_index;
     }
     compute_sub_order(max_segments, segments_min_attachment, segments, false);

@@ -1,7 +1,6 @@
 #include "domus/orthogonal/shape/shape_builder.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
 #include <cstdlib>
 #include <optional>
@@ -15,6 +14,7 @@
 #include "domus/sat/cnf.hpp"
 #include "domus/sat/sat.hpp"
 
+#include "../../core/domus_assert.hpp"
 #include "clauses_functions.hpp"
 #include "variables_handler.hpp"
 
@@ -63,14 +63,17 @@ Edge find_edges_to_split(
             } else
                 token += c;
         }
-        assert(token == "0");
+        DOMUS_ASSERT(token == "0", "find_edges_to_split: last token should be 0");
         if (tokens.size() == 1) {
             int unit_clause = tokens[0];
             if (static_cast<size_t>(std::abs(unit_clause)) <= number_of_variables)
                 unit_clauses.push_back(unit_clause);
         }
     }
-    assert(!unit_clauses.empty()); // Could not find the edge to remove
+    DOMUS_ASSERT(
+        !unit_clauses.empty(),
+        "find_edges_to_split: no unit clauses found"
+    ); // Could not find the edge to remove
     // pick one of the first two unit clauses
     size_t random_index = random_engine() % std::min(unit_clauses.size(), static_cast<size_t>(2));
     size_t variable = static_cast<size_t>(std::abs(unit_clauses[random_index]));
@@ -103,7 +106,7 @@ void add_corner_inside_edge(
     GraphAttributes& attributes,
     std::vector<Cycle>& cycles
 ) {
-    assert(graph.are_neighbors(from_id, to_id));
+    DOMUS_ASSERT(graph.are_neighbors(from_id, to_id), "add_corner_inside_edge: not neighbors");
     size_t new_node_id = graph.add_node();
     attributes.set_node_color(new_node_id, Color::RED);
     graph.remove_edge(from_id, to_id);

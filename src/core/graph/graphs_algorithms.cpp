@@ -1,7 +1,6 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <functional>
 #include <list>
 #include <optional>
@@ -14,6 +13,8 @@
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/tree/tree.hpp"
 #include "domus/core/tree/tree_algorithms.hpp"
+
+#include "../domus_assert.hpp"
 
 bool is_graph_connected(const Graph& graph) {
     if (graph.size() == 0)
@@ -82,9 +83,7 @@ std::optional<Cycle> find_a_directed_cycle_in_graph(const Graph& graph) {
 }
 
 std::vector<Cycle> compute_cycle_basis(const Graph& graph) {
-    assert(
-        is_graph_connected(graph) && "Error in compute_cycle_basis: input graph is not connected"
-    );
+    DOMUS_ASSERT(is_graph_connected(graph), "compute_cycle_basis: input graph is not connected");
     const Tree spanning = *build_spanning_tree(graph);
     std::vector<Cycle> cycles;
     graph.for_each_node([&](size_t node_id) {
@@ -228,8 +227,9 @@ BiconnectedComponents compute_biconnected_components(const Graph& graph) {
             cut_vertices
         );
     });
-    assert(
-        stack_of_nodes.empty() && stack_of_edges.empty()
+    DOMUS_ASSERT(
+        stack_of_nodes.empty() && stack_of_edges.empty(),
+        "compute_biconnected_components: some internal error took place"
     ); // assessing algorithm finished correctly
     BiconnectedComponents result{std::move(cut_vertices), std::move(components)};
     return result;
@@ -419,13 +419,13 @@ bool Bipartition::get_side(size_t node_id) const { return m_impl->partition_map.
 bool Bipartition::has_node(size_t node_id) const { return m_impl->partition_map.has(node_id); }
 
 void Bipartition::set_side(size_t node_id, bool side) {
-    assert(!m_impl->partition_map.has(node_id) && "Bipartition::set_side: node already exists");
+    DOMUS_ASSERT(!m_impl->partition_map.has(node_id), "Bipartition::set_side: node already exists");
     m_impl->partition_map[node_id] = side;
 }
 
 bool Bipartition::are_in_same_side(size_t node_id_1, size_t node_id_2) const {
-    assert(
-        has_node(node_id_1) && has_node(node_id_2) &&
+    DOMUS_ASSERT(
+        has_node(node_id_1) && has_node(node_id_2),
         "Bipartition::are_in_same_side: nodes do not exist"
     );
     return get_side(node_id_1) == get_side(node_id_2);

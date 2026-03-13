@@ -21,6 +21,7 @@
 #include "domus/orthogonal/shape/shape.hpp"
 #include "domus/orthogonal/shape/shape_builder.hpp"
 
+#include "../core/domus_assert.hpp"
 #include "equivalence_classes.hpp"
 
 using namespace std;
@@ -88,7 +89,10 @@ void remove_useless_bends(Graph& graph, const GraphAttributes& attributes, Shape
     graph.for_each_node([&](size_t node_id) {
         if (attributes.get_node_color(node_id) == Color::BLACK)
             return;
-        assert(graph.get_degree_of_node(node_id) == 2);
+        DOMUS_ASSERT(
+            graph.get_degree_of_node(node_id) == 2,
+            "remove_useless_bends: internal error happened"
+        );
         array<size_t, 2> neighbors{graph.size(), graph.size()};
         size_t i = 0;
         graph.for_each_neighbor(node_id, [&neighbors, &i](size_t neighbor_id) {
@@ -274,7 +278,10 @@ auto find_edges_to_fix(const Graph& graph, const Shape& shape, const GraphAttrib
         optional<size_t> downest_left, downest_right, leftest_up, leftest_down;
         graph.for_each_neighbor(node_id, [&](size_t added_id) {
             if (shape.is_horizontal(node_id, added_id)) {
-                assert(!shape.is_left(node_id, added_id));
+                DOMUS_ASSERT(
+                    !shape.is_left(node_id, added_id),
+                    "find_edges_to_fix: internal errors happened"
+                );
                 size_t other_neighbor_id = 0;
                 graph.for_each_neighbor(added_id, [&](size_t neighbor_id) {
                     if (neighbor_id == node_id)
@@ -295,7 +302,10 @@ auto find_edges_to_fix(const Graph& graph, const Shape& shape, const GraphAttrib
                         leftest_down = added_id;
                 }
             } else {
-                assert(!shape.is_down(node_id, added_id));
+                DOMUS_ASSERT(
+                    !shape.is_down(node_id, added_id),
+                    "find_edges_to_fix: internal errors happened"
+                );
                 size_t other_neighbor_id = 0;
                 graph.for_each_neighbor(added_id, [&](size_t neighbor_id) {
                     if (neighbor_id == node_id)
@@ -339,7 +349,10 @@ size_t get_other_neighbor_id(const Graph& graph, size_t node_id, size_t neighbor
         if (other_id != neighbor_id)
             other = other_id;
     });
-    assert(other.has_value()); // No other neighbor found for node
+    DOMUS_ASSERT(
+        other.has_value(),
+        "get_other_neighbor_id: internal error happened, no other neighbor found for node"
+    );
     return other.value();
 }
 
@@ -387,8 +400,8 @@ void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shap
             nodes.push_back(node_id);
     });
     for (size_t node_id : nodes) {
-        vector<pair<size_t, size_t>> edges_to_remove;
-        vector<pair<size_t, size_t>> edges_to_add;
+        vector<Edge> edges_to_remove;
+        vector<Edge> edges_to_add;
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             size_t added_id = graph.add_node();
             edges_to_add.emplace_back(added_id, node_id);
@@ -460,7 +473,7 @@ void fix_inconsistency(
             return;
         colored_node = node_id;
     });
-    assert(colored_node.has_value());
+    DOMUS_ASSERT(colored_node.has_value(), "fix_inconsistency: internal error happened");
     size_t colored_node_id = colored_node.value();
     size_t neighbors_ids[2] = {graph.size(), graph.size()};
     int i = 0;
@@ -621,7 +634,14 @@ void make_shifts(
         shape.set_direction(node_to_shift_id, added_node_id, opposite_direction(direction));
         shape.remove_direction(node_id, node_to_shift_id);
         shape.remove_direction(node_to_shift_id, node_id);
-        graph.remove_edge(node_id, node_to_shift_id);
+        DOMUS_ASSERT(
+            graph.are_neighbors(node_id, node_to_shift_id),
+            "make_shifts: internal error happened"
+        );
+        if (graph.has_edge(node_id, node_to_shift_id))
+            graph.remove_edge(node_id, node_to_shift_id);
+        else
+            graph.remove_edge(node_to_shift_id, node_id);
         graph.add_edge(node_id, added_node_id);
         graph.add_edge(added_node_id, node_to_shift_id);
         if (axis == Axis::X)

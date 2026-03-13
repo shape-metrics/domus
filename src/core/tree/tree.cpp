@@ -1,15 +1,16 @@
 #include "domus/core/tree/tree.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include <cassert>
 #include <print>
+
+#include "../domus_assert.hpp"
 
 Tree::Tree(const size_t root_id) : m_root_id(root_id) { m_node_ids.add_node(root_id); }
 
 void Tree::for_each_node(std::function<void(size_t)> f) const { m_node_ids.for_each(f); }
 
 void Tree::for_each_child(size_t node_id, std::function<void(size_t)> f) const {
-    assert(has_node(node_id) && "Node does not exist");
+    DOMUS_ASSERT(has_node(node_id), "Tree::for_each_child: node does not exist");
     m_nodeid_to_childrenid.get_neighbors_of_node(node_id).for_each(f);
 }
 
@@ -27,16 +28,16 @@ bool Tree::has_edge(size_t node_id_1, size_t node_id_2) const {
 }
 
 size_t Tree::get_parent(size_t node_id) const {
-    assert(has_node(node_id) && "Tree::get_parent: node does not exist");
-    assert(!is_root(node_id) && "Tree::get_parent: node is root");
+    DOMUS_ASSERT(has_node(node_id), "Tree::get_parent: node does not exist");
+    DOMUS_ASSERT(!is_root(node_id), "Tree::get_parent: node is root");
     return m_nodeid_to_parentid.get(node_id);
 }
 
 bool Tree::has_node(size_t id) const { return m_node_ids.has_node(id); }
 
 void Tree::add_node(size_t id, size_t parent_id) {
-    assert(!has_node(id) && "Node already exists");
-    assert(has_node(parent_id) && "Parent node does not exist");
+    DOMUS_ASSERT(!has_node(id), "Tree::add_node: node already exists");
+    DOMUS_ASSERT(has_node(parent_id), "Tree::add_node: parent node does not exist");
     m_node_ids.add_node(id);
     m_nodeid_to_parentid.add(id, parent_id);
     m_nodeid_to_childrenid.add_edge(parent_id, id);

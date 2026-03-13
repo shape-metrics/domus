@@ -1,6 +1,6 @@
 #include "domus/orthogonal/shape/shape.hpp"
 
-#include <cassert>
+#include "../../core/domus_assert.hpp"
 
 size_t Shape::direction_to_size_t(Direction direction) const {
     switch (direction) {
@@ -13,7 +13,7 @@ size_t Shape::direction_to_size_t(Direction direction) const {
     case Direction::DOWN:
         return 3;
     default:
-        assert(false && "Shape::direction_to_size_t: invalid direction");
+        DOMUS_ASSERT(false, "Shape::direction_to_size_t: invalid direction");
         return 4;
     }
 }
@@ -29,15 +29,15 @@ Direction Shape::size_t_to_direction(size_t direction) const {
     case 3:
         return Direction::DOWN;
     default:
-        assert(false && "Shape::size_t_to_direction: invalid direction");
+        DOMUS_ASSERT(false, "Shape::size_t_to_direction: invalid direction");
         return Direction::INVALID;
     }
 }
 
 void Shape::set_direction(size_t node_id_1, size_t node_id_2, const Direction direction) {
-    assert(
-        !m_shape.has(node_id_1, node_id_2) &&
-        "Error in Shape::set_direction: direction already set for this pair"
+    DOMUS_ASSERT(
+        !m_shape.has(node_id_1, node_id_2),
+        "Shape::set_direction: direction already set for this pair"
     );
     m_shape.add(node_id_1, node_id_2, direction_to_size_t(direction));
 }
@@ -77,9 +77,9 @@ bool Shape::is_vertical(size_t node_id_1, size_t node_id_2) const {
 }
 
 void Shape::remove_direction(size_t node_id_1, size_t node_id_2) {
-    assert(
-        contains(node_id_1, node_id_2) &&
-        "Error in Shape::remove_direction: direction does not exist for this pair"
+    DOMUS_ASSERT(
+        contains(node_id_1, node_id_2),
+        "Shape::remove_direction: direction does not exist for this pair"
     );
     m_shape.erase(node_id_1, node_id_2);
 }

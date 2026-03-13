@@ -1,11 +1,12 @@
 #include "interlacement.hpp"
 
-#include <cassert>
 #include <stddef.h>
 #include <unordered_map>
 
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/segment.hpp"
+
+#include "../core/domus_assert.hpp"
 
 std::unordered_map<size_t, int> compute_cycle_labels(const Segment& segment, const Cycle& cycle) {
     std::unordered_map<size_t, int> cycle_labels;
@@ -38,7 +39,7 @@ void compute_conflicts(
                 labels[k] = 0;
             other_segment.get_attachments().for_each([&](size_t attachment_id) {
                 const int cycle_label = cycle_labels[attachment_id];
-                assert(cycle_label >= 0);
+                DOMUS_ASSERT(cycle_label >= 0, "compute_conflicts: internal errors");
                 labels[static_cast<size_t>(cycle_label)] = 1;
             });
             int sum = 0;

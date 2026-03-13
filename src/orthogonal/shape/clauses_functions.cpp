@@ -1,6 +1,5 @@
 #include "clauses_functions.hpp"
 
-#include <cassert>
 #include <cstddef>
 #include <stddef.h>
 
@@ -8,6 +7,7 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/sat/cnf.hpp"
 
+#include "../../core/domus_assert.hpp"
 #include "variables_handler.hpp"
 
 void add_constraints_at_most_one_is_true(
@@ -91,7 +91,10 @@ void add_one_edge_per_direction_clauses(
         // at most one is true (at least 1 is false)
         cnf_builder.add_clause(clause);
     } else if (degree != 1) {
-        assert(false); // degree of node is not valid
+        DOMUS_ASSERT(
+            false,
+            "add_one_edge_per_direction_clauses: internal error, degree of node is not valid"
+        );
     }
 }
 

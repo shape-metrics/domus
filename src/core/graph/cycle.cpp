@@ -1,9 +1,10 @@
 
 #include "domus/core/graph/cycle.hpp"
 
-#include <cassert>
 #include <format>
 #include <print>
+
+#include "../domus_assert.hpp"
 
 bool Cycle::empty() const { return m_nodes_ids.empty(); }
 
@@ -18,8 +19,11 @@ void Cycle::remove_if_exists(size_t node_id) { m_nodes_ids.remove_if_exists(node
 void Cycle::add_in_between_if_exists(
     size_t node_id_1, size_t node_id_2, size_t in_between_node_id
 ) {
-    assert(node_id_1 != node_id_2 && "Elements are equal");
-    assert(!has_node(in_between_node_id) && "Element already exists");
+    DOMUS_ASSERT(node_id_1 != node_id_2, "Cycle::add_in_between_if_exists: elements are equal");
+    DOMUS_ASSERT(
+        !has_node(in_between_node_id),
+        "Cycle::add_in_between_if_exists: element already exists"
+    );
     if (!has_node(node_id_1) || !has_node(node_id_2))
         return;
     if (next_of_node(node_id_1) == node_id_2)

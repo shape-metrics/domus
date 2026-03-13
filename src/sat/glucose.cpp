@@ -1,6 +1,5 @@
 #include "domus/sat/sat.hpp"
 
-#include <cassert>
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +8,7 @@
 
 #include "domus/sat/cnf.hpp"
 
+#include "../core/domus_assert.hpp"
 #include "../core/memory_file.hpp"
 
 #include "glucose/src/SimpSolver.h"
@@ -17,11 +17,11 @@
 
 using namespace Glucose;
 
-void readClause(const CnfRow& row, SimpSolver& S, vec<Lit>& lits) {
+void read_clause(const CnfRow& row, SimpSolver& S, vec<Lit>& lits) {
     int var;
     lits.clear();
     for (int lit : row.m_clause) {
-        assert(lit != 0);
+        DOMUS_ASSERT(lit != 0, "read_clause: internal errors, found a 0 literal in clause");
         var = abs(lit) - 1;
         while (var >= S.nVars())
             S.newVar();
@@ -32,7 +32,7 @@ void readClause(const CnfRow& row, SimpSolver& S, vec<Lit>& lits) {
 void parse_cnf(const Cnf& cnf, SimpSolver& S) {
     vec<Lit> lits;
     for (const CnfRow& row : cnf.get_rows()) {
-        readClause(row, S, lits);
+        read_clause(row, S, lits);
         S.addClause_(lits);
     }
 }

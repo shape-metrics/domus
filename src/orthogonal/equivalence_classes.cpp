@@ -1,6 +1,5 @@
 #include "equivalence_classes.hpp"
 
-#include <cassert>
 #include <functional>
 #include <unordered_map>
 #include <utility>
@@ -9,11 +8,13 @@
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/shape/shape.hpp"
 
+#include "../core/domus_assert.hpp"
+
 bool EquivalenceClasses::has_class(size_t class_id) const { return m_all_classes.has(class_id); }
 
 void EquivalenceClasses::set_class(size_t elem, size_t class_id) {
-    assert(
-        !has_elem_a_class(elem) &&
+    DOMUS_ASSERT(
+        !has_elem_a_class(elem),
         "EquivalenceClasses::set_class elem already has an assigned class"
     );
     m_elem_to_class.add(elem, class_id);
@@ -24,12 +25,15 @@ void EquivalenceClasses::set_class(size_t elem, size_t class_id) {
 bool EquivalenceClasses::has_elem_a_class(size_t elem) const { return m_elem_to_class.has(elem); }
 
 size_t EquivalenceClasses::get_class_of_elem(size_t elem) const {
-    assert(has_elem_a_class(elem) && "EquivalenceClasses::get_class elem does not have a class");
+    DOMUS_ASSERT(
+        has_elem_a_class(elem),
+        "EquivalenceClasses::get_class elem does not have a class"
+    );
     return m_elem_to_class.get(elem);
 }
 
 const IntHashSet& EquivalenceClasses::get_elems_of_class(size_t class_id) const {
-    assert(has_class(class_id) && "EquivalenceClasses::get_elems class does not exist");
+    DOMUS_ASSERT(has_class(class_id), "EquivalenceClasses::get_elems class does not exist");
     return m_class_to_elems.get(class_id);
 }
 

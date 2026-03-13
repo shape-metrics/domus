@@ -1,10 +1,11 @@
 #include "domus/planarity/embedding.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include <cassert>
 #include <cstddef>
 #include <print>
 #include <stack>
+
+#include "../core/domus_assert.hpp"
 
 Embedding::Embedding(const Graph& graph) {
     graph.for_each_node([&](size_t node_id) { adjacency_list[node_id]; });
@@ -19,7 +20,7 @@ const CircularSequence& Embedding::get_adjacency_list(size_t node_id) const {
 }
 
 void Embedding::add_edge(size_t from_id, size_t to_id) {
-    assert(!m_edges.has(from_id, to_id) && "Embedding::add_edge: edge already exists");
+    DOMUS_ASSERT(!m_edges.has(from_id, to_id), "Embedding::add_edge: edge already exists");
     m_edges.add(from_id, to_id);
     if (m_edges_to_add.has(from_id, to_id)) {
         m_edges_to_add.erase(from_id, to_id);
@@ -93,8 +94,8 @@ bool is_embedding_planar(const Embedding& embedding) {
 }
 
 size_t compute_number_of_connected_components(const Embedding& embedding) {
-    assert(
-        embedding.is_consistent() &&
+    DOMUS_ASSERT(
+        embedding.is_consistent(),
         "compute_number_of_connected_components: embedding is not fully undirected"
     );
     NodesContainer visited;
@@ -139,13 +140,14 @@ size_t compute_embedding_genus(
     int f = static_cast<int>(number_of_faces);
     int p = static_cast<int>(connected_components);
     int genus = p - (f - e + n) / 2;
-    assert(genus >= 0 && "compute_embedding_genus: genus is negative");
+    DOMUS_ASSERT(genus >= 0, "compute_embedding_genus: genus is negative");
     return static_cast<size_t>(genus);
 }
 
 size_t compute_embedding_genus(const Embedding& embedding) {
-    assert(
-        embedding.is_consistent() && "compute_embedding_genus: embedding is not fully undirected"
+    DOMUS_ASSERT(
+        embedding.is_consistent(),
+        "compute_embedding_genus: embedding is not fully undirected"
     );
     size_t number_of_nodes = embedding.size();
     size_t number_of_edges = embedding.total_number_of_edges() / 2;

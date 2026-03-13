@@ -1,9 +1,12 @@
 #include "domus/core/containers.hpp"
 
-#include <cassert>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
+
+#include "domus_assert.hpp"
+
+// INT PAIR HASH
 
 struct int_pair_hash {
     size_t operator()(const std::pair<size_t, size_t>& p) const {
@@ -30,7 +33,7 @@ PairIntHashSet::PairIntHashSet(PairIntHashSet&&) noexcept = default;
 PairIntHashSet& PairIntHashSet::operator=(PairIntHashSet&&) noexcept = default;
 
 void PairIntHashSet::add(size_t value_1, size_t value_2) {
-    assert(!has(value_1, value_2) && "PairIntHashSet::add: pair already exists");
+    DOMUS_ASSERT(!has(value_1, value_2), "PairIntHashSet::add: pair already exists");
     m_impl->pairs.insert({value_1, value_2});
 }
 
@@ -43,7 +46,7 @@ size_t PairIntHashSet::size() const { return m_impl->pairs.size(); }
 bool PairIntHashSet::empty() const { return m_impl->pairs.empty(); }
 
 void PairIntHashSet::erase(size_t value_1, size_t value_2) {
-    assert(has(value_1, value_2) && "PairIntHashSet::erase: pair does not exist");
+    DOMUS_ASSERT(has(value_1, value_2), "PairIntHashSet::erase: pair does not exist");
     m_impl->pairs.erase({value_1, value_2});
 }
 
@@ -72,7 +75,7 @@ IntPair_ToInt_HashMap::IntPair_ToInt_HashMap(IntPair_ToInt_HashMap&&) noexcept =
 IntPair_ToInt_HashMap& IntPair_ToInt_HashMap::operator=(IntPair_ToInt_HashMap&&) noexcept = default;
 
 void IntPair_ToInt_HashMap::add(size_t key_1, size_t key_2, size_t value) {
-    assert(!has(key_1, key_2) && "IntPair_ToInt_HashMap::add: pair already exists");
+    DOMUS_ASSERT(!has(key_1, key_2), "IntPair_ToInt_HashMap::add: pair already exists");
     m_impl->map[{key_1, key_2}] = value;
 }
 
@@ -89,7 +92,7 @@ size_t IntPair_ToInt_HashMap::size() const { return m_impl->map.size(); }
 bool IntPair_ToInt_HashMap::empty() const { return m_impl->map.empty(); }
 
 void IntPair_ToInt_HashMap::erase(size_t key_1, size_t key_2) {
-    assert(has(key_1, key_2) && "IntPair_ToInt_HashMap::erase: pair does not exist");
+    DOMUS_ASSERT(has(key_1, key_2), "IntPair_ToInt_HashMap::erase: pair does not exist");
     m_impl->map.erase({key_1, key_2});
 }
 
@@ -113,7 +116,7 @@ void IntHashSet::add(size_t value) { m_impl->ints.insert(value); }
 bool IntHashSet::has(size_t value) const { return m_impl->ints.contains(value); }
 
 size_t IntHashSet::get_one_int() const {
-    assert(!empty() && "IntContainer::get_one_int: container is empty");
+    DOMUS_ASSERT(!empty(), "IntContainer::get_one_int: container is empty");
     return *m_impl->ints.begin();
 }
 
@@ -122,7 +125,7 @@ size_t IntHashSet::size() const { return m_impl->ints.size(); }
 bool IntHashSet::empty() const { return m_impl->ints.empty(); }
 
 void IntHashSet::erase(size_t value) {
-    assert(has(value) && "IntContainer::erase: value does not exist");
+    DOMUS_ASSERT(has(value), "IntContainer::erase: value does not exist");
     m_impl->ints.erase(value);
 }
 
@@ -151,7 +154,7 @@ Int_ToIntContainer_HashMap&
 Int_ToIntContainer_HashMap::operator=(Int_ToIntContainer_HashMap&&) noexcept = default;
 
 void Int_ToIntContainer_HashMap::add(size_t key, size_t value) {
-    assert(!has(key, value) && "Int_ToIntContainer_HashMap::add: key-value already exists");
+    DOMUS_ASSERT(!has(key, value), "Int_ToIntContainer_HashMap::add: key-value already exists");
     m_impl->key_values[key].add(value);
 }
 
@@ -166,7 +169,7 @@ const IntHashSet& Int_ToIntContainer_HashMap::get(size_t node_id) const {
 }
 
 void Int_ToIntContainer_HashMap::erase(size_t key, size_t value) {
-    assert(has(key, value) && "Int_ToIntContainer_HashMap::erase: key-value does not exist");
+    DOMUS_ASSERT(has(key, value), "Int_ToIntContainer_HashMap::erase: key-value does not exist");
     m_impl->key_values[key].erase(value);
 }
 
@@ -201,7 +204,7 @@ void Int_ToInt_HashMap::for_each(std::function<void(size_t, size_t)> func) const
 void Int_ToInt_HashMap::clear() { m_impl->map.clear(); }
 
 void Int_ToInt_HashMap::update(size_t key, size_t value) {
-    assert(has(key));
+    DOMUS_ASSERT(has(key), "Int_ToInt_HashMap::update: key does not exist");
     m_impl->map.at(key) = value;
 }
 

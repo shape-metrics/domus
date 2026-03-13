@@ -1,20 +1,21 @@
 #include "domus/core/graph/generators.hpp"
 
-#include <cassert>
 #include <stdlib.h>
 
 #include "domus/core/graph/graphs_algorithms.hpp"
 
+#include "../domus_assert.hpp"
+
 Graph generate_connected_random_graph_degree_max_4(
     const size_t number_of_nodes, const size_t number_of_edges
 ) {
-    assert(
-        number_of_edges <= 2 * number_of_nodes && "generate_connected_random_graph_degree_max_4: "
-                                                  "number of edges is too large.\n"
+    DOMUS_ASSERT(
+        number_of_edges <= 2 * number_of_nodes,
+        "generate_connected_random_graph_degree_max_4: number of edges is too large."
     );
-    assert(
-        number_of_edges + 1 >= number_of_nodes && "generate_connected_random_graph_degree_max_4: "
-                                                  "number of edges is too small.\n"
+    DOMUS_ASSERT(
+        number_of_edges + 1 >= number_of_nodes,
+        "generate_connected_random_graph_degree_max_4: number of edges is too small."
     );
     Graph graph;
     for (size_t i = 0; i < number_of_nodes; ++i)
@@ -38,9 +39,9 @@ Graph generate_connected_random_graph_degree_max_4(
 }
 
 Graph generate_connected_random_graph(size_t number_of_nodes, size_t number_of_edges) {
-    assert(
-        number_of_edges + 1 >= number_of_nodes && "generate_connected_random_graph: "
-                                                  "number of edges is too small.\n"
+    DOMUS_ASSERT(
+        number_of_edges + 1 >= number_of_nodes,
+        "generate_connected_random_graph: number of edges is too small."
     );
     Graph graph;
     for (size_t i = 0; i < number_of_nodes; ++i)

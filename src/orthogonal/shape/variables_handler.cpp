@@ -1,9 +1,10 @@
 #include "variables_handler.hpp"
 
-#include <cassert>
 #include <print>
 
 #include "domus/core/graph/graph.hpp"
+
+#include "../../core/domus_assert.hpp"
 
 void VariablesHandler::add_variable(size_t i, size_t j, const Direction direction) {
     variable_to_edge.push_back({i, j});
@@ -27,7 +28,7 @@ void VariablesHandler::add_variable(size_t i, size_t j, const Direction directio
         m_edge_left_variable.add(j, i, m_next_var);
         break;
     case Direction::INVALID:
-        assert(false && "VariablesHandler::add_variable: invalid direction");
+        DOMUS_ASSERT(false, "VariablesHandler::add_variable: invalid direction");
         break;
     }
     m_next_var++;
@@ -78,7 +79,7 @@ size_t VariablesHandler::get_variable(size_t i, size_t j, Direction direction) c
         return get_left_variable(i, j);
     if (direction == Direction::RIGHT)
         return get_right_variable(i, j);
-    assert(false && "Invalid direction");
+    DOMUS_ASSERT(false, "VariablesHandler::get_variable: invalid direction");
     return 0;
 }
 
@@ -95,21 +96,24 @@ Direction VariablesHandler::get_direction_of_edge(size_t i, size_t j) const {
         return Direction::LEFT;
     if (get_variable_value(get_right_variable(i, j)))
         return Direction::RIGHT;
-    assert(false && "No direction found for standard edge");
+    DOMUS_ASSERT(
+        false,
+        "VariablesHandler::get_direction_of_edge: no direction found for standard edge"
+    );
     return Direction::UP;
 }
 
 void VariablesHandler::set_variable_value(size_t variable, bool value) {
-    assert(
-        variable_to_value.at(variable) == -1 &&
+    DOMUS_ASSERT(
+        variable_to_value.at(variable) == -1,
         "VariablesHandler::set_variable_value: variable value is already set"
     );
     variable_to_value[variable] = value;
 }
 
 bool VariablesHandler::get_variable_value(size_t variable) const {
-    assert(
-        variable_to_value.at(variable) != -1 &&
+    DOMUS_ASSERT(
+        variable_to_value.at(variable) != -1,
         "VariablesHandler::get_variable_value: variable does not have a set value"
     );
     return variable_to_value.at(variable);
