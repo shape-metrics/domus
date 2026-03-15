@@ -21,9 +21,9 @@ std::expected<std::vector<std::string>, std::string>
 collect_txt_files(std::filesystem::path folder_path) {
     std::vector<std::string> txt_files;
     if (!std::filesystem::exists(folder_path)) {
-        std::string error_msg = "Error in collect_txt_files: ";
-        error_msg += "Folder does not exist: " + folder_path.string();
-        return std::unexpected(error_msg);
+        return std::unexpected(
+            std::format("collect_txt_files: folder does not exist: {}", folder_path.string())
+        );
     }
     for (const auto& entry : std::filesystem::recursive_directory_iterator(folder_path))
         if (entry.is_regular_file() && entry.path().extension() == ".txt")

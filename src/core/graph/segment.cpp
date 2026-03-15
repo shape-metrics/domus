@@ -26,10 +26,10 @@ void Segment::add_attachment(const size_t attachment_id) { attachments.add_node(
 std::string Segment::to_string() const {
     std::string result = "Segment:\n";
     auto out = std::back_inserter(result);
-    result.append(segment.to_string());
+    std::format_to(out, "{}", segment.to_string());
     std::format_to(out, "Attachments: ");
     attachments.for_each([&](size_t attachment_id) { std::format_to(out, "{} ", attachment_id); });
-    result.push_back('\n');
+    std::format_to(out, "\n");
     return result;
 }
 

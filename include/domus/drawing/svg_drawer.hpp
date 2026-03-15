@@ -9,7 +9,7 @@
 
 class Circle2D;
 class Line2D;
-class Path2D;
+struct Path2D;
 class Polygon2D;
 class Square2D;
 

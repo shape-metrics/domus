@@ -36,7 +36,14 @@ size_t Cycle::operator[](size_t index) const { return m_nodes_ids[index]; }
 
 size_t Cycle::at(size_t index) const { return m_nodes_ids.at(index); }
 
-std::string Cycle::to_string() const { return std::format("Cycle"); }
+std::string Cycle::to_string() const {
+    std::string result;
+    auto out = std::back_inserter(result);
+    std::format_to(out, "Cycle: [ ");
+    for_each([&](size_t node_id) { std::format_to(out, "{} ", node_id); });
+    std::format_to(out, "]\n");
+    return result;
+}
 
 void Cycle::print() const { std::println("{}", to_string()); }
 

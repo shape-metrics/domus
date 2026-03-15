@@ -10,28 +10,29 @@
 #include "domus/planarity/auslander_parter.hpp"
 #include "domus/planarity/embedding.hpp"
 
-using namespace std;
-
 int planarity() {
     const auto graph = load_graph_from_txt_file("graph.txt");
     if (!graph) {
         println("{}", graph.error());
         return 1;
     }
-    const optional<Embedding> embedding = embed_graph(*graph);
+    const std::optional<Embedding> embedding = embed_graph(*graph);
     if (embedding.has_value()) {
-        println("Embedding found");
+        std::println("Embedding found");
         embedding->print();
-        println("number of faces: {}", compute_number_of_faces_in_embedding(embedding.value()));
-        println("{}", is_embedding_planar(embedding.value()));
+        std::println(
+            "number of faces: {}",
+            compute_number_of_faces_in_embedding(embedding.value())
+        );
+        std::println("{}", is_embedding_planar(embedding.value()));
     } else
-        println("Embedding not found");
+        std::println("Embedding not found");
     return 0;
 }
 
 int main() {
-    string svg_filename = "drawing.svg";
-    string input_graph_filename = "graph.txt";
+    std::string svg_filename = "drawing.svg";
+    std::string input_graph_filename = "graph.txt";
     const auto graph = load_graph_from_txt_file(input_graph_filename);
     if (!graph) {
         println("{}", graph.error());
@@ -45,9 +46,9 @@ int main() {
     }
     make_svg(result->drawing.augmented_graph, result->drawing.attributes, svg_filename).value();
     compute_all_orthogonal_stats(result->drawing).print();
-    println("Initial number of cycles: {}", result->initial_number_of_cycles);
-    println("Number of added cycles: {}", result->number_of_added_cycles);
-    println("Number of useless bends: {}", result->number_of_useless_bends);
+    std::println("Initial number of cycles: {}", result->initial_number_of_cycles);
+    std::println("Number of added cycles: {}", result->number_of_added_cycles);
+    std::println("Number of useless bends: {}", result->number_of_useless_bends);
     planarity();
     return 0;
 }

@@ -5,7 +5,6 @@
 #include <unordered_map>
 
 #include "domus/core/circular_sequence.hpp"
-#include "domus/core/containers.hpp"
 #include "domus/core/graph/graph.hpp"
 
 class EmbeddingImpl;
@@ -14,8 +13,6 @@ class Embedding {
 
     std::unordered_map<size_t, CircularSequence> adjacency_list;
     size_t number_of_edges_m = 0;
-    PairIntHashSet m_edges;
-    PairIntHashSet m_edges_to_add;
 
   public:
     explicit Embedding(const Graph& graph);
@@ -27,6 +24,8 @@ class Embedding {
     std::string to_string() const;
     size_t size() const;
     size_t total_number_of_edges() const;
+    /**
+     */
     bool is_consistent() const;
     void print() const;
 };

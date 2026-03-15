@@ -10,7 +10,8 @@
 #include "domus/drawing/linear_scale.hpp"
 #include "domus/drawing/polygon.hpp"
 #include "domus/drawing/svg_drawer.hpp"
-#include "domus/nlohmann/json.hpp"
+
+#include "../nlohmann/json.hpp"
 
 using json = nlohmann::json;
 
@@ -50,19 +51,9 @@ save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, std::filesystem
                 return;
             if (neighbor_id < node_id)
                 return;
-            const auto direction = result.shape.get_direction(node_id, neighbor_id);
-            if (!direction) {
-                std::string error = "Error in save_orthogonal_drawing_to_file: ";
-                error += "direction not set for edge (";
-                error += std::to_string(node_id);
-                error += ", ";
-                error += std::to_string(neighbor_id);
-                error += ")";
-                error_msg = error;
-                return;
-            }
+            Direction direction = result.shape.get_direction(node_id, neighbor_id);
             shape_array.push_back(
-                {{"u", node_id}, {"v", neighbor_id}, {"dir", direction_to_string(*direction)}}
+                {{"u", node_id}, {"v", neighbor_id}, {"dir", direction_to_string(direction)}}
             );
         });
     });
@@ -72,18 +63,18 @@ save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, std::filesystem
         file << data.dump(4);
         return {};
     }
-    std::string error = "Error in save_orthogonal_drawing_to_file: could not open file ";
-    error += path.string();
-    return std::unexpected(error);
+    return std::unexpected(
+        std::format("save_orthogonal_drawing_to_file: could not open file {}", path.string())
+    );
 }
 
 std::expected<OrthogonalDrawing, std::string>
 load_orthogonal_drawing_from_file(std::filesystem::path path) {
     std::ifstream file(path);
     if (!file.is_open()) {
-        std::string error_msg = "Error in load_orthogonal_drawing_from_file: could not open file ";
-        error_msg += path.string();
-        return std::unexpected(error_msg);
+        return std::unexpected(
+            std::format("load_orthogonal_drawing_from_file: could not open file {}", path.string())
+        );
     }
     json data;
     file >> data;

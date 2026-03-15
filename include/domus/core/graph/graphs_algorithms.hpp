@@ -52,6 +52,8 @@ class Bipartition {
     bool get_side(size_t node_id) const;
     bool has_node(size_t node_id) const;
     bool are_in_same_side(size_t node_id_1, size_t node_id_2) const;
+    std::string to_string() const;
+    void print() const;
 };
 
 std::optional<Bipartition> compute_bipartition(const Graph& graph);

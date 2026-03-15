@@ -1,5 +1,6 @@
 #include "variables_handler.hpp"
 
+#include <format>
 #include <print>
 
 #include "domus/core/graph/graph.hpp"
@@ -120,13 +121,19 @@ bool VariablesHandler::get_variable_value(size_t variable) const {
 }
 
 std::string VariablesHandler::to_string() const {
-    std::string result = "VariablesHandler:\n";
+    std::string result;
+    auto out = std::back_inserter(result);
+    std::format_to(out, "VariablesHandler:\n");
     for (size_t variable = 1; variable < variable_to_edge.size(); variable++) {
         const Edge& edge = variable_to_edge.at(variable);
-        result +=
-            ("(" + std::to_string(edge.from_id) + " -> " + std::to_string(edge.to_id) +
-             "): " + std::to_string(variable) + ", " +
-             direction_to_string(variable_to_direction.at(variable)) + "\n");
+        std::format_to(
+            out,
+            "({} -> {}): {}, {}\n",
+            edge.from_id,
+            edge.to_id,
+            variable,
+            direction_to_string(variable_to_direction.at(variable))
+        );
     }
     return result;
 }

@@ -314,12 +314,14 @@ void dfs_bic_com(
 }
 
 std::string BiconnectedComponents::to_string() const {
-    std::string result = "Biconnected Components:\n";
-    result += "Cut vertices: ";
-    m_cutvertices.for_each([&result](size_t cv) { result += std::to_string(cv) + " "; });
-    result += "\nComponents:\n";
+    std::string result;
+    auto out = std::back_inserter(result);
+    std::format_to(out, "Biconnected Components:\n");
+    std::format_to(out, "Cut vertices:");
+    m_cutvertices.for_each([&](size_t node_id) { std::format_to(out, " {}", node_id); });
+    std::format_to(out, "\nComponents:\n");
     for (const auto& component : m_components)
-        result += component.to_string() + "\n";
+        std::format_to(out, "{}\n", component.to_string());
     return result;
 }
 
@@ -356,6 +358,8 @@ std::optional<Bipartition> compute_bipartition(const Graph& graph) {
             if (!bfs_bipartition(graph, node_id, bipartition))
                 is_bipartite = false;
     });
+    if (!is_bipartite)
+        return std::nullopt;
     return bipartition;
 }
 
@@ -414,7 +418,13 @@ Bipartition::~Bipartition() = default;
 Bipartition::Bipartition(Bipartition&&) noexcept = default;
 Bipartition& Bipartition::operator=(Bipartition&&) noexcept = default;
 
-bool Bipartition::get_side(size_t node_id) const { return m_impl->partition_map.get(node_id); }
+bool Bipartition::get_side(size_t node_id) const {
+    DOMUS_ASSERT(
+        has_node(node_id),
+        std::format("Bipartition::get_side: node {} does not exist", node_id)
+    );
+    return m_impl->partition_map.get(node_id);
+}
 
 bool Bipartition::has_node(size_t node_id) const { return m_impl->partition_map.has(node_id); }
 
@@ -430,3 +440,15 @@ bool Bipartition::are_in_same_side(size_t node_id_1, size_t node_id_2) const {
     );
     return get_side(node_id_1) == get_side(node_id_2);
 }
+
+std::string Bipartition::to_string() const {
+    std::string result;
+    auto out = std::back_inserter(result);
+    std::format_to(out, "Bipartition:\n");
+    m_impl->partition_map.for_each([&](size_t node_id, bool side) {
+        std::format_to(out, "{}: {}\n", node_id, side ? "left" : "right");
+    });
+    return result;
+}
+
+void Bipartition::print() const { std::print("{}", to_string()); }

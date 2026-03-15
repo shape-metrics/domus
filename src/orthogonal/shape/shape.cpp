@@ -42,9 +42,11 @@ void Shape::set_direction(size_t node_id_1, size_t node_id_2, const Direction di
     m_shape.add(node_id_1, node_id_2, direction_to_size_t(direction));
 }
 
-std::optional<Direction> Shape::get_direction(size_t node_id_1, size_t node_id_2) const {
-    if (!m_shape.has(node_id_1, node_id_2))
-        return std::nullopt;
+Direction Shape::get_direction(size_t node_id_1, size_t node_id_2) const {
+    DOMUS_ASSERT(
+        m_shape.has(node_id_1, node_id_2),
+        "Shape::get_direction: direction does not exist"
+    );
     return size_t_to_direction(m_shape.get(node_id_1, node_id_2));
 }
 

@@ -15,12 +15,10 @@
 #include "../core/domus_assert.hpp"
 #include "interlacement.hpp"
 
-using namespace std;
-
 Embedding merge_biconnected_components(
     const Graph& graph,
     const BiconnectedComponents& biconnected_components,
-    const vector<Embedding>& embeddings
+    const std::vector<Embedding>& embeddings
 ) {
     Embedding output(graph);
     for (size_t i = 0; i < biconnected_components.get_components().size(); ++i) {
@@ -63,7 +61,7 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
             cycle.has_node(node_id),
             "base_case_component: cycle does not contain the node with degree 3"
         );
-        optional<size_t> neighbor_in_between;
+        std::optional<size_t> neighbor_in_between;
         component.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (neighbor_in_between.has_value())
                 return;
@@ -85,9 +83,9 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
 }
 
 Cycle change_cycle_with_path(
-    const Cycle& cycle, const deque<size_t>& path, const optional<size_t> node_to_include
+    const Cycle& cycle, const std::deque<size_t>& path, const std::optional<size_t> node_to_include
 ) {
-    deque<size_t> nodes_copy(path); // newCycleList
+    std::deque<size_t> nodes_copy(path); // newCycleList
     size_t first_of_path = path.front();
     size_t last_of_path = path.back();
     size_t current = cycle.next_of_node(last_of_path);
@@ -99,14 +97,14 @@ Cycle change_cycle_with_path(
         current = cycle.next_of_node(current);
     }
     if (!foundNodeToInclude) {
-        const deque reversed_path(path.rbegin(), path.rend());
+        const std::deque reversed_path(path.rbegin(), path.rend());
         return change_cycle_with_path(cycle, reversed_path, node_to_include);
     }
     return Cycle(nodes_copy);
 }
 
 Cycle make_cycle_good(const Cycle& cycle, const Segment& segment) {
-    vector<size_t> attachments_to_use{};
+    std::vector<size_t> attachments_to_use{};
     cycle.for_each([&](size_t cycle_node_id) {
         if (attachments_to_use.size() == 3)
             return;
@@ -114,16 +112,18 @@ Cycle make_cycle_good(const Cycle& cycle, const Segment& segment) {
             return;
         attachments_to_use.push_back(cycle_node_id);
     });
-    const deque<size_t> path =
+    const std::deque<size_t> path =
         compute_path_between_attachments(segment, attachments_to_use[0], attachments_to_use[1]);
     if (attachments_to_use.size() == 3)
         return change_cycle_with_path(cycle, path, attachments_to_use[2]);
     return change_cycle_with_path(cycle, path, std::nullopt);
 }
 
-auto compute_min_and_max_segments_attachments(const vector<Segment>& segments, const Cycle& cycle) {
-    vector<size_t> segments_min_attachment(segments.size());
-    vector<size_t> segments_max_attachment(segments.size());
+auto compute_min_and_max_segments_attachments(
+    const std::vector<Segment>& segments, const Cycle& cycle
+) {
+    std::vector<size_t> segments_min_attachment(segments.size());
+    std::vector<size_t> segments_max_attachment(segments.size());
     for (size_t i = 0; i < segments.size(); i++) {
         size_t min = cycle.size();
         size_t max = 0;
@@ -139,10 +139,12 @@ auto compute_min_and_max_segments_attachments(const vector<Segment>& segments, c
 }
 
 // true if, when drawing the cycle clockwise, the segment is inside it
-vector<bool> are_embeddings_inside_clockwise_cycle(
-    const Cycle& cycle, const vector<Embedding>& embeddings, const vector<Segment>& segments
+std::vector<bool> are_embeddings_inside_clockwise_cycle(
+    const Cycle& cycle,
+    const std::vector<Embedding>& embeddings,
+    const std::vector<Segment>& segments
 ) {
-    vector<bool> is_inside(segments.size());
+    std::vector<bool> is_inside(segments.size());
     for (size_t i = 0; i < segments.size(); ++i) {
         const Segment& segment = segments[i];
         const Embedding& embedding = embeddings[i];
@@ -156,9 +158,9 @@ vector<bool> are_embeddings_inside_clockwise_cycle(
 }
 
 void compute_sub_order(
-    vector<size_t>& sub_segments,
-    const vector<size_t>& segments_attachment_index,
-    const vector<Segment>& segments,
+    std::vector<size_t>& sub_segments,
+    const std::vector<size_t>& segments_attachment_index,
+    const std::vector<Segment>& segments,
     const bool ordering_min_segments
 ) {
     if (sub_segments.size() < 2)
@@ -197,18 +199,18 @@ void compute_sub_order(
     }
 }
 
-vector<size_t> compute_order(
-    const vector<size_t>& segments_indexes,
-    const vector<size_t>& segments_min_attachment,
-    const vector<size_t>& segments_max_attachment,
-    const vector<Segment>& segments,
+std::vector<size_t> compute_order(
+    const std::vector<size_t>& segments_indexes,
+    const std::vector<size_t>& segments_min_attachment,
+    const std::vector<size_t>& segments_max_attachment,
+    const std::vector<Segment>& segments,
     const size_t cycle_node_position
 ) {
     if (segments_indexes.size() < 2)
         return segments_indexes;
-    optional<size_t> middle_segment{};
-    vector<size_t> min_segments{};
-    vector<size_t> max_segments{};
+    std::optional<size_t> middle_segment{};
+    std::vector<size_t> min_segments{};
+    std::vector<size_t> max_segments{};
     for (size_t seg_index : segments_indexes) {
         if (segments_min_attachment[seg_index] == cycle_node_position) {
             min_segments.push_back(seg_index);
@@ -218,13 +220,12 @@ vector<size_t> compute_order(
             max_segments.push_back(seg_index);
             continue;
         }
-        max_segments.push_back(seg_index);
         DOMUS_ASSERT(!middle_segment.has_value(), "compute_order: internal errors");
         middle_segment = seg_index;
     }
     compute_sub_order(max_segments, segments_min_attachment, segments, false);
     compute_sub_order(min_segments, segments_max_attachment, segments, true);
-    vector<size_t> order;
+    std::vector<size_t> order;
     for (size_t segment_index : max_segments)
         order.push_back(segment_index);
     if (middle_segment.has_value())
@@ -243,7 +244,7 @@ void add_middle_edges(
 ) {
     size_t prev_cycle_node_id = cycle.prev_of_node(cycle_node_id);
     size_t next_cycle_node_id = cycle.next_of_node(cycle_node_id);
-    vector<size_t> neighbors_to_add;
+    std::vector<size_t> neighbors_to_add;
     size_t current = prev_cycle_node_id;
     for (size_t i = 1; i < embedding.get_adjacency_list(cycle_node_id).size(); ++i) {
         current = embedding.next_element_in_adjacency_list(cycle_node_id, current);
@@ -262,20 +263,20 @@ void add_middle_edges(
 }
 
 void add_edges_incident_to_cycle(
-    const vector<Segment>& segments,
+    const std::vector<Segment>& segments,
     const Cycle& cycle,
-    const vector<Embedding>& embeddings,
+    const std::vector<Embedding>& embeddings,
     const Bipartition& is_segment_inside,
     Embedding& output,
-    const vector<size_t>& segments_min_attachment,
-    const vector<size_t>& segments_max_attachment,
-    const vector<bool>& is_embedding_inside
+    const std::vector<size_t>& segments_min_attachment,
+    const std::vector<size_t>& segments_max_attachment,
+    const std::vector<bool>& is_embedding_inside
 ) {
     for (size_t cycle_node_position = 0; cycle_node_position < cycle.size();
          ++cycle_node_position) {
         size_t cycle_node_id = cycle[cycle_node_position];
-        vector<size_t> inside_segments{};
-        vector<size_t> outside_segments{};
+        std::vector<size_t> inside_segments{};
+        std::vector<size_t> outside_segments{};
         for (size_t i = 0; i < segments.size(); ++i) {
             if (segments[i].has_attachment(cycle_node_id)) {
                 if (is_segment_inside.get_side(i))
@@ -285,16 +286,16 @@ void add_edges_incident_to_cycle(
             }
         }
         // order of the segments inside the cycle
-        vector<size_t> inside_order = compute_order(
+        std::vector<size_t> inside_order = compute_order(
             inside_segments,
             segments_min_attachment,
             segments_max_attachment,
             segments,
             cycle_node_position
         );
-        ranges::reverse(inside_order);
+        std::ranges::reverse(inside_order);
         // order of the segments outside the cycle
-        vector<size_t> outside_order = compute_order(
+        std::vector<size_t> outside_order = compute_order(
             outside_segments,
             segments_min_attachment,
             segments_max_attachment,
@@ -321,11 +322,11 @@ void add_edges_incident_to_cycle(
 }
 
 void add_edges_not_incident_to_cycle(
-    const vector<Segment>& segments,
+    const std::vector<Segment>& segments,
     Embedding& output,
     const Cycle& cycle,
-    const vector<Embedding>& embeddings,
-    const vector<bool>& is_embedding_inside,
+    const std::vector<Embedding>& embeddings,
+    const std::vector<bool>& is_embedding_inside,
     const Bipartition& is_segment_inside
 ) {
     for (size_t i = 0; i < segments.size(); ++i) {
@@ -334,7 +335,7 @@ void add_edges_not_incident_to_cycle(
         segment.get_segment().for_each_node([&](size_t node_id) {
             if (cycle.has_node(node_id))
                 return;
-            vector<size_t> neighbors_to_add;
+            std::vector<size_t> neighbors_to_add;
             embedding.for_each_neighbor(node_id, [&neighbors_to_add](size_t neighbor_id) {
                 neighbors_to_add.push_back(neighbor_id);
             });
@@ -351,14 +352,14 @@ void add_edges_not_incident_to_cycle(
 Embedding merge_segments_embeddings(
     const Graph& component,
     const Cycle& cycle,
-    const vector<Embedding>& embeddings,
-    const vector<Segment>& segments,
+    const std::vector<Embedding>& embeddings,
+    const std::vector<Segment>& segments,
     const Bipartition& is_segment_inside
 ) {
     Embedding output(component);
     const auto [segments_min_attachment, segments_max_attachment] =
         compute_min_and_max_segments_attachments(segments, cycle);
-    const vector<bool> is_embedding_inside =
+    const std::vector<bool> is_embedding_inside =
         are_embeddings_inside_clockwise_cycle(cycle, embeddings, segments);
     add_edges_incident_to_cycle(
         segments,
@@ -381,10 +382,10 @@ Embedding merge_segments_embeddings(
     return output;
 }
 
-optional<Embedding> embed_biconnected_component(const Graph& component);
+std::optional<Embedding> embed_biconnected_component(const Graph& component);
 
-optional<Embedding> embed_biconnected_component(const Graph& component, const Cycle& cycle) {
-    const vector<Segment> segments = compute_segments(component, cycle);
+std::optional<Embedding> embed_biconnected_component(const Graph& component, const Cycle& cycle) {
+    const std::vector<Segment> segments = compute_segments(component, cycle);
     if (segments.empty()) // the entire biconnected component is a cycle
         return base_case_graph(component);
     if (segments.size() == 1) {
@@ -395,12 +396,12 @@ optional<Embedding> embed_biconnected_component(const Graph& component, const Cy
         return embed_biconnected_component(component, make_cycle_good(cycle, segment));
     }
     const Graph interlacement_graph = compute_interlacement_graph(segments, cycle);
-    const optional<Bipartition> is_segment_inside = compute_bipartition(interlacement_graph);
+    const std::optional<Bipartition> is_segment_inside = compute_bipartition(interlacement_graph);
     if (!is_segment_inside.has_value())
         return std::nullopt; // if no bipartition exists, the component is not planar
-    vector<Embedding> embeddings;
+    std::vector<Embedding> embeddings;
     for (const Segment& segment : segments) {
-        optional<Embedding> embedding = embed_biconnected_component(segment.get_segment());
+        std::optional<Embedding> embedding = embed_biconnected_component(segment.get_segment());
         if (!embedding.has_value())
             return std::nullopt;
         embeddings.push_back(std::move(embedding.value()));
@@ -414,22 +415,22 @@ optional<Embedding> embed_biconnected_component(const Graph& component, const Cy
     );
 }
 
-optional<Embedding> embed_biconnected_component(const Graph& component) {
-    const optional<Cycle> cycle = find_an_undirected_cycle_in_graph(component);
+std::optional<Embedding> embed_biconnected_component(const Graph& component) {
+    const std::optional<Cycle> cycle = find_an_undirected_cycle_in_graph(component);
     if (cycle.has_value())
         return embed_biconnected_component(component, cycle.value());
     return base_case_graph(component);
 }
 
-optional<Embedding> embed_graph(const Graph& graph) {
+std::optional<Embedding> embed_graph(const Graph& graph) {
     if (graph.size() < 4)
         return base_case_graph(graph);
     if (graph.get_number_of_edges() / 2 > 3 * graph.size() - 6)
         return std::nullopt;
     const BiconnectedComponents bic_comps = compute_biconnected_components(graph);
-    vector<Embedding> embeddings;
+    std::vector<Embedding> embeddings;
     for (const auto& component : bic_comps.get_components()) {
-        optional<Embedding> embedding = embed_biconnected_component(component);
+        std::optional<Embedding> embedding = embed_biconnected_component(component);
         if (!embedding.has_value())
             return std::nullopt;
         embeddings.push_back(std::move(embedding.value()));

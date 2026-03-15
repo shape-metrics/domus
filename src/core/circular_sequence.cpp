@@ -32,10 +32,7 @@ void CircularSequence::append(size_t element) {
 }
 
 void CircularSequence::insert(size_t index, size_t element) {
-    DOMUS_ASSERT(
-        !has_element(element),
-        "Error in CircularSequence::insert: element already exists"
-    );
+    DOMUS_ASSERT(!has_element(element), "CircularSequence::insert: element already exists");
     auto it =
         m_elements.begin() + static_cast<typename std::vector<size_t>::difference_type>(index);
     m_elements.insert(it, element);

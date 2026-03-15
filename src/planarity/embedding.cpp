@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <print>
 #include <stack>
+#include <unordered_set>
 
 #include "../core/domus_assert.hpp"
 
@@ -20,18 +21,9 @@ const CircularSequence& Embedding::get_adjacency_list(size_t node_id) const {
 }
 
 void Embedding::add_edge(size_t from_id, size_t to_id) {
-    DOMUS_ASSERT(!m_edges.has(from_id, to_id), "Embedding::add_edge: edge already exists");
-    m_edges.add(from_id, to_id);
-    if (m_edges_to_add.has(from_id, to_id)) {
-        m_edges_to_add.erase(from_id, to_id);
-    } else {
-        m_edges_to_add.add(to_id, from_id);
-    }
     adjacency_list.at(from_id).append(to_id);
     number_of_edges_m++;
 }
-
-bool Embedding::is_consistent() const { return m_edges_to_add.empty(); }
 
 std::string Embedding::to_string() const {
     std::string result;
@@ -91,6 +83,21 @@ size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
 
 bool is_embedding_planar(const Embedding& embedding) {
     return compute_embedding_genus(embedding) == 0;
+}
+
+// This function verifies that for every edge from_id-to_id there is the edge to_id-from_id
+// It is intended to be used only for debug purposes
+bool Embedding::is_consistent() const {
+    std::unordered_set<Edge, edge_hash> edges;
+    for_each_node([this, &edges](size_t node_id) {
+        for_each_neighbor(node_id, [&edges, node_id](size_t neighbor_id) {
+            if (edges.contains({neighbor_id, node_id}))
+                edges.erase({neighbor_id, node_id});
+            else
+                edges.insert({node_id, neighbor_id});
+        });
+    });
+    return edges.empty();
 }
 
 size_t compute_number_of_connected_components(const Embedding& embedding) {

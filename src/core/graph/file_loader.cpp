@@ -10,8 +10,9 @@ std::expected<Graph, std::string> load_graph_from_txt_file(std::filesystem::path
     Graph graph;
     std::ifstream infile(path);
     if (!infile) {
-        std::string error = "Could not load graph from file.\nCannot open: " + path.string();
-        return std::unexpected(error);
+        return std::unexpected(
+            std::format("load_graph_from_txt_file: cannot open: {}", path.string())
+        );
     }
     std::string line;
     enum Section { NONE, NODES, EDGES } section = NONE;
@@ -40,9 +41,9 @@ std::expected<void, std::string>
 save_graph_to_file(const Graph& graph, std::filesystem::path path) {
     std::ofstream outfile(path);
     if (!outfile) {
-        std::string error = "Could not save graph to file.\n";
-        error += "could not write to file: " + path.string();
-        return std::unexpected(error);
+        return std::unexpected(
+            std::format("save_graph_to_file: could not write to file: {}", path.string())
+        );
     }
     outfile << "nodes:\n";
     graph.for_each_node([&outfile](size_t node_id) { outfile << node_id << '\n'; });
@@ -110,9 +111,9 @@ std::expected<void, std::string> save_graph_to_graphml_file(
 ) {
     std::ofstream outfile(path);
     if (!outfile) {
-        std::string error = "Could not save graph to file.\n";
-        error += "could not write to file: " + path.string();
-        return std::unexpected(error);
+        return std::unexpected(
+            std::format("save_graph_to_graphml_file: could not write to file: {}", path.string())
+        );
     }
     save_to_graphml(outfile, graph, attributes);
     return {};

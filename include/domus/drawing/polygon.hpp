@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <optional>
 #include <string>
 #include <vector>
@@ -10,19 +9,18 @@ class Point2D {
     double x_m, y_m;
     Point2D(double x, double y);
     double distance(const Point2D& other) const;
-    Point2D operator+(const Point2D& other) const { return {x_m + other.x_m, y_m + other.y_m}; }
-    Point2D operator-(const Point2D& other) const { return {x_m + other.x_m, y_m + other.y_m}; }
-    Point2D operator*(const double scalar) const { return {x_m * scalar, y_m * scalar}; }
-    Point2D operator/(const double scalar) const { return {x_m / scalar, y_m / scalar}; }
-    bool operator==(const Point2D& other) const { return x_m == other.x_m && y_m == other.y_m; }
-    bool operator!=(const Point2D& other) const { return !(*this == other); }
-    bool operator<(const Point2D& p) const { return x_m < p.x_m || (x_m == p.x_m && y_m < p.y_m); }
+    Point2D operator+(const Point2D& other) const;
+    Point2D operator-(const Point2D& other) const;
+    Point2D operator*(const double scalar) const;
+    Point2D operator/(const double scalar) const;
+    bool operator==(const Point2D& other) const;
+    bool operator!=(const Point2D& other) const;
+    bool operator<(const Point2D& p) const;
 };
 
-class Path2D {
-  public:
+struct Path2D {
     std::vector<Point2D> points;
-    void addPoint(const Point2D& p) { points.push_back(p); }
+    void addPoint(const Point2D& p);
 };
 
 class Line2D {
@@ -31,8 +29,8 @@ class Line2D {
     Line2D(const Point2D& p1, const Point2D& p2);
     bool isPointOnLine(const Point2D& p) const;
     bool isIntersecting(const Line2D& l) const;
-    bool operator==(const Line2D& other) const { return p1_m == other.p1_m && p2_m == other.p2_m; }
-    bool operator!=(const Line2D& other) const { return !(*this == other); }
+    bool operator==(const Line2D& other) const;
+    bool operator!=(const Line2D& other) const;
 };
 
 class Polygon2D {
@@ -54,21 +52,15 @@ class Circle2D {
     std::string color_m{};
 
   public:
-    Circle2D(const Point2D& center, const double radius) : center_m(center), radius_m(radius) {}
-    Point2D getCenter() const { return center_m; }
-    double getRadius() const { return radius_m; }
-    void setLabel(const std::string_view label) { label_m = label; }
-    bool hasLabel() const { return !label_m.empty(); }
-    const std::string_view getLabel() const {
-        assert(hasLabel());
-        return label_m;
-    }
-    void setColor(const std::string_view color) { color_m = color; }
-    bool hasColor() const { return !color_m.empty(); }
-    const std::string_view getColor() const {
-        assert(hasColor());
-        return color_m;
-    }
+    Circle2D(const Point2D& center, const double radius);
+    Point2D getCenter() const;
+    double getRadius() const;
+    void setLabel(const std::string_view label);
+    bool hasLabel() const;
+    const std::string_view getLabel() const;
+    void setColor(const std::string_view color);
+    bool hasColor() const;
+    const std::string_view getColor() const;
 };
 
 class Square2D {
@@ -78,13 +70,13 @@ class Square2D {
     std::optional<std::string> color_m;
 
   public:
-    Square2D(const Point2D& center, const double side) : center_m(center), side_m(side) {}
-    Point2D getCenter() const { return center_m; }
-    double getSide() const { return side_m; }
-    void setLabel(const std::string& label) { this->label_m = label; }
-    bool hasLabel() const { return label_m.has_value(); }
-    std::optional<std::string> getLabel() const { return label_m; }
-    void setColor(const std::string& color) { this->color_m = color; }
-    bool hasColor() const { return color_m.has_value(); }
-    std::optional<std::string> getColor() const { return color_m; }
+    Square2D(const Point2D& center, const double side);
+    Point2D getCenter() const;
+    double getSide() const;
+    void setLabel(const std::string& label);
+    bool hasLabel() const;
+    std::optional<std::string> getLabel() const;
+    void setColor(const std::string& color);
+    bool hasColor() const;
+    std::optional<std::string> getColor() const;
 };

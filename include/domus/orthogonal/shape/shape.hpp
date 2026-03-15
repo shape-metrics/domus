@@ -1,6 +1,5 @@
 #pragma once
 
-#include <optional>
 #include <string>
 
 #include "domus/core/containers.hpp"
@@ -13,7 +12,7 @@ class Shape {
 
   public:
     void set_direction(size_t node_id_1, size_t node_id_2, Direction direction);
-    std::optional<Direction> get_direction(size_t node_id_1, size_t node_id_2) const;
+    Direction get_direction(size_t node_id_1, size_t node_id_2) const;
     bool contains(size_t node_id_1, size_t node_id_2) const;
     bool is_up(size_t node_id_1, size_t node_id_2) const;
     bool is_down(size_t node_id_1, size_t node_id_2) const;

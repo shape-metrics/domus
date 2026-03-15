@@ -16,21 +16,19 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
-#include "domus/nlohmann/json.hpp"
 #include "domus/orthogonal/area_compacter.hpp"
 #include "domus/orthogonal/shape/shape.hpp"
 #include "domus/orthogonal/shape/shape_builder.hpp"
 
 #include "../core/domus_assert.hpp"
+#include "../nlohmann/json.hpp"
 #include "equivalence_classes.hpp"
 
-using namespace std;
-
-vector<size_t>
+std::vector<size_t>
 path_in_class(const Graph& graph, size_t from, size_t to, const Shape& shape, bool go_horizontal) {
-    vector<size_t> path;
+    std::vector<size_t> path;
     NodesContainer visited;
-    function<void(size_t)> dfs = [&](size_t current) {
+    std::function<void(size_t)> dfs = [&](size_t current) {
         if (current == to) {
             path.push_back(current);
             return;
@@ -53,7 +51,7 @@ path_in_class(const Graph& graph, size_t from, size_t to, const Shape& shape, bo
         visited.erase(current);
     };
     dfs(from);
-    ranges::reverse(path);
+    std::ranges::reverse(path);
     return path;
 }
 
@@ -61,10 +59,10 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
     const Graph& graph,
     const Shape& shape,
     const Cycle& cycle_in_ordering,
-    const unordered_map<Edge, Edge, edge_hash>& ordering_edge_to_graph_edge,
+    const std::unordered_map<Edge, Edge, edge_hash>& ordering_edge_to_graph_edge,
     const bool go_horizontal
 ) {
-    vector<size_t> cycle;
+    std::vector<size_t> cycle;
     for (size_t i = 0; i < cycle_in_ordering.size(); ++i) {
         size_t class_id = cycle_in_ordering[i];
         size_t next_class_id = cycle_in_ordering.next_of_node(class_id);
@@ -74,7 +72,7 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
         auto [next_from, next_to] =
             ordering_edge_to_graph_edge.at({next_class_id, next_next_class_id});
         if (to != next_from) {
-            vector<size_t> path = path_in_class(graph, to, next_from, shape, go_horizontal);
+            std::vector<size_t> path = path_in_class(graph, to, next_from, shape, go_horizontal);
             const auto end = static_cast<size_t>(static_cast<int>(path.size()) - 1);
             for (size_t j = 0; j < end; ++j)
                 cycle.push_back(path[j]);
@@ -84,56 +82,119 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
 }
 
 // useless bends are red nodes with two horizontal or vertical edges
-void remove_useless_bends(Graph& graph, const GraphAttributes& attributes, Shape& shape) {
-    vector<size_t> nodes_to_remove;
+// void remove_useless_bends(Graph& graph, const GraphAttributes& attributes, Shape& shape) {
+//     std::vector<size_t> nodes_to_remove;
+//     graph.for_each_node([&](size_t node_id) {
+//         if (attributes.get_node_color(node_id) == Color::BLACK)
+//             return;
+//         DOMUS_ASSERT(
+//             graph.get_degree_of_node(node_id) == 2,
+//             "remove_useless_bends: internal error happened"
+//         );
+//         std::array<size_t, 2> neighbors{graph.size(), graph.size()};
+//         size_t i = 0;
+//         graph.for_each_neighbor(node_id, [&neighbors, &i](size_t neighbor_id) {
+//             neighbors[i++] = neighbor_id;
+//         });
+//         // if the added corner is flat, remove it
+//         if (shape.is_horizontal(node_id, neighbors[0]) ==
+//             shape.is_horizontal(node_id, neighbors[1]))
+//             nodes_to_remove.push_back(node_id);
+//     });
+//     for (size_t node_id : nodes_to_remove) {
+//         std::array<size_t, 2> neighbors{graph.size(), graph.size()};
+//         size_t i = 0;
+//         graph.for_each_neighbor(node_id, [&neighbors, &i](size_t neighbor_id) {
+//             neighbors[i++] = neighbor_id;
+//         });
+//         auto direction = shape.get_direction(neighbors[0], node_id);
+//         graph.remove_node(node_id);
+//         graph.add_edge(neighbors[0], neighbors[1]);
+//         shape.remove_direction(node_id, neighbors[0]);
+//         shape.remove_direction(node_id, neighbors[1]);
+//         shape.remove_direction(neighbors[0], node_id);
+//         shape.remove_direction(neighbors[1], node_id);
+//         shape.set_direction(neighbors[0], neighbors[1], *direction);
+//         shape.set_direction(neighbors[1], neighbors[0], opposite_direction(*direction));
+//     }
+// }
+
+// useless bends are red nodes with two horizontal or vertical edges
+std::tuple<Graph, GraphAttributes, Shape>
+remove_useless_bends(const Graph& graph, const GraphAttributes& attributes, const Shape& shape) {
+    Graph new_graph;
+    std::vector<bool> kept_nodes(graph.size(), false);
     graph.for_each_node([&](size_t node_id) {
-        if (attributes.get_node_color(node_id) == Color::BLACK)
+        if (attributes.get_node_color(node_id) == Color::BLACK) {
+            new_graph.add_node(node_id);
+            kept_nodes[node_id] = true;
             return;
+        }
         DOMUS_ASSERT(
             graph.get_degree_of_node(node_id) == 2,
-            "remove_useless_bends: internal error happened"
+            "remove_useless_bends: internal error 1 happened"
         );
-        array<size_t, 2> neighbors{graph.size(), graph.size()};
+        std::array<size_t, 2> neighbors{graph.size(), graph.size()};
         size_t i = 0;
         graph.for_each_neighbor(node_id, [&neighbors, &i](size_t neighbor_id) {
             neighbors[i++] = neighbor_id;
         });
-        // if the added corner is flat, remove it
-        if (shape.is_horizontal(node_id, neighbors[0]) ==
-            shape.is_horizontal(node_id, neighbors[1]))
-            nodes_to_remove.push_back(node_id);
+        // if the added corner is not flat, keep it
+        if (shape.is_horizontal(node_id, neighbors[0]) !=
+            shape.is_horizontal(node_id, neighbors[1])) {
+            new_graph.add_node(node_id);
+            kept_nodes[node_id] = true;
+        }
     });
-    for (size_t node_id : nodes_to_remove) {
-        array<size_t, 2> neighbors{graph.size(), graph.size()};
-        size_t i = 0;
-        graph.for_each_neighbor(node_id, [&neighbors, &i](size_t neighbor_id) {
-            neighbors[i++] = neighbor_id;
+    Shape new_shape;
+    GraphAttributes new_attributes;
+    new_attributes.add_attribute(Attribute::NODES_COLOR);
+    new_graph.for_each_node([&](size_t node_id) {
+        new_attributes.set_node_color(node_id, attributes.get_node_color(node_id));
+        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
+            size_t prev = node_id;
+            size_t curr = neighbor_id;
+            // Traverse down the chain of useless nodes until we hit a kept node.
+            // Because useless nodes are guaranteed to have degree == 2,
+            // there is only one valid "next" node to step to.
+            while (!kept_nodes[curr]) {
+                size_t next_node = graph.size(); // Dummy init
+                DOMUS_ASSERT(
+                    graph.get_degree_of_node(curr) == 2,
+                    "remove_useless_bends: internal error 2 happened"
+                );
+                graph.for_each_neighbor(curr, [&](size_t n) {
+                    // Step forward by ignoring the node we just came from
+                    if (n != prev)
+                        next_node = n;
+                });
+                prev = curr;
+                curr = next_node;
+            }
+            if (node_id < curr) {
+                new_graph.add_edge(node_id, curr);
+                new_shape.set_direction(node_id, curr, shape.get_direction(node_id, neighbor_id));
+                new_shape.set_direction(curr, node_id, shape.get_direction(neighbor_id, node_id));
+            }
         });
-        auto direction = shape.get_direction(neighbors[0], node_id);
-        graph.remove_node(node_id);
-        graph.add_edge(neighbors[0], neighbors[1]);
-        shape.remove_direction(node_id, neighbors[0]);
-        shape.remove_direction(node_id, neighbors[1]);
-        shape.remove_direction(neighbors[0], node_id);
-        shape.remove_direction(neighbors[1], node_id);
-        shape.set_direction(neighbors[0], neighbors[1], *direction);
-        shape.set_direction(neighbors[1], neighbors[0], opposite_direction(*direction));
-    }
+    });
+    return {std::move(new_graph), std::move(new_attributes), std::move(new_shape)};
 }
 
-ShapeMetricsDrawing make_orthogonal_drawing_incremental(const Graph& graph, vector<Cycle>& cycles);
+ShapeMetricsDrawing
+make_orthogonal_drawing_incremental(const Graph& graph, std::vector<Cycle>& cycles);
 
-expected<ShapeMetricsDrawing, string> make_orthogonal_drawing(const Graph& graph) {
+std::expected<ShapeMetricsDrawing, std::string> make_orthogonal_drawing(const Graph& graph) {
     auto cycles = compute_cycle_basis(graph);
     return make_orthogonal_drawing_incremental(graph, cycles);
 }
 
-optional<Cycle> check_if_metrics_exist(Shape& shape, Graph& graph) {
+std::optional<Cycle> check_if_metrics_exist(Shape& shape, Graph& graph) {
     auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
     auto [ordering_x, ordering_y, ordering_x_edge_to_graph_edge, ordering_y_edge_to_graph_edge] =
         equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
-    optional<Cycle> cycle_x = find_a_directed_cycle_in_graph(ordering_x);
-    optional<Cycle> cycle_y = find_a_directed_cycle_in_graph(ordering_y);
+    std::optional<Cycle> cycle_x = find_a_directed_cycle_in_graph(ordering_x);
+    std::optional<Cycle> cycle_y = find_a_directed_cycle_in_graph(ordering_y);
     if (cycle_x.has_value()) {
         return build_cycle_in_graph_from_cycle_in_ordering(
             graph,
@@ -179,7 +240,8 @@ void fix_degree_more_than_4(Graph& augmented_graph, GraphAttributes& attributes,
     fix_negative_positions(augmented_graph, attributes);
 }
 
-ShapeMetricsDrawing make_orthogonal_drawing_incremental(const Graph& graph, vector<Cycle>& cycles) {
+ShapeMetricsDrawing
+make_orthogonal_drawing_incremental(const Graph& graph, std::vector<Cycle>& cycles) {
     Graph augmented_graph;
     GraphAttributes attributes;
     attributes.add_attribute(Attribute::NODES_COLOR);
@@ -194,7 +256,7 @@ ShapeMetricsDrawing make_orthogonal_drawing_incremental(const Graph& graph, vect
         });
     });
     Shape shape = build_shape(augmented_graph, attributes, cycles);
-    optional<Cycle> cycle_to_add = check_if_metrics_exist(shape, augmented_graph);
+    std::optional<Cycle> cycle_to_add = check_if_metrics_exist(shape, augmented_graph);
     size_t number_of_added_cycles = 0;
     while (cycle_to_add.has_value()) {
         cycles.push_back(std::move(*cycle_to_add));
@@ -203,16 +265,19 @@ ShapeMetricsDrawing make_orthogonal_drawing_incremental(const Graph& graph, vect
         cycle_to_add = check_if_metrics_exist(shape, augmented_graph);
     }
     const size_t old_size = augmented_graph.size();
-    remove_useless_bends(augmented_graph, attributes, shape);
-    // from now on cycles are not valid anymore
+    auto [new_graph, new_attributes, new_shape] =
+        remove_useless_bends(augmented_graph, attributes, shape);
+    augmented_graph = std::move(new_graph);
+    shape = std::move(new_shape);
+    attributes = std::move(new_attributes);
+    // from now on cycles are not valid anymore (because of removal of useless bends)
     const size_t number_of_cycles = cycles.size();
     cycles.clear();
     const size_t number_of_useless_bends = old_size - augmented_graph.size();
-    if (has_graph_degree_more_than_4(augmented_graph)) {
+    if (has_graph_degree_more_than_4(augmented_graph))
         fix_degree_more_than_4(augmented_graph, attributes, shape);
-    } else {
+    else
         build_nodes_positions(augmented_graph, attributes, shape);
-    }
     compact_area(augmented_graph, attributes);
     OrthogonalDrawing drawing{std::move(augmented_graph), std::move(attributes), std::move(shape)};
     return {
@@ -233,7 +298,7 @@ void build_nodes_positions(Graph& graph, GraphAttributes& attributes, Shape& sha
     auto new_classes_x_ordering = *make_topological_ordering(ordering_x);
     auto new_classes_y_ordering = *make_topological_ordering(ordering_y);
     int current_position_x = -100;
-    unordered_map<size_t, int> node_id_to_position_x;
+    std::unordered_map<size_t, int> node_id_to_position_x;
     for (size_t class_id : new_classes_x_ordering) {
         int next_position_x = current_position_x + 100;
 
@@ -247,7 +312,7 @@ void build_nodes_positions(Graph& graph, GraphAttributes& attributes, Shape& sha
         current_position_x = next_position_x;
     }
     int current_position_y = -100;
-    unordered_map<size_t, int> node_id_to_position_y;
+    std::unordered_map<size_t, int> node_id_to_position_y;
     for (size_t class_id : new_classes_y_ordering) {
         int next_position_y = current_position_y + 100;
         classes_y.get_elems_of_class(class_id).for_each([&](size_t node_id) {
@@ -268,14 +333,14 @@ void build_nodes_positions(Graph& graph, GraphAttributes& attributes, Shape& sha
 }
 
 auto find_edges_to_fix(const Graph& graph, const Shape& shape, const GraphAttributes& attributes) {
-    unordered_map<size_t, size_t> node_to_leftest_up;
-    unordered_map<size_t, size_t> node_to_leftest_down;
-    unordered_map<size_t, size_t> node_to_downest_left;
-    unordered_map<size_t, size_t> node_to_downest_right;
+    std::unordered_map<size_t, size_t> node_to_leftest_up;
+    std::unordered_map<size_t, size_t> node_to_leftest_down;
+    std::unordered_map<size_t, size_t> node_to_downest_left;
+    std::unordered_map<size_t, size_t> node_to_downest_right;
     graph.for_each_node([&](size_t node_id) {
         if (graph.get_degree_of_node(node_id) <= 4)
             return;
-        optional<size_t> downest_left, downest_right, leftest_up, leftest_down;
+        std::optional<size_t> downest_left, downest_right, leftest_up, leftest_down;
         graph.for_each_neighbor(node_id, [&](size_t added_id) {
             if (shape.is_horizontal(node_id, added_id)) {
                 DOMUS_ASSERT(
@@ -342,7 +407,7 @@ auto find_edges_to_fix(const Graph& graph, const Shape& shape, const GraphAttrib
 }
 
 size_t get_other_neighbor_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
-    optional<size_t> other;
+    std::optional<size_t> other;
     graph.for_each_neighbor(node_id, [&](size_t other_id) {
         if (other.has_value())
             return;
@@ -394,20 +459,20 @@ void fix_useless_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Sha
 }
 
 void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shape) {
-    vector<size_t> nodes;
+    std::vector<size_t> nodes;
     graph.for_each_node([&](size_t node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
             nodes.push_back(node_id);
     });
     for (size_t node_id : nodes) {
-        vector<Edge> edges_to_remove;
-        vector<Edge> edges_to_add;
+        std::vector<Edge> edges_to_remove;
+        std::vector<Edge> edges_to_add;
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             size_t added_id = graph.add_node();
             edges_to_add.emplace_back(added_id, node_id);
             edges_to_add.emplace_back(added_id, neighbor_id);
-            shape.set_direction(added_id, neighbor_id, *shape.get_direction(node_id, neighbor_id));
-            shape.set_direction(neighbor_id, added_id, *shape.get_direction(neighbor_id, node_id));
+            shape.set_direction(added_id, neighbor_id, shape.get_direction(node_id, neighbor_id));
+            shape.set_direction(neighbor_id, added_id, shape.get_direction(neighbor_id, node_id));
             if (shape.is_horizontal(node_id, neighbor_id)) {
                 attributes.set_node_color(added_id, Color::GREEN);
                 shape.set_direction(node_id, added_id, Direction::UP);
@@ -423,17 +488,21 @@ void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shap
         });
         for (auto [from_id, to_id] : edges_to_add)
             graph.add_edge(from_id, to_id);
-        for (auto [from_id, to_id] : edges_to_remove)
-            graph.remove_edge(from_id, to_id);
+        for (auto [from_id, to_id] : edges_to_remove) {
+            if (graph.has_edge(from_id, to_id))
+                graph.remove_edge(from_id, to_id);
+            else
+                graph.remove_edge(to_id, from_id);
+        }
     }
     auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
     auto ordering = equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
     Graph& ordering_x = std::get<0>(ordering);
     Graph& ordering_y = std::get<1>(ordering);
-    vector<size_t> classes_x_ordering = *make_topological_ordering(ordering_x);
-    vector<size_t> classes_y_ordering = *make_topological_ordering(ordering_y);
+    std::vector<size_t> classes_x_ordering = *make_topological_ordering(ordering_x);
+    std::vector<size_t> classes_y_ordering = *make_topological_ordering(ordering_y);
     int current_position_x = 0;
-    unordered_map<size_t, int> node_id_to_position_x;
+    std::unordered_map<size_t, int> node_id_to_position_x;
     for (size_t class_id : classes_x_ordering) {
         classes_x.get_elems_of_class(class_id).for_each([&](size_t node_id) {
             node_id_to_position_x[node_id] = 100 * current_position_x;
@@ -441,7 +510,7 @@ void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shap
         ++current_position_x;
     }
     int current_position_y = 0;
-    unordered_map<size_t, int> node_id_to_position_y;
+    std::unordered_map<size_t, int> node_id_to_position_y;
     for (size_t class_id : classes_y_ordering) {
         classes_y.get_elems_of_class(class_id).for_each([&](size_t node_id) {
             node_id_to_position_y[node_id] = 100 * current_position_y;
@@ -467,7 +536,7 @@ void fix_inconsistency(
 ) {
     const Direction direction = color_to_find == Color::GREEN ? Direction::UP : Direction::RIGHT;
     const Color dark_color = color_to_find == Color::GREEN ? Color::GREEN_DARK : Color::BLUE_DARK;
-    optional<size_t> colored_node;
+    std::optional<size_t> colored_node;
     cycle.for_each([&](size_t node_id) {
         if (attributes.get_node_color(node_id) != color_to_find)
             return;
@@ -499,8 +568,8 @@ void find_inconsistencies(Graph& graph, Shape& shape, GraphAttributes& attribute
     auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
     auto [ordering_x, ordering_y, ordering_x_edge_to_graph_edge, ordering_y_edge_to_graph_edge] =
         equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
-    optional<Cycle> cycle_x = find_a_directed_cycle_in_graph(ordering_x);
-    optional<Cycle> cycle_y = find_a_directed_cycle_in_graph(ordering_y);
+    std::optional<Cycle> cycle_x = find_a_directed_cycle_in_graph(ordering_x);
+    std::optional<Cycle> cycle_y = find_a_directed_cycle_in_graph(ordering_y);
     if (cycle_x.has_value() || cycle_y.has_value()) {
         if (cycle_x.has_value()) {
             Cycle cycle = build_cycle_in_graph_from_cycle_in_ordering(
@@ -530,7 +599,7 @@ void shifting_order(
     size_t node_id,
     Graph& graph,
     Shape& shape,
-    vector<size_t>& nodes_at_direction,
+    std::vector<size_t>& nodes_at_direction,
     GraphAttributes& attributes,
     const Direction increasing_direction,
     Func get_position
@@ -563,8 +632,9 @@ void shifting_order(
     });
 }
 
-size_t
-find_fixed_index_node(const GraphAttributes& attributes, const vector<size_t>& nodes_at_direction) {
+size_t find_fixed_index_node(
+    const GraphAttributes& attributes, const std::vector<size_t>& nodes_at_direction
+) {
     for (size_t i = 0; i < nodes_at_direction.size(); ++i) {
         size_t node_id = nodes_at_direction[i];
         if (attributes.get_node_color(node_id) == Color::BLACK)
@@ -580,7 +650,7 @@ void make_shifts(
     Graph& graph,
     Shape& shape,
     GraphAttributes& attributes,
-    vector<size_t>& right_nodes,
+    std::vector<size_t>& right_nodes,
     const Axis axis,
     const Direction increasing_direction,
     const Color color
@@ -625,7 +695,7 @@ void make_shifts(
         size_t node_to_shift_id = right_nodes[i];
         int shift = (static_cast<int>(i) - static_cast<int>(index_of_fixed_node)) * 5;
         size_t node_to_shift_neighbor_id = get_other_neighbor_id(graph, node_to_shift_id, node_id);
-        Direction direction = *shape.get_direction(node_to_shift_id, node_to_shift_neighbor_id);
+        Direction direction = shape.get_direction(node_to_shift_id, node_to_shift_neighbor_id);
         size_t added_node_id = graph.add_node();
         attributes.set_node_color(added_node_id, color);
         shape.set_direction(node_id, added_node_id, direction);
@@ -665,22 +735,22 @@ void make_shifts(
 }
 
 auto neighbors_at_each_direction(const Graph& graph, size_t node_id, const Shape& shape) {
-    unordered_map<Direction, vector<size_t>> nodes_at_direction;
+    std::unordered_map<Direction, std::vector<size_t>> nodes_at_direction;
     graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-        Direction dir = *shape.get_direction(node_id, neighbor_id);
+        Direction dir = shape.get_direction(node_id, neighbor_id);
         nodes_at_direction[dir].push_back(neighbor_id);
     });
     return nodes_at_direction;
 }
 
 void make_shifts_overlapped_edges(Graph& graph, GraphAttributes& attributes, Shape& shape) {
-    vector<size_t> nodes;
+    std::vector<size_t> nodes;
     graph.for_each_node([&](size_t node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
             nodes.push_back(node_id);
     });
     for (size_t node_id : nodes) {
-        unordered_map<Direction, vector<size_t>> nodes_to_sort =
+        std::unordered_map<Direction, std::vector<size_t>> nodes_to_sort =
             neighbors_at_each_direction(graph, node_id, shape);
         make_shifts(
             node_id,
@@ -746,12 +816,13 @@ void fix_negative_positions(const Graph& graph, GraphAttributes& attributes) {
 
 using json = nlohmann::json;
 
-expected<void, string>
+std::expected<void, std::string>
 save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, std::filesystem::path path) {
     auto saved = save_orthogonal_drawing_to_file(result.drawing, path);
     if (!saved) {
-        string error_msg = "Error in save_shape_metrics_drawing_to_file: " + saved.error();
-        return std::unexpected(error_msg);
+        return std::unexpected(
+            std::format("save_shape_metrics_drawing_to_file: {}", saved.error())
+        );
     }
     json data;
     data["initial_number_of_cycles"] = result.initial_number_of_cycles;
@@ -759,20 +830,21 @@ save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, std::files
     data["number_of_useless_bends"] = result.number_of_useless_bends;
     std::ofstream file(path);
     if (!file.is_open()) {
-        string error_msg = "Error in save_shape_metrics_drawing_to_file: " + path.string();
-        error_msg += " could not be opened";
-        return std::unexpected(error_msg);
+        return std::unexpected(
+            std::format("save_shape_metrics_drawing_to_file: could not open {}", path.string())
+        );
     }
     file << data;
     return {};
 }
 
-expected<ShapeMetricsDrawing, string>
+std::expected<ShapeMetricsDrawing, std::string>
 load_shape_metrics_drawing_from_file(std::filesystem::path path) {
     auto drawing = load_orthogonal_drawing_from_file(path);
     if (!drawing) {
-        string error_msg = "Error in load_shape_metrics_drawing_from_file: " + drawing.error();
-        return std::unexpected(error_msg);
+        return std::unexpected(
+            std::format("load_shape_metrics_drawing_from_file: {}", drawing.error())
+        );
     }
     std::ifstream file(path);
     json data;

@@ -39,8 +39,7 @@ std::expected<CSVData, std::string> parse_csv(std::filesystem::path path) {
     CSVData data;
     std::ifstream file(path);
     if (!file.is_open()) {
-        std::string error = "Error parsing csv: could not open file <" + path.string() + ">";
-        return std::unexpected(error);
+        return std::unexpected(std::format("parse_csv: could not open file <{}>", path.string()));
     }
     std::string line;
     if (std::getline(file, line))
@@ -49,8 +48,7 @@ std::expected<CSVData, std::string> parse_csv(std::filesystem::path path) {
     while (std::getline(file, line)) {
         auto tokens = parse_csv_line(line, delimiter);
         if (tokens.size() != header_size) {
-            std::string error = "Error parsing csv: inconsistent table size";
-            return std::unexpected(error);
+            return std::unexpected("parse_csv: inconsistent table size");
         }
         data.rows.push_back(tokens);
     }

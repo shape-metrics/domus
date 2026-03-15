@@ -75,9 +75,9 @@ void SvgDrawer::add_and_smooth(Path2D& path, const std::string_view color) {
 std::expected<void, std::string> SvgDrawer::save_to_file(std::filesystem::path path) {
     std::ofstream svgFile(path);
     if (!svgFile.is_open()) {
-        std::string error_msg = "Error in SvgDrawer::save_to_file: could not open file ";
-        error_msg += path.string();
-        return std::unexpected(error_msg);
+        return std::unexpected(
+            std::format("SvgDrawer::save_to_file: could not open file {}", path.string())
+        );
     }
     svgFile << m_svg.str();
     svgFile << "</svg>" << std::endl;

@@ -6,6 +6,79 @@
 
 #include "../core/domus_assert.hpp"
 
+Point2D Point2D::operator+(const Point2D& other) const {
+    return {x_m + other.x_m, y_m + other.y_m};
+}
+
+Point2D Point2D::operator-(const Point2D& other) const {
+    return {x_m + other.x_m, y_m + other.y_m};
+}
+
+Point2D Point2D::operator*(const double scalar) const { return {x_m * scalar, y_m * scalar}; }
+
+Point2D Point2D::operator/(const double scalar) const { return {x_m / scalar, y_m / scalar}; }
+
+bool Point2D::operator==(const Point2D& other) const {
+    return x_m == other.x_m && y_m == other.y_m;
+}
+
+bool Point2D::operator!=(const Point2D& other) const { return !(*this == other); }
+
+bool Point2D::operator<(const Point2D& p) const {
+    return x_m < p.x_m || (x_m == p.x_m && y_m < p.y_m);
+}
+
+void Path2D::addPoint(const Point2D& p) { points.push_back(p); }
+
+bool Line2D::operator==(const Line2D& other) const {
+    return p1_m == other.p1_m && p2_m == other.p2_m;
+}
+
+bool Line2D::operator!=(const Line2D& other) const { return !(*this == other); }
+
+Circle2D::Circle2D(const Point2D& center, const double radius)
+    : center_m(center), radius_m(radius) {}
+
+Point2D Circle2D::getCenter() const { return center_m; }
+
+double Circle2D::getRadius() const { return radius_m; }
+
+void Circle2D::setLabel(const std::string_view label) { label_m = label; }
+
+bool Circle2D::hasLabel() const { return !label_m.empty(); }
+
+const std::string_view Circle2D::getLabel() const {
+    DOMUS_ASSERT(hasLabel(), "Circle2D::getLabel: circle does not have a label");
+    return label_m;
+}
+
+void Circle2D::setColor(const std::string_view color) { color_m = color; }
+
+bool Circle2D::hasColor() const { return !color_m.empty(); }
+
+const std::string_view Circle2D::getColor() const {
+    DOMUS_ASSERT(hasColor(), "Circle2D::getColor: circle does not have a color");
+    return color_m;
+}
+
+Square2D::Square2D(const Point2D& center, const double side) : center_m(center), side_m(side) {}
+
+Point2D Square2D::getCenter() const { return center_m; }
+
+double Square2D::getSide() const { return side_m; }
+
+void Square2D::setLabel(const std::string& label) { this->label_m = label; }
+
+bool Square2D::hasLabel() const { return label_m.has_value(); }
+
+std::optional<std::string> Square2D::getLabel() const { return label_m; }
+
+void Square2D::setColor(const std::string& color) { this->color_m = color; }
+
+bool Square2D::hasColor() const { return color_m.has_value(); }
+
+std::optional<std::string> Square2D::getColor() const { return color_m; }
+
 Point2D::Point2D(const double x, const double y) : x_m(x), y_m(y) {}
 
 double Point2D::distance(const Point2D& other) const {
