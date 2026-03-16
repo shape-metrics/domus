@@ -13,7 +13,6 @@ enum class Attribute {
     // EDGES_WEIGHT,
     // NODES_STRING_LABEL,
     // EDGES_STRING_LABEL,
-    // NODES_ANY_LABEL,
 };
 
 std::string attribute_to_string(Attribute attribute);

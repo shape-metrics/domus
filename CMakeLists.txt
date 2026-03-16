@@ -71,6 +71,7 @@ set(COMMON_SRCS
     src/orthogonal/shape/shape_builder.cpp
     src/orthogonal/shape/variables_handler.cpp
     src/orthogonal/shape/clauses_functions.cpp
+    src/orthogonal/shape/node_type.cpp
     src/orthogonal/area_compacter.cpp
     src/orthogonal/equivalence_classes.cpp
     src/orthogonal/drawing.cpp
