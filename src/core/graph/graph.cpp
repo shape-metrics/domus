@@ -79,22 +79,8 @@ bool Graph::are_neighbors(size_t node_1_id, size_t node_2_id) const {
 }
 
 size_t Graph::size() const { return m_nodes_ids.size(); }
-size_t Graph::get_number_of_edges() const { return m_total_edges; }
 
-void Graph::remove_node(size_t node_id) {
-    DOMUS_ASSERT(has_node(node_id), "Graph::remove_node: node does not exist");
-    for_each_out_neighbors(node_id, [this, node_id](size_t neighbor_id) {
-        m_in_adjacency_list.erase_edge(neighbor_id, node_id);
-        m_total_edges--;
-    });
-    for_each_in_neighbors(node_id, [this, node_id](size_t neighbor_id) {
-        if (neighbor_id != node_id) {
-            m_out_adjacency_list.erase_edge(neighbor_id, node_id);
-            m_total_edges--;
-        }
-    });
-    m_nodes_ids.erase(node_id);
-}
+size_t Graph::get_number_of_edges() const { return m_total_edges; }
 
 void Graph::remove_edge(size_t from_id, size_t to_id) {
     DOMUS_ASSERT(has_node(from_id) && has_node(to_id), "Graph::remove_edge: node does not exist");

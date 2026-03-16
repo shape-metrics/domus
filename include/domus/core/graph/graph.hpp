@@ -28,7 +28,6 @@ class Graph {
     bool are_neighbors(size_t node_1_id, size_t node_2_id) const;
     size_t size() const;
     size_t get_number_of_edges() const;
-    void remove_node(size_t node_id);
     void remove_edge(size_t from_id, size_t to_id);
     std::string to_string() const;
     void print() const;

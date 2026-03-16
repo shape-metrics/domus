@@ -82,44 +82,6 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
 }
 
 // useless bends are red nodes with two horizontal or vertical edges
-// void remove_useless_bends(Graph& graph, const GraphAttributes& attributes, Shape& shape) {
-//     std::vector<size_t> nodes_to_remove;
-//     graph.for_each_node([&](size_t node_id) {
-//         if (attributes.get_node_color(node_id) == Color::BLACK)
-//             return;
-//         DOMUS_ASSERT(
-//             graph.get_degree_of_node(node_id) == 2,
-//             "remove_useless_bends: internal error happened"
-//         );
-//         std::array<size_t, 2> neighbors{graph.size(), graph.size()};
-//         size_t i = 0;
-//         graph.for_each_neighbor(node_id, [&neighbors, &i](size_t neighbor_id) {
-//             neighbors[i++] = neighbor_id;
-//         });
-//         // if the added corner is flat, remove it
-//         if (shape.is_horizontal(node_id, neighbors[0]) ==
-//             shape.is_horizontal(node_id, neighbors[1]))
-//             nodes_to_remove.push_back(node_id);
-//     });
-//     for (size_t node_id : nodes_to_remove) {
-//         std::array<size_t, 2> neighbors{graph.size(), graph.size()};
-//         size_t i = 0;
-//         graph.for_each_neighbor(node_id, [&neighbors, &i](size_t neighbor_id) {
-//             neighbors[i++] = neighbor_id;
-//         });
-//         auto direction = shape.get_direction(neighbors[0], node_id);
-//         graph.remove_node(node_id);
-//         graph.add_edge(neighbors[0], neighbors[1]);
-//         shape.remove_direction(node_id, neighbors[0]);
-//         shape.remove_direction(node_id, neighbors[1]);
-//         shape.remove_direction(neighbors[0], node_id);
-//         shape.remove_direction(neighbors[1], node_id);
-//         shape.set_direction(neighbors[0], neighbors[1], *direction);
-//         shape.set_direction(neighbors[1], neighbors[0], opposite_direction(*direction));
-//     }
-// }
-
-// useless bends are red nodes with two horizontal or vertical edges
 std::tuple<Graph, GraphAttributes, Shape>
 remove_useless_bends(const Graph& graph, const GraphAttributes& attributes, const Shape& shape) {
     Graph new_graph;
@@ -233,7 +195,9 @@ void make_shifts_overlapped_edges(Graph& graph, GraphAttributes& attributes, Sha
 
 void fix_negative_positions(const Graph& graph, GraphAttributes& attributes);
 
-void fix_degree_more_than_4(Graph& augmented_graph, GraphAttributes& attributes, Shape& shape) {
+void build_nodes_position_degree_more_than_4(
+    Graph& augmented_graph, GraphAttributes& attributes, Shape& shape
+) {
     add_green_blue_nodes(augmented_graph, attributes, shape);
     build_nodes_positions(augmented_graph, attributes, shape);
     make_shifts_overlapped_edges(augmented_graph, attributes, shape);
@@ -275,7 +239,7 @@ make_orthogonal_drawing_incremental(const Graph& graph, std::vector<Cycle>& cycl
     cycles.clear();
     const size_t number_of_useless_bends = old_size - augmented_graph.size();
     if (has_graph_degree_more_than_4(augmented_graph))
-        fix_degree_more_than_4(augmented_graph, attributes, shape);
+        build_nodes_position_degree_more_than_4(augmented_graph, attributes, shape);
     else
         build_nodes_positions(augmented_graph, attributes, shape);
     compact_area(augmented_graph, attributes);
@@ -295,8 +259,8 @@ void build_nodes_positions(Graph& graph, GraphAttributes& attributes, Shape& sha
     auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
     auto [ordering_x, ordering_y, ignored_1, ignored_2] =
         equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
-    auto new_classes_x_ordering = *make_topological_ordering(ordering_x);
-    auto new_classes_y_ordering = *make_topological_ordering(ordering_y);
+    auto new_classes_x_ordering = make_topological_ordering(ordering_x).value();
+    auto new_classes_y_ordering = make_topological_ordering(ordering_y).value();
     int current_position_x = -100;
     std::unordered_map<size_t, int> node_id_to_position_x;
     for (size_t class_id : new_classes_x_ordering) {
@@ -332,11 +296,9 @@ void build_nodes_positions(Graph& graph, GraphAttributes& attributes, Shape& sha
     });
 }
 
-auto find_edges_to_fix(const Graph& graph, const Shape& shape, const GraphAttributes& attributes) {
-    std::unordered_map<size_t, size_t> node_to_leftest_up;
-    std::unordered_map<size_t, size_t> node_to_leftest_down;
-    std::unordered_map<size_t, size_t> node_to_downest_left;
-    std::unordered_map<size_t, size_t> node_to_downest_right;
+const std::unordered_map<Edge, Direction, edge_hash>
+find_edges_to_fix(const Graph& graph, const Shape& shape, const GraphAttributes& attributes) {
+    std::unordered_map<Edge, Direction, edge_hash> edge_to_direction;
     graph.for_each_node([&](size_t node_id) {
         if (graph.get_degree_of_node(node_id) <= 4)
             return;
@@ -393,20 +355,19 @@ auto find_edges_to_fix(const Graph& graph, const Shape& shape, const GraphAttrib
                 }
             }
         });
-        node_to_leftest_up[node_id] = leftest_up.value();
-        node_to_leftest_down[node_id] = leftest_down.value();
-        node_to_downest_left[node_id] = downest_left.value();
-        node_to_downest_right[node_id] = downest_right.value();
+        edge_to_direction[{node_id, leftest_up.value()}] = Direction::UP;
+        edge_to_direction[{node_id, leftest_down.value()}] = Direction::DOWN;
+        edge_to_direction[{node_id, downest_left.value()}] = Direction::LEFT;
+        edge_to_direction[{node_id, downest_right.value()}] = Direction::RIGHT;
     });
-    return std::make_tuple(
-        std::move(node_to_leftest_up),
-        std::move(node_to_leftest_down),
-        std::move(node_to_downest_left),
-        std::move(node_to_downest_right)
-    );
+    return edge_to_direction;
 }
 
 size_t get_other_neighbor_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
+    DOMUS_ASSERT(
+        graph.get_degree_of_node(node_id) == 2,
+        "get_other_neighbor_id: function only for degree 2 nodes"
+    );
     std::optional<size_t> other;
     graph.for_each_neighbor(node_id, [&](size_t other_id) {
         if (other.has_value())
@@ -421,41 +382,76 @@ size_t get_other_neighbor_id(const Graph& graph, size_t node_id, size_t neighbor
     return other.value();
 }
 
-void fix_edge(
-    Graph& graph,
-    size_t node_id,
-    size_t other_node_id,
-    Shape& shape,
-    GraphAttributes& attributes,
-    Direction direction
-) {
-    size_t other_neighbor_id = get_other_neighbor_id(graph, other_node_id, node_id);
-    graph.remove_node(other_node_id);
-    attributes.remove_position(other_node_id);
-    attributes.remove_nodes_attribute(other_node_id);
-    graph.add_edge(node_id, other_neighbor_id);
-    shape.remove_direction(node_id, other_node_id);
-    shape.remove_direction(other_node_id, node_id);
-    shape.remove_direction(other_node_id, other_neighbor_id);
-    shape.remove_direction(other_neighbor_id, other_node_id);
-    shape.set_direction(node_id, other_neighbor_id, direction);
-    shape.set_direction(other_neighbor_id, node_id, opposite_direction(direction));
-}
-
 // at the moment, a node with degree > 4 doesn't have all its "ports" used,
-// this method takes some of its neighbors and places them in the unused
-// "ports"
-void fix_useless_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shape) {
-    auto [node_to_leftest_up, node_to_leftest_down, node_to_downest_left, node_to_downest_right] =
-        find_edges_to_fix(graph, shape, attributes);
-    for (auto [node, leftest_up] : node_to_leftest_up)
-        fix_edge(graph, node, leftest_up, shape, attributes, Direction::UP);
-    for (auto [node, leftest_down] : node_to_leftest_down)
-        fix_edge(graph, node, leftest_down, shape, attributes, Direction::DOWN);
-    for (auto [node, downest_left] : node_to_downest_left)
-        fix_edge(graph, node, downest_left, shape, attributes, Direction::LEFT);
-    for (auto [node, downest_right] : node_to_downest_right)
-        fix_edge(graph, node, downest_right, shape, attributes, Direction::RIGHT);
+// this method takes some of its neighbors and places them in the unused "ports"
+std::tuple<Graph, GraphAttributes, Shape> fix_useless_green_blue_nodes(
+    const Graph& graph, const GraphAttributes& attributes, const Shape& shape
+) {
+    const std::unordered_map<Edge, Direction, edge_hash> edge_to_direction(
+        find_edges_to_fix(graph, shape, attributes)
+    );
+
+    std::vector<bool> keep_node(graph.size(), true);
+    for (auto [edge, direction] : edge_to_direction)
+        keep_node[edge.to_id] = false;
+
+    Graph new_graph;
+    Shape new_shape;
+    GraphAttributes new_attributes;
+    new_attributes.add_attribute(Attribute::NODES_COLOR);
+
+    graph.for_each_node([&](size_t node_id) {
+        if (keep_node[node_id]) {
+            new_graph.add_node(node_id);
+            new_attributes.set_node_color(node_id, attributes.get_node_color(node_id));
+        }
+    });
+
+    graph.for_each_node([&](size_t node_id) {
+        if (!keep_node[node_id])
+            return;
+        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
+            if (!keep_node[neighbor_id]) {
+                DOMUS_ASSERT(
+                    attributes.get_node_color(neighbor_id) == Color::GREEN ||
+                        attributes.get_node_color(neighbor_id) == Color::BLUE,
+                    "fix_useless_green_blue_nodes: internal error - node to remove which is "
+                    "neither green nor blue"
+                );
+                if (graph.get_degree_of_node(node_id) <= 4)
+                    return;
+                Direction direction = edge_to_direction.at({node_id, neighbor_id});
+                size_t curr = node_id;
+                size_t next = neighbor_id;
+                size_t other = get_other_neighbor_id(graph, next, curr);
+                while (!keep_node[other]) {
+                    curr = next;
+                    next = other;
+                    other = get_other_neighbor_id(graph, next, curr);
+                }
+                if (!new_graph.are_neighbors(node_id, other)) {
+                    new_graph.add_edge(node_id, other);
+                    new_shape.set_direction(node_id, other, direction);
+                    new_shape.set_direction(other, node_id, opposite_direction(direction));
+                }
+                return;
+            }
+            if (node_id < neighbor_id) {
+                new_graph.add_edge(node_id, neighbor_id);
+                new_shape
+                    .set_direction(node_id, neighbor_id, shape.get_direction(node_id, neighbor_id));
+                new_shape
+                    .set_direction(neighbor_id, node_id, shape.get_direction(neighbor_id, node_id));
+            }
+        });
+    });
+    DOMUS_ASSERT(
+        graph.get_number_of_edges() - graph.size() ==
+            new_graph.get_number_of_edges() - new_graph.size(),
+        "fix_useless_green_blue_nodes: internal error - new graph does not have matching size with "
+        "old graph"
+    );
+    return std::make_tuple(std::move(new_graph), std::move(new_attributes), std::move(new_shape));
 }
 
 void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shape) {
@@ -523,8 +519,11 @@ void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shap
         const int y = node_id_to_position_y[node_id];
         attributes.set_position(node_id, x, y);
     });
-    fix_useless_green_blue_nodes(graph, attributes, shape);
-    attributes.remove_attribute(Attribute::NODES_POSITION);
+    auto [new_graph, new_attributes, new_shape] =
+        fix_useless_green_blue_nodes(graph, attributes, shape);
+    graph = std::move(new_graph);
+    attributes = std::move(new_attributes);
+    shape = std::move(new_shape);
 }
 
 void fix_inconsistency(
