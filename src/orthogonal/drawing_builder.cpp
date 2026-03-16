@@ -495,8 +495,8 @@ void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shap
     auto ordering = equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
     Graph& ordering_x = std::get<0>(ordering);
     Graph& ordering_y = std::get<1>(ordering);
-    std::vector<size_t> classes_x_ordering = *make_topological_ordering(ordering_x);
-    std::vector<size_t> classes_y_ordering = *make_topological_ordering(ordering_y);
+    std::vector<size_t> classes_x_ordering = make_topological_ordering(ordering_x).value();
+    std::vector<size_t> classes_y_ordering = make_topological_ordering(ordering_y).value();
     int current_position_x = 0;
     std::unordered_map<size_t, int> node_id_to_position_x;
     for (size_t class_id : classes_x_ordering) {
