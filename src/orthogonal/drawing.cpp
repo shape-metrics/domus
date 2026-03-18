@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <fstream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -79,8 +80,11 @@ load_orthogonal_drawing_from_file(std::filesystem::path path) {
     json data;
     file >> data;
     OrthogonalDrawing result;
+    for (size_t i = 0; i < data.at("nodes").size(); ++i)
+        result.augmented_graph.add_node();
     for (size_t node_id : data.at("nodes"))
-        result.augmented_graph.add_node(node_id);
+        if (!result.augmented_graph.has_node(node_id))
+            return std::unexpected("load_orthogonal_drawing_from_file: invalid graph");
     for (const auto& edge_arr : data.at("edges"))
         result.augmented_graph.add_edge(edge_arr[0], edge_arr[1]);
     result.attributes.add_attribute(Attribute::NODES_COLOR);
@@ -161,34 +165,29 @@ make_svg(const Graph& graph, const GraphAttributes& attributes, std::filesystem:
     return drawer.save_to_file(path);
 }
 
-int min_coordinate(std::unordered_map<int, NodesContainer>& coordinate_to_nodes) {
-    int min_c = INT_MAX;
-    for (int coord : coordinate_to_nodes | std::views::keys)
-        if (coord < min_c)
-            min_c = coord;
-    return min_c;
+int min_coordinate(std::map<int, std::vector<size_t>>& coordinate_to_nodes) {
+    return coordinate_to_nodes.begin()->first;
 }
 
-std::pair<Int_ToInt_HashMap, Int_ToInt_HashMap>
+std::pair<std::vector<size_t>, std::vector<size_t>>
 compute_node_to_index_position(const Graph& graph, const GraphAttributes& attributes) {
     constexpr int THRESHOLD = 45;
-    std::unordered_map<int, NodesContainer> coordinate_y_to_nodes;
+    std::map<int, std::vector<size_t>> coordinate_y_to_nodes;
     graph.for_each_node([&](size_t node_id) {
         int y = attributes.get_position_y(node_id);
-        coordinate_y_to_nodes[y].add_node(node_id);
+        coordinate_y_to_nodes[y].push_back(node_id);
     });
-    std::unordered_map<int, NodesContainer> coordinate_x_to_nodes;
+    std::map<int, std::vector<size_t>> coordinate_x_to_nodes;
     graph.for_each_node([&](size_t node_id) {
         int x = attributes.get_position_x(node_id);
-        coordinate_x_to_nodes[x].add_node(node_id);
+        coordinate_x_to_nodes[x].push_back(node_id);
     });
     size_t y_index = 0;
-    Int_ToInt_HashMap node_to_coordinate_y;
+    std::vector<std::optional<size_t>> node_to_coordinate_y(graph.size(), std::nullopt);
     int min_y = min_coordinate(coordinate_y_to_nodes);
     while (true) {
-        coordinate_y_to_nodes[min_y].for_each([&node_to_coordinate_y, y_index](size_t node_id) {
-            node_to_coordinate_y.add(node_id, y_index);
-        });
+        for (size_t node_id : coordinate_y_to_nodes[min_y])
+            node_to_coordinate_y[node_id] = y_index;
         coordinate_y_to_nodes.erase(min_y);
         if (coordinate_y_to_nodes.empty())
             break;
@@ -198,12 +197,11 @@ compute_node_to_index_position(const Graph& graph, const GraphAttributes& attrib
         min_y = next_min_y;
     }
     size_t x_index = 0;
-    Int_ToInt_HashMap node_to_coordinate_x;
+    std::vector<std::optional<size_t>> node_to_coordinate_x(graph.size(), std::nullopt);
     int min_x = min_coordinate(coordinate_x_to_nodes);
     while (true) {
-        coordinate_x_to_nodes[min_x].for_each([&node_to_coordinate_x, x_index](size_t node_id) {
-            node_to_coordinate_x.add(node_id, x_index);
-        });
+        for (size_t node_id : coordinate_x_to_nodes[min_x])
+            node_to_coordinate_x[node_id] = x_index;
         coordinate_x_to_nodes.erase(min_x);
         if (coordinate_x_to_nodes.empty())
             break;
@@ -212,5 +210,13 @@ compute_node_to_index_position(const Graph& graph, const GraphAttributes& attrib
             ++x_index;
         min_x = next_min_x;
     }
-    return std::make_pair(std::move(node_to_coordinate_x), std::move(node_to_coordinate_y));
+
+    return std::make_pair(
+        node_to_coordinate_x | std::views::transform([](std::optional<size_t> node_id) {
+            return node_id.value();
+        }) | std::ranges::to<std::vector<size_t>>(),
+        node_to_coordinate_y | std::views::transform([](std::optional<size_t> node_id) {
+            return node_id.value();
+        }) | std::ranges::to<std::vector<size_t>>()
+    );
 }

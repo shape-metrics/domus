@@ -1,4 +1,4 @@
-#include "domus/core/graph/segment.hpp"
+#include "segment.hpp"
 
 #include <print>
 
@@ -6,29 +6,25 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
-Segment::Segment() {
-    this->segment = {};
-    this->attachments = {};
-}
-
 Graph& Segment::get_segment() { return segment; }
 
 const Graph& Segment::get_segment() const { return segment; }
 
-const NodesContainer& Segment::get_attachments() const { return attachments; }
-
-bool Segment::has_attachment(const size_t attachment_id) const {
-    return attachments.has_node(attachment_id);
+void Segment::for_each_attachment(std::function<void(size_t)> f) const {
+    for (size_t attachment_id : attachments)
+        f(attachment_id);
 }
 
-void Segment::add_attachment(const size_t attachment_id) { attachments.add_node(attachment_id); }
+size_t Segment::number_of_attachments() const { return attachments.size(); }
+
+void Segment::add_attachment(const size_t attachment_id) { attachments.push_back(attachment_id); }
 
 std::string Segment::to_string() const {
     std::string result = "Segment:\n";
     auto out = std::back_inserter(result);
-    std::format_to(out, "{}", segment.to_string());
+    std::format_to(out, "{}", segment.to_string(new_id_to_old_id));
     std::format_to(out, "Attachments: ");
-    attachments.for_each([&](size_t attachment_id) { std::format_to(out, "{} ", attachment_id); });
+    for_each_attachment([&](size_t attachment_id) { std::format_to(out, "{} ", attachment_id); });
     std::format_to(out, "\n");
     return result;
 }
@@ -40,7 +36,7 @@ bool is_segment_a_path(const Segment& segment) {
     segment.get_segment().for_each_node([&](size_t node_id) {
         if (!is_path)
             return;
-        if (segment.has_attachment(node_id))
+        if (segment.is_attachment(node_id))
             return;
         if (segment.get_segment().get_degree_of_node(node_id) > 2)
             is_path = false;
@@ -67,7 +63,7 @@ std::deque<size_t> compute_path_between_attachments(
                 prev_of_node.add(neighbor_id, node_id);
                 keep_exploring = false;
             }
-            if (segment.has_attachment(neighbor_id))
+            if (segment.is_attachment(neighbor_id))
                 return;
             if (!prev_of_node.has(neighbor_id)) {
                 prev_of_node.add(neighbor_id, node_id);
@@ -184,7 +180,7 @@ void find_chords(const Graph& graph, const Cycle& cycle, std::vector<Segment>& s
     });
 }
 
-std::vector<Segment> compute_segments(const Graph& graph, const Cycle& cycle) {
+std::vector<Segment> Segment::compute_segments(const Graph& graph, const Cycle& cycle) {
     std::vector<Segment> segments;
     find_segments(graph, cycle, segments);
     find_chords(graph, cycle, segments);

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
-#include "domus/core/containers.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/shape/direction.hpp"
 
@@ -13,10 +13,10 @@ class VariablesHandler {
     std::vector<Edge> variable_to_edge;
     std::vector<Direction> variable_to_direction;
     std::vector<int> variable_to_value;
-    IntPair_ToInt_HashMap m_edge_up_variable;
-    IntPair_ToInt_HashMap m_edge_down_variable;
-    IntPair_ToInt_HashMap m_edge_right_variable;
-    IntPair_ToInt_HashMap m_edge_left_variable;
+    std::unordered_map<Edge, size_t, edge_hash> m_edge_up_variable;
+    std::unordered_map<Edge, size_t, edge_hash> m_edge_down_variable;
+    std::unordered_map<Edge, size_t, edge_hash> m_edge_right_variable;
+    std::unordered_map<Edge, size_t, edge_hash> m_edge_left_variable;
     void add_variable(size_t i, size_t j, Direction direction);
     void add_edge_variables(size_t i, size_t j);
 

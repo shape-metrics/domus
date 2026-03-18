@@ -13,7 +13,7 @@ std::unordered_map<size_t, int> compute_cycle_labels(const Segment& segment, con
     int found_attachments = 0;
     const int total_attachments = static_cast<int>(segment.get_attachments().size());
     cycle.for_each([&](size_t node_id) {
-        if (segment.has_attachment(node_id))
+        if (segment.is_attachment(node_id))
             cycle_labels[node_id] = 2 * (found_attachments++);
         else if (found_attachments == 0)
             cycle_labels[node_id] = 2 * total_attachments - 1;

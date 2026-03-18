@@ -1,32 +1,9 @@
 #include "domus/core/tree/tree_algorithms.hpp"
 
 #include <algorithm>
-#include <queue>
-#include <stddef.h>
+#include <vector>
 
-#include "domus/core/graph/graph.hpp"
-
-std::optional<Tree> build_spanning_tree(const Graph& graph) {
-    NodesContainer visited;
-    std::queue<size_t> queue;
-    queue.push(graph.get_one_node_id());
-    Tree tree(queue.front());
-    visited.add_node(queue.front());
-    while (!queue.empty()) {
-        size_t node_id = queue.front();
-        queue.pop();
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            if (!visited.has_node(neighbor_id)) {
-                visited.add_node(neighbor_id);
-                tree.add_node(neighbor_id, node_id);
-                queue.push(neighbor_id);
-            }
-        });
-    }
-    if (tree.size() != graph.size())
-        return std::nullopt;
-    return tree;
-}
+#include "domus/core/tree/tree.hpp"
 
 std::vector<size_t> get_path_from_root(const Tree& tree, size_t node_id) {
     std::vector<size_t> path;

@@ -1,19 +1,35 @@
 #pragma once
 
-#include <functional>
-#include <memory>
+#include <cstddef>
+#include <optional>
+#include <vector>
 
-#include "domus/core/containers.hpp"
+class Graph;
 
-class NodesContainer : protected IntHashSet {
+class NodesContainer {
+    size_t m_number_of_nodes = 0;
+    std::vector<bool> m_has_node;
+
   public:
+    NodesContainer(const Graph& graph);
     void add_node(size_t node_id);
     bool has_node(size_t node_id) const;
-    size_t get_one_node_id() const;
     size_t size() const;
     bool empty() const;
     void erase(size_t node_id);
-    void for_each(std::function<void(size_t)> func) const;
+};
+
+class NodesLabels {
+    std::vector<std::optional<size_t>> m_labels;
+
+  public:
+    NodesLabels(const Graph& graph);
+    NodesLabels(size_t size);
+    void add_label(size_t node_id, size_t label);
+    bool has_label(size_t node_id) const;
+    size_t get_label(size_t node_id) const;
+    void erase_label(size_t node_id);
+    void update_label(size_t node_id, size_t new_label);
 };
 
 struct Edge {
@@ -31,22 +47,4 @@ struct edge_hash {
         size_t mult = h2 * 0x9e3779b9;
         return h1 ^ (mult + (h1 << 6) + (h1 >> 2));
     }
-};
-
-class I_AdjacencyList;
-
-class AdjacencyList {
-    std::unique_ptr<I_AdjacencyList> m_impl;
-
-  public:
-    AdjacencyList();
-    ~AdjacencyList();
-    AdjacencyList(AdjacencyList&&) noexcept;
-    AdjacencyList& operator=(AdjacencyList&&) noexcept;
-
-    void add_edge(size_t from_id, size_t to_id);
-    bool has_edge(size_t from_id, size_t to_id) const;
-    const NodesContainer& get_neighbors_of_node(size_t node_id) const;
-    void erase_edge(size_t from_id, size_t to_id);
-    void erase_node(size_t node_id);
 };

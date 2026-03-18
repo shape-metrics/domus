@@ -8,6 +8,7 @@
 
 std::expected<Graph, std::string> load_graph_from_txt_file(std::filesystem::path path) {
     Graph graph;
+    std::vector<size_t> nodes;
     std::ifstream infile(path);
     if (!infile) {
         return std::unexpected(
@@ -25,8 +26,10 @@ std::expected<Graph, std::string> load_graph_from_txt_file(std::filesystem::path
             std::istringstream iss(line);
             if (section == NODES) {
                 size_t node_id;
-                if (iss >> node_id)
-                    graph.add_node(node_id);
+                if (iss >> node_id) {
+                    nodes.push_back(node_id);
+                    graph.add_node();
+                }
             } else if (section == EDGES) {
                 size_t from, to;
                 if (iss >> from >> to)
@@ -34,6 +37,9 @@ std::expected<Graph, std::string> load_graph_from_txt_file(std::filesystem::path
             }
         }
     }
+    for (size_t node_id : nodes)
+        if (!graph.has_node(node_id))
+            return std::unexpected("load_graph_from_txt_file: invalid graph");
     return graph;
 }
 

@@ -1,33 +1,43 @@
 #pragma once
 
+#include <functional>
 #include <string>
 #include <tuple>
 #include <utility>
 
-#include "domus/core/containers.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
 class Shape;
 
 class EquivalenceClasses {
-    Int_ToInt_HashMap m_elem_to_class;
-    Int_ToIntContainer_HashMap m_class_to_elems;
-    IntHashSet m_all_classes;
+    NodesLabels m_elem_to_class;
+    std::vector<std::vector<size_t>> m_class_to_elems;
+    size_t m_number_of_classes = 0;
     bool has_class(size_t class_id) const;
+    void set_class(size_t elem, size_t class_id);
+    size_t add_class();
+    EquivalenceClasses(const Graph& graph);
+    void directional_node_expander(
+        const Shape& shape,
+        const Graph& graph,
+        size_t node_id,
+        size_t class_id,
+        const std::function<bool(const Shape&, size_t, size_t)>& is_direction_wrong
+    );
+    void horizontal_node_expander(const Shape& shape, const Graph& graph, size_t node_id);
+    void vertical_node_expander(const Shape& shape, const Graph& graph, size_t node_id);
 
   public:
-    void set_class(size_t elem, size_t class_id);
     bool has_elem_a_class(size_t elem) const;
     size_t get_class_of_elem(size_t elem) const;
-    const IntHashSet& get_elems_of_class(size_t class_id) const;
+    void for_each_elem_of_class(size_t class_id, std::function<void(size_t)> f) const;
     std::string to_string() const;
     void print() const;
-    const IntHashSet& get_all_classes() const;
+    void for_each_class(std::function<void(size_t)> f) const;
+    static const std::pair<EquivalenceClasses, EquivalenceClasses>
+    build(const Shape& shape, const Graph& graph);
 };
-
-std::pair<const EquivalenceClasses, const EquivalenceClasses>
-build_equivalence_classes(const Shape& shape, const Graph& graph);
 
 std::tuple<
     Graph,

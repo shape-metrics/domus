@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -19,34 +18,35 @@ std::vector<Cycle> compute_cycle_basis(const Graph& graph);
 
 std::optional<std::vector<size_t>> make_topological_ordering(const Graph& graph);
 
-std::vector<Graph> compute_connected_components(const Graph& graph);
+std::pair<std::vector<Graph>, NodesLabels> compute_connected_components(const Graph& graph);
 
 size_t compute_number_of_connected_components(const Graph& graph);
 
 class BiconnectedComponents {
-    NodesContainer m_cutvertices;
+    std::vector<size_t> m_cutvertices;
     std::vector<Graph> m_components;
+    std::vector<NodesLabels> m_components_nodes_to_original_nodes;
 
   public:
     const std::vector<Graph>& get_components() const;
     std::string to_string() const;
     void print() const;
-    BiconnectedComponents(NodesContainer&& cutvertices, std::vector<Graph>&& components);
+    BiconnectedComponents(
+        std::vector<size_t>&& cutvertices,
+        std::vector<Graph>&& components,
+        std::vector<NodesLabels>&& components_to_original_nodes
+    );
 };
 
 BiconnectedComponents compute_biconnected_components(const Graph& graph);
 
-class IBipartitionImpl;
-
 class Bipartition {
   private:
-    std::unique_ptr<IBipartitionImpl> m_impl;
+    size_t m_size;
+    NodesLabels m_side;
 
   public:
-    Bipartition();
-    ~Bipartition();
-    Bipartition(Bipartition&&) noexcept;
-    Bipartition& operator=(Bipartition&&) noexcept;
+    Bipartition(const Graph& graph);
 
     void set_side(size_t node_id, bool side);
     bool get_side(size_t node_id) const;

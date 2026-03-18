@@ -1,67 +1,50 @@
 #include "domus/core/graph/graph_utilities.hpp"
-#include "domus/core/containers.hpp"
-
-#include <memory>
 
 #include "../domus_assert.hpp"
+#include "domus/core/graph/graph.hpp"
 
-// NODE SET
+NodesContainer::NodesContainer(const Graph& graph) : m_has_node(graph.size(), false) {}
 
-void NodesContainer::add_node(size_t node_id) { add(node_id); }
-
-bool NodesContainer::has_node(size_t node_id) const { return has(node_id); }
-
-size_t NodesContainer::get_one_node_id() const {
-    DOMUS_ASSERT(!empty(), "NodesContainer::get_one_node_id: container is empty");
-    return get_one_int();
+void NodesContainer::add_node(size_t node_id) {
+    DOMUS_ASSERT(!has_node(node_id), "NodesContainer::add_node: node already exists");
+    m_has_node[node_id] = true;
+    m_number_of_nodes++;
 }
 
-size_t NodesContainer::size() const { return IntHashSet::size(); }
+bool NodesContainer::has_node(size_t node_id) const { return m_has_node.at(node_id); }
 
-bool NodesContainer::empty() const { return IntHashSet::empty(); }
+size_t NodesContainer::size() const { return m_number_of_nodes; }
+
+bool NodesContainer::empty() const { return size() == 0; }
 
 void NodesContainer::erase(size_t node_id) {
     DOMUS_ASSERT(has_node(node_id), "NodesContainer::erase: node does not exist");
-    IntHashSet::erase(node_id);
+    m_has_node[node_id] = false;
+    m_number_of_nodes--;
 }
 
-void NodesContainer::for_each(std::function<void(size_t)> func) const {
-    IntHashSet::for_each(func);
+NodesLabels::NodesLabels(const Graph& graph) { m_labels.resize(graph.size()); }
+
+NodesLabels::NodesLabels(size_t size) { m_labels.resize(size); }
+
+void NodesLabels::add_label(size_t node_id, size_t label) {
+    DOMUS_ASSERT(!has_label(node_id), "NodesLabels::add_label: node already has a label");
+    m_labels[node_id] = label;
 }
 
-// ADJACENCY LIST
+bool NodesLabels::has_label(size_t node_id) const { return m_labels[node_id].has_value(); }
 
-class I_AdjacencyList {
-  public:
-    std::unordered_map<size_t, NodesContainer> map;
-};
-
-AdjacencyList::AdjacencyList() { m_impl = std::make_unique<I_AdjacencyList>(); }
-
-AdjacencyList::~AdjacencyList() = default;
-
-AdjacencyList::AdjacencyList(AdjacencyList&&) noexcept = default;
-
-AdjacencyList& AdjacencyList::operator=(AdjacencyList&&) noexcept = default;
-
-void AdjacencyList::add_edge(size_t from_id, size_t to_id) {
-    DOMUS_ASSERT(!has_edge(from_id, to_id), "AdjacencyList::add_edge: edge already exists");
-    m_impl->map[from_id].add_node(to_id);
+size_t NodesLabels::get_label(size_t node_id) const {
+    DOMUS_ASSERT(has_label(node_id), "NodesLabels::get_label: node does not have a label");
+    return m_labels[node_id].value();
 }
 
-bool AdjacencyList::has_edge(size_t from_id, size_t to_id) const {
-    if (!m_impl->map.contains(from_id))
-        return false;
-    return m_impl->map.at(from_id).has_node(to_id);
+void NodesLabels::erase_label(size_t node_id) {
+    DOMUS_ASSERT(has_label(node_id), "NodesLabels::erase_label: node does not have a label");
+    m_labels[node_id].reset();
 }
 
-const NodesContainer& AdjacencyList::get_neighbors_of_node(size_t node_id) const {
-    return m_impl->map[node_id];
+void NodesLabels::update_label(size_t node_id, size_t new_label) {
+    DOMUS_ASSERT(has_label(node_id), "NodesLabels::update_label: node does not have a label");
+    m_labels[node_id] = new_label;
 }
-
-void AdjacencyList::erase_edge(size_t from_id, size_t to_id) {
-    DOMUS_ASSERT(has_edge(from_id, to_id), "AdjacencyList::erase: edge does not exist");
-    m_impl->map[from_id].erase(to_id);
-}
-
-void AdjacencyList::erase_node(size_t node_id) { m_impl->map.erase(node_id); }

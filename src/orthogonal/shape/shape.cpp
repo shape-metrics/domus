@@ -36,22 +36,22 @@ Direction Shape::size_t_to_direction(size_t direction) const {
 
 void Shape::set_direction(size_t node_id_1, size_t node_id_2, const Direction direction) {
     DOMUS_ASSERT(
-        !m_shape.has(node_id_1, node_id_2),
+        !m_shape.contains({node_id_1, node_id_2}),
         "Shape::set_direction: direction already set for this pair"
     );
-    m_shape.add(node_id_1, node_id_2, direction_to_size_t(direction));
+    m_shape[{node_id_1, node_id_2}] = direction_to_size_t(direction);
 }
 
 Direction Shape::get_direction(size_t node_id_1, size_t node_id_2) const {
     DOMUS_ASSERT(
-        m_shape.has(node_id_1, node_id_2),
+        m_shape.contains({node_id_1, node_id_2}),
         "Shape::get_direction: direction does not exist"
     );
-    return size_t_to_direction(m_shape.get(node_id_1, node_id_2));
+    return size_t_to_direction(m_shape.at({node_id_1, node_id_2}));
 }
 
 bool Shape::contains(size_t node_id_1, size_t node_id_2) const {
-    return m_shape.has(node_id_1, node_id_2);
+    return m_shape.contains({node_id_1, node_id_2});
 }
 
 bool Shape::is_up(size_t node_id_1, size_t node_id_2) const {
@@ -83,5 +83,5 @@ void Shape::remove_direction(size_t node_id_1, size_t node_id_2) {
         contains(node_id_1, node_id_2),
         "Shape::remove_direction: direction does not exist for this pair"
     );
-    m_shape.erase(node_id_1, node_id_2);
+    m_shape.erase({node_id_1, node_id_2});
 }

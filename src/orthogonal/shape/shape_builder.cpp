@@ -115,11 +115,11 @@ void add_corner_inside_edge(
     for (Cycle& cycle : cycles) {
         if (!cycle.has_node(from_id) || !cycle.has_node(to_id))
             continue;
-        const size_t from_pos = cycle.node_position(from_id);
-        const size_t to_pos = cycle.node_position(to_id);
-        if (cycle.next_of_node(from_id) == to_id)
+        size_t from_pos = cycle.node_position(from_id);
+        size_t to_pos = cycle.node_position(to_id);
+        if (cycle.at(from_pos + 1) == to_id)
             cycle.insert(to_pos, new_node_id);
-        else if (cycle.next_of_node(to_id) == from_id)
+        else if (cycle.at(to_pos + 1) == from_id)
             cycle.insert(from_pos, new_node_id);
     }
 }

@@ -19,7 +19,7 @@ Graph generate_connected_random_graph_degree_max_4(
     );
     Graph graph;
     for (size_t i = 0; i < number_of_nodes; ++i)
-        graph.add_node(i);
+        graph.add_node();
     size_t added_edges = 0;
     while (added_edges < number_of_edges) {
         size_t i = static_cast<size_t>(rand()) % number_of_nodes;
@@ -45,7 +45,7 @@ Graph generate_connected_random_graph(size_t number_of_nodes, size_t number_of_e
     );
     Graph graph;
     for (size_t i = 0; i < number_of_nodes; ++i)
-        graph.add_node(i);
+        graph.add_node();
     size_t added_edges = 0;
     while (added_edges < number_of_edges) {
         size_t i = static_cast<size_t>(rand()) % number_of_nodes;
@@ -65,7 +65,7 @@ Graph generate_grid_graph(size_t n, size_t m) {
     size_t num_nodes = 2 * n + 2 * m - 4;
     Graph graph;
     for (size_t i = 0; i < num_nodes; ++i)
-        graph.add_node(i);
+        graph.add_node();
     for (size_t i = 0; i < num_nodes - 1; ++i)
         graph.add_edge(i, i + 1);
     graph.add_edge(0, num_nodes - 1);
@@ -82,7 +82,7 @@ Graph generate_triangle_graph(size_t num_nodes) {
     num_nodes = 3 * num_nodes;
     Graph graph;
     for (size_t i = 0; i < num_nodes; ++i)
-        graph.add_node(i);
+        graph.add_node();
     for (size_t i = 0; i < num_nodes - 3; ++i) {
         if (i % 3 == 2) {
             graph.add_edge(i, i + 3);

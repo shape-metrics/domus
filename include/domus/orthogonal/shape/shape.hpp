@@ -1,12 +1,13 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
-#include "domus/core/containers.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/shape/direction.hpp"
 
 class Shape {
-    IntPair_ToInt_HashMap m_shape;
+    std::unordered_map<Edge, size_t, edge_hash> m_shape;
     size_t direction_to_size_t(Direction direction) const;
     Direction size_t_to_direction(size_t direction) const;
 

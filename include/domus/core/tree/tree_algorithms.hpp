@@ -1,13 +1,8 @@
 #pragma once
 
-#include <optional>
 #include <vector>
 
-#include "domus/core/tree/tree.hpp"
-
-class Graph;
-
-std::optional<Tree> build_spanning_tree(const Graph& graph);
+class Tree;
 
 std::vector<size_t> get_path_from_root(const Tree& tree, size_t node);
 

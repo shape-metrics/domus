@@ -18,7 +18,7 @@ std::vector<size_t> compute_edge_lengths(const Graph& graph, const GraphAttribut
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     std::vector<size_t> edge_lengths;
-    NodesContainer visited;
+    NodesContainer visited(graph);
     graph.for_each_node([&](size_t node_id) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
             return;
@@ -28,10 +28,10 @@ std::vector<size_t> compute_edge_lengths(const Graph& graph, const GraphAttribut
                 graph.for_each_neighbor(current_id, [&](size_t neighbor_id) {
                     if (visited.has_node(neighbor_id))
                         return;
-                    size_t x1 = node_to_coordinate_x.get(current_id);
-                    size_t y1 = node_to_coordinate_y.get(current_id);
-                    size_t x2 = node_to_coordinate_x.get(current_id);
-                    size_t y2 = node_to_coordinate_y.get(current_id);
+                    size_t x1 = node_to_coordinate_x[current_id];
+                    size_t y1 = node_to_coordinate_y[current_id];
+                    size_t x2 = node_to_coordinate_x[current_id];
+                    size_t y2 = node_to_coordinate_y[current_id];
                     if (x1 < x2) {
                         size_t temp = x1;
                         x1 = x2;
@@ -94,7 +94,7 @@ std::vector<size_t> compute_bends_counts(const Graph& graph, const GraphAttribut
     graph.for_each_node([&](size_t node_id) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
             return;
-        NodesContainer visited;
+        NodesContainer visited(graph);
         std::function<void(size_t, size_t, size_t, size_t)> dfs =
             [&](size_t current, size_t black, size_t count, size_t previous_id) {
                 visited.add_node(current);
@@ -103,18 +103,15 @@ std::vector<size_t> compute_bends_counts(const Graph& graph, const GraphAttribut
                         return;
                     Color neighbor_color = attributes.get_node_color(neighbor_id);
                     if (neighbor_color != Color::BLACK) {
-                        if (node_to_coordinate_x.get(previous_id) ==
-                                node_to_coordinate_x.get(neighbor_id) &&
-                            node_to_coordinate_y.get(previous_id) ==
-                                node_to_coordinate_y.get(neighbor_id))
+                        if (node_to_coordinate_x[previous_id] ==
+                                node_to_coordinate_x[neighbor_id] &&
+                            node_to_coordinate_y[previous_id] == node_to_coordinate_y[neighbor_id])
                             dfs(neighbor_id, black, count, current);
                         else
                             dfs(neighbor_id, black, count + 1, current);
                     } else if (black < neighbor_id) {
-                        if (node_to_coordinate_x.get(current) ==
-                                node_to_coordinate_x.get(neighbor_id) &&
-                            node_to_coordinate_y.get(current) ==
-                                node_to_coordinate_y.get(neighbor_id))
+                        if (node_to_coordinate_x[current] == node_to_coordinate_x[neighbor_id] &&
+                            node_to_coordinate_y[current] == node_to_coordinate_y[neighbor_id])
                             count--;
                         bends_counts.push_back(count);
                     }
@@ -162,8 +159,8 @@ size_t compute_total_area(const OrthogonalDrawing& result) {
     size_t min_x = INT_MAX;
     size_t min_y = INT_MAX;
     graph.for_each_node([&](size_t node_id) {
-        size_t x = node_to_coordinate_x.get(node_id);
-        size_t y = node_to_coordinate_y.get(node_id);
+        size_t x = node_to_coordinate_x[node_id];
+        size_t y = node_to_coordinate_y[node_id];
         max_x = std::max(max_x, x);
         max_y = std::max(max_y, y);
         min_x = std::min(min_x, x);
@@ -177,17 +174,17 @@ bool do_edges_cross(
     size_t j,
     size_t k,
     size_t l,
-    const Int_ToInt_HashMap& node_to_coordinate_x,
-    const Int_ToInt_HashMap& node_to_coordinate_y
+    const std::vector<size_t>& node_to_coordinate_x,
+    const std::vector<size_t>& node_to_coordinate_y
 ) {
-    size_t i_pos_x = node_to_coordinate_x.get(i);
-    size_t i_pos_y = node_to_coordinate_y.get(i);
-    size_t j_pos_x = node_to_coordinate_x.get(j);
-    size_t j_pos_y = node_to_coordinate_y.get(j);
-    size_t k_pos_x = node_to_coordinate_x.get(k);
-    size_t k_pos_y = node_to_coordinate_y.get(k);
-    size_t l_pos_x = node_to_coordinate_x.get(l);
-    size_t l_pos_y = node_to_coordinate_y.get(l);
+    size_t i_pos_x = node_to_coordinate_x[i];
+    size_t i_pos_y = node_to_coordinate_y[i];
+    size_t j_pos_x = node_to_coordinate_x[j];
+    size_t j_pos_y = node_to_coordinate_y[j];
+    size_t k_pos_x = node_to_coordinate_x[k];
+    size_t k_pos_y = node_to_coordinate_y[k];
+    size_t l_pos_x = node_to_coordinate_x[l];
+    size_t l_pos_y = node_to_coordinate_y[l];
 
     bool is_i_j_horizontal = i_pos_y == j_pos_y;
     bool is_k_l_horizontal = k_pos_y == l_pos_y;

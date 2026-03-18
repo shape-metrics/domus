@@ -62,18 +62,18 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
             "base_case_component: cycle does not contain the node with degree 3"
         );
         std::optional<size_t> neighbor_in_between;
+        size_t position = cycle.node_position(node_id);
         component.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (neighbor_in_between.has_value())
                 return;
-            if (cycle.next_of_node(node_id) == neighbor_id ||
-                cycle.prev_of_node(node_id) == neighbor_id) {
+            if (cycle.at(position + 1) == neighbor_id || cycle.at(position - 1) == neighbor_id) {
                 return;
             }
             neighbor_in_between = neighbor_id;
         });
-        embedding.add_edge(node_id, cycle.next_of_node(node_id));
+        embedding.add_edge(node_id, cycle.at(position + 1));
         embedding.add_edge(node_id, neighbor_in_between.value());
-        embedding.add_edge(node_id, cycle.prev_of_node(node_id));
+        embedding.add_edge(node_id, cycle.at(position - 1));
     });
     DOMUS_ASSERT(
         is_embedding_planar(embedding),
@@ -88,13 +88,14 @@ Cycle change_cycle_with_path(
     std::deque<size_t> nodes_copy(path); // newCycleList
     size_t first_of_path = path.front();
     size_t last_of_path = path.back();
-    size_t current = cycle.next_of_node(last_of_path);
+    size_t position = cycle.node_position(last_of_path);
+    size_t current = cycle.at(++position);
     bool foundNodeToInclude = !node_to_include.has_value();
     while (current != first_of_path) {
         nodes_copy.push_back(current);
         if (!foundNodeToInclude && current == *node_to_include)
             foundNodeToInclude = true;
-        current = cycle.next_of_node(current);
+        current = cycle.at(++position);
     }
     if (!foundNodeToInclude) {
         const std::deque reversed_path(path.rbegin(), path.rend());
@@ -108,7 +109,7 @@ Cycle make_cycle_good(const Cycle& cycle, const Segment& segment) {
     cycle.for_each([&](size_t cycle_node_id) {
         if (attachments_to_use.size() == 3)
             return;
-        if (!segment.has_attachment(cycle_node_id))
+        if (!segment.is_attachment(cycle_node_id))
             return;
         attachments_to_use.push_back(cycle_node_id);
     });
@@ -278,7 +279,7 @@ void add_edges_incident_to_cycle(
         std::vector<size_t> inside_segments{};
         std::vector<size_t> outside_segments{};
         for (size_t i = 0; i < segments.size(); ++i) {
-            if (segments[i].has_attachment(cycle_node_id)) {
+            if (segments[i].is_attachment(cycle_node_id)) {
                 if (is_segment_inside.get_side(i))
                     inside_segments.push_back(i);
                 else

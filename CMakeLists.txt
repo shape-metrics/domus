@@ -80,7 +80,6 @@ set(COMMON_SRCS
     src/core/color.cpp
     src/core/circular_sequence.cpp
     src/core/graph/graphs_algorithms.cpp
-    src/core/containers.cpp
     src/core/graph/graph.cpp
     src/core/graph/graph_utilities.cpp
     src/core/graph/cycle.cpp
@@ -88,17 +87,17 @@ set(COMMON_SRCS
     src/core/graph/file_loader.cpp
     src/core/tree/tree.cpp
     src/core/tree/tree_algorithms.cpp
-    src/core/graph/segment.cpp
+    #src/core/graph/segment.cpp
     src/drawing/svg_drawer.cpp
     src/orthogonal/drawing_builder.cpp
     src/orthogonal/drawing_stats.cpp
     src/core/graph/generators.cpp
     src/core/utils.cpp
     src/core/csv.cpp
-    src/planarity/auslander_parter.cpp
-    src/planarity/embedding.cpp
-    src/planarity/interlacement.cpp
-    src/core/graph/palm_tree.cpp
+    #src/planarity/auslander_parter.cpp
+    #src/planarity/embedding.cpp
+    #src/planarity/interlacement.cpp
+    #src/core/graph/palm_tree.cpp
 )
 
 add_library(core ${COMMON_SRCS})

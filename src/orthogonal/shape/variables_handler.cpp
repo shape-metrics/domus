@@ -13,20 +13,20 @@ void VariablesHandler::add_variable(size_t i, size_t j, const Direction directio
     variable_to_value.push_back(-1);
     switch (direction) {
     case Direction::UP:
-        m_edge_up_variable.add(i, j, m_next_var);
-        m_edge_down_variable.add(j, i, m_next_var);
+        m_edge_up_variable[{i, j}] = m_next_var;
+        m_edge_down_variable[{j, i}] = m_next_var;
         break;
     case Direction::DOWN:
-        m_edge_down_variable.add(i, j, m_next_var);
-        m_edge_up_variable.add(j, i, m_next_var);
+        m_edge_down_variable[{i, j}] = m_next_var;
+        m_edge_up_variable[{j, i}] = m_next_var;
         break;
     case Direction::LEFT:
-        m_edge_left_variable.add(i, j, m_next_var);
-        m_edge_right_variable.add(j, i, m_next_var);
+        m_edge_left_variable[{i, j}] = m_next_var;
+        m_edge_right_variable[{j, i}] = m_next_var;
         break;
     case Direction::RIGHT:
-        m_edge_right_variable.add(i, j, m_next_var);
-        m_edge_left_variable.add(j, i, m_next_var);
+        m_edge_right_variable[{i, j}] = m_next_var;
+        m_edge_left_variable[{j, i}] = m_next_var;
         break;
     case Direction::INVALID:
         DOMUS_ASSERT(false, "VariablesHandler::add_variable: invalid direction");
@@ -56,19 +56,19 @@ VariablesHandler::VariablesHandler(const Graph& graph) {
 }
 
 size_t VariablesHandler::get_up_variable(size_t i, size_t j) const {
-    return m_edge_up_variable.get(i, j);
+    return m_edge_up_variable.at({i, j});
 }
 
 size_t VariablesHandler::get_down_variable(size_t i, size_t j) const {
-    return m_edge_down_variable.get(i, j);
+    return m_edge_down_variable.at({i, j});
 }
 
 size_t VariablesHandler::get_left_variable(size_t i, size_t j) const {
-    return m_edge_left_variable.get(i, j);
+    return m_edge_left_variable.at({i, j});
 }
 
 size_t VariablesHandler::get_right_variable(size_t i, size_t j) const {
-    return m_edge_right_variable.get(i, j);
+    return m_edge_right_variable.at({i, j});
 }
 
 size_t VariablesHandler::get_variable(size_t i, size_t j, Direction direction) const {

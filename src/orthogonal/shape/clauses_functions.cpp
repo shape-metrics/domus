@@ -106,8 +106,9 @@ void add_cycles_constraints(
         std::vector<int> at_least_one_up{};
         std::vector<int> at_least_one_right{};
         std::vector<int> at_least_one_left{};
-        cycle.for_each([&](size_t cycle_node) {
-            size_t next_cycle_node = cycle.next_of_node(cycle_node);
+        for (size_t i = 0; i < cycle.size(); i++) {
+            size_t cycle_node = cycle[i];
+            size_t next_cycle_node = cycle[i + 1];
             at_least_one_down.push_back(
                 static_cast<int>(handler.get_down_variable(cycle_node, next_cycle_node))
             );
@@ -120,7 +121,7 @@ void add_cycles_constraints(
             at_least_one_left.push_back(
                 static_cast<int>(handler.get_left_variable(cycle_node, next_cycle_node))
             );
-        });
+        }
         cnf_builder.add_clause(at_least_one_down);
         cnf_builder.add_clause(at_least_one_up);
         cnf_builder.add_clause(at_least_one_right);
