@@ -133,6 +133,8 @@ equivalence_classes_to_ordering(
             if (shape.is_right(node_id, neighbor_id)) {
                 size_t node_class_x = equivalence_classes_x.get_class_of_elem(node_id);
                 size_t neighbor_class_x = equivalence_classes_x.get_class_of_elem(neighbor_id);
+                if (node_class_x == neighbor_class_x)
+                    return;
                 if (ordering_x.has_edge(node_class_x, neighbor_class_x))
                     return;
                 ordering_x.add_edge(node_class_x, neighbor_class_x);
@@ -143,6 +145,8 @@ equivalence_classes_to_ordering(
             } else if (shape.is_up(node_id, neighbor_id)) {
                 size_t node_class_y = equivalence_classes_y.get_class_of_elem(node_id);
                 size_t neighbor_class_y = equivalence_classes_y.get_class_of_elem(neighbor_id);
+                if (node_class_y == neighbor_class_y)
+                    return;
                 if (ordering_y.has_edge(node_class_y, neighbor_class_y))
                     return;
                 ordering_y.add_edge(node_class_y, neighbor_class_y);

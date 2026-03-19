@@ -1,16 +1,23 @@
 #pragma once
 
 #include <functional>
+#include <stack>
 #include <string>
 #include <vector>
 
 #include "domus/core/graph/graph_utilities.hpp"
 
+struct EdgeId {
+    size_t id;
+    Edge edge;
+};
+
 class Graph {
     size_t m_total_nodes = 0;
-    size_t m_total_edges = 0;
     std::vector<std::vector<size_t>> m_out_adjacency_list;
     std::vector<std::vector<size_t>> m_in_adjacency_list;
+    std::vector<std::optional<EdgeId>> m_edges;
+    std::stack<size_t> m_free_edges_ids;
 
   public:
     bool has_node(size_t node_id) const;

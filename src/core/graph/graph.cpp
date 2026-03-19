@@ -1,5 +1,6 @@
 #include "domus/core/graph/graph.hpp"
 
+#include <algorithm>
 #include <format>
 #include <iterator>
 #include <print>
@@ -19,14 +20,14 @@ void Graph::for_each_node(std::function<void(size_t)> f) const {
 
 void Graph::for_each_out_neighbor(size_t node_id, std::function<void(size_t)> f) const {
     DOMUS_ASSERT(has_node(node_id), "Graph::for_each_out_neighbors: node does not exist");
-    for (size_t neighbor_id : m_out_adjacency_list[node_id])
-        f(neighbor_id);
+    for (const size_t edge_id : m_out_adjacency_list[node_id])
+        f(m_edges[edge_id]->edge.to_id);
 }
 
 void Graph::for_each_in_neighbor(size_t node_id, std::function<void(size_t)> f) const {
     DOMUS_ASSERT(has_node(node_id), "Graph::for_each_in_neighbors: node does not exist");
-    for (size_t neighbor_id : m_in_adjacency_list[node_id])
-        f(neighbor_id);
+    for (const size_t edge_id : m_in_adjacency_list[node_id])
+        f(m_edges[edge_id]->edge.from_id);
 }
 
 void Graph::for_each_neighbor(size_t node_id, std::function<void(size_t)> f) const {
@@ -63,18 +64,25 @@ size_t Graph::get_degree_of_node(size_t node_id) const {
 void Graph::add_edge(size_t from_id, size_t to_id) {
     DOMUS_ASSERT(has_node(from_id) && has_node(to_id), "Graph::add_edge: node does not exist");
     DOMUS_ASSERT(!has_edge(from_id, to_id), "Graph::add_edge: edge already exists");
-    m_out_adjacency_list[from_id].push_back(to_id);
-    m_in_adjacency_list[to_id].push_back(from_id);
-    m_total_edges++;
+    DOMUS_ASSERT(from_id != to_id, "graph::add_edge: from and to are equal");
+    size_t edge_id;
+    if (m_free_edges_ids.empty()) {
+        edge_id = m_edges.size();
+        m_edges.emplace_back(EdgeId{edge_id, Edge{from_id, to_id}});
+    } else {
+        edge_id = m_free_edges_ids.top();
+        m_free_edges_ids.pop();
+        m_edges[edge_id] = EdgeId{edge_id, Edge{from_id, to_id}};
+    }
+    m_out_adjacency_list[from_id].push_back(edge_id);
+    m_in_adjacency_list[to_id].push_back(edge_id);
 }
 
 bool Graph::has_edge(size_t from_id, size_t to_id) const {
     DOMUS_ASSERT(has_node(from_id) && has_node(to_id), "Graph::has_edge: node does not exist");
-    return std::find(
-               m_out_adjacency_list[from_id].begin(),
-               m_out_adjacency_list[from_id].end(),
-               to_id
-           ) != m_out_adjacency_list[from_id].end();
+    return std::ranges::any_of(m_out_adjacency_list[from_id], [&](const size_t edge_id) {
+        return m_edges[edge_id]->edge.to_id == to_id;
+    });
 }
 
 bool Graph::are_neighbors(size_t node_1_id, size_t node_2_id) const {
@@ -83,21 +91,31 @@ bool Graph::are_neighbors(size_t node_1_id, size_t node_2_id) const {
 
 size_t Graph::size() const { return m_total_nodes; }
 
-size_t Graph::get_number_of_edges() const { return m_total_edges; }
+size_t Graph::get_number_of_edges() const { return m_edges.size() - m_free_edges_ids.size(); }
 
 void Graph::remove_edge(size_t from_id, size_t to_id) {
+    DOMUS_ASSERT(from_id != to_id, "Graph::remove_edge: from_id and to_id are equal");
     DOMUS_ASSERT(has_node(from_id) && has_node(to_id), "Graph::remove_edge: node does not exist");
-    DOMUS_ASSERT(has_edge(from_id, to_id), "Graph::remove_edge: edge does not exist");
+    auto it_1 = std::ranges::find_if(m_out_adjacency_list[from_id], [&](const size_t edge_id) {
+        return m_edges[edge_id]->edge.to_id == to_id;
+    });
+    auto it_2 = std::ranges::find_if(m_in_adjacency_list[to_id], [&](const size_t edge_id) {
+        return m_edges[edge_id]->edge.from_id == from_id;
+    });
+    DOMUS_ASSERT(it_1 != m_out_adjacency_list[from_id].end(), "Graph::remove_edge: edge not found");
+    DOMUS_ASSERT(it_2 != m_in_adjacency_list[to_id].end(), "Graph::remove_edge: edge not found");
+    DOMUS_ASSERT(*it_1 == *it_2, "Graph::remove_edge: edge_ids do not coincide");
 
-    *std::find(m_out_adjacency_list[from_id].begin(), m_out_adjacency_list[from_id].end(), to_id) =
-        m_out_adjacency_list[from_id].back();
+    const size_t edge_id = *it_1;
+
+    *it_1 = m_out_adjacency_list[from_id].back();
     m_out_adjacency_list[from_id].pop_back();
 
-    *std::find(m_in_adjacency_list[to_id].begin(), m_in_adjacency_list[to_id].end(), from_id) =
-        m_in_adjacency_list[to_id].back();
+    *it_2 = m_in_adjacency_list[to_id].back();
     m_in_adjacency_list[to_id].pop_back();
 
-    m_total_edges--;
+    m_free_edges_ids.push(edge_id);
+    m_edges[edge_id] = std::nullopt;
 }
 
 std::string Graph::to_string() const { return to_string(true); }
