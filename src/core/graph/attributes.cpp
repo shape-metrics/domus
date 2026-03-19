@@ -5,7 +5,7 @@
 #include <ranges>
 #include <unordered_map>
 
-#include "../domus_assert.hpp"
+#include "../domus_debug.hpp"
 
 class GraphAttributesImpl {
     std::unordered_map<Attribute, std::unordered_map<size_t, std::any>> mattribute_to_node;

@@ -13,7 +13,7 @@
 #include "domus/core/tree/tree.hpp"
 #include "domus/core/tree/tree_algorithms.hpp"
 
-#include "../domus_assert.hpp"
+#include "../domus_debug.hpp"
 
 bool is_graph_connected(const Graph& graph) {
     if (graph.size() <= 1)
@@ -341,7 +341,8 @@ void dfs_bic_com(
                 );
                 if (prev_of_node.has_label(node_id)) // the root needs to be handled differently
                     // (handled at the end of the function)
-                    cut_vertices.add_node(node_id);
+                    if (!cut_vertices.has_node(node_id))
+                        cut_vertices.add_node(node_id);
             } else {
                 stack_of_nodes.splice(stack_of_nodes.end(), new_stack_of_nodes);
                 stack_of_edges.splice(stack_of_edges.end(), new_stack_of_edges);
@@ -373,9 +374,13 @@ std::string BiconnectedComponents::to_string() const {
     std::format_to(out, "Cut vertices:");
     for (size_t cutvertex : m_cutvertices)
         std::format_to(out, " {}", cutvertex);
-    std::format_to(out, "\nComponents:\n");
-    for (const auto& component : m_components)
-        std::format_to(out, "{}\n", component.to_string());
+    std::format_to(out, "\n");
+    for (size_t i = 0; i < m_components.size(); ++i) {
+        const Graph& component = m_components[i];
+        const NodesLabels& labels = m_components_nodes_to_original_nodes[i];
+        const std::string name = std::format("Component {}", i);
+        std::format_to(out, "{}\n", component.to_string(true, labels, name));
+    }
     return result;
 }
 
@@ -456,6 +461,10 @@ std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
 
 const std::vector<Graph>& BiconnectedComponents::get_components() const { return m_components; }
 
+const NodesLabels& BiconnectedComponents::get_labels_of_component(size_t component_id) const {
+    return m_components_nodes_to_original_nodes[component_id];
+}
+
 BiconnectedComponents::BiconnectedComponents(
     std::vector<size_t>&& cutvertices,
     std::vector<Graph>&& components,
@@ -467,10 +476,7 @@ BiconnectedComponents::BiconnectedComponents(
 Bipartition::Bipartition(const Graph& graph) : m_size(graph.size()), m_side(graph) {}
 
 bool Bipartition::get_side(size_t node_id) const {
-    DOMUS_ASSERT(
-        has_node(node_id),
-        std::format("Bipartition::get_side: node {} does not exist", node_id)
-    );
+    DOMUS_ASSERT(has_node(node_id), "Bipartition::get_side: node {} does not exist", node_id);
     return m_side.get_label(node_id);
 }
 

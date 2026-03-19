@@ -1,6 +1,6 @@
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include "../domus_assert.hpp"
+#include "../domus_debug.hpp"
 #include "domus/core/graph/graph.hpp"
 
 NodesContainer::NodesContainer(const Graph& graph) : m_has_node(graph.size(), false) {}
@@ -25,8 +25,6 @@ void NodesContainer::erase(size_t node_id) {
 
 NodesLabels::NodesLabels(const Graph& graph) { m_labels.resize(graph.size()); }
 
-NodesLabels::NodesLabels(size_t size) { m_labels.resize(size); }
-
 void NodesLabels::add_label(size_t node_id, size_t label) {
     DOMUS_ASSERT(!has_label(node_id), "NodesLabels::add_label: node already has a label");
     m_labels[node_id] = label;
@@ -35,7 +33,11 @@ void NodesLabels::add_label(size_t node_id, size_t label) {
 bool NodesLabels::has_label(size_t node_id) const { return m_labels[node_id].has_value(); }
 
 size_t NodesLabels::get_label(size_t node_id) const {
-    DOMUS_ASSERT(has_label(node_id), "NodesLabels::get_label: node does not have a label");
+    DOMUS_ASSERT(
+        has_label(node_id),
+        "NodesLabels::get_label: node {} does not have a label",
+        node_id
+    );
     return m_labels[node_id].value();
 }
 

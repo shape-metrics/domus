@@ -8,7 +8,7 @@
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/shape/shape.hpp"
 
-#include "../core/domus_assert.hpp"
+#include "../core/domus_debug.hpp"
 
 EquivalenceClasses::EquivalenceClasses(const Graph& graph) : m_elem_to_class(graph) {}
 

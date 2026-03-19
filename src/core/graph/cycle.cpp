@@ -4,7 +4,7 @@
 #include <format>
 #include <print>
 
-#include "../domus_assert.hpp"
+#include "../domus_debug.hpp"
 
 Cycle::Cycle(const Cycle& other) {
     other.for_each([this](size_t node_id) { m_nodes_ids.append(node_id); });

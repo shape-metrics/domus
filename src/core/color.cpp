@@ -1,6 +1,6 @@
 #include "domus/core/color.hpp"
 
-#include "domus_assert.hpp"
+#include "domus_debug.hpp"
 
 std::string color_to_string(const Color color) {
     switch (color) {

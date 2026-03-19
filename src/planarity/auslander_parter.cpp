@@ -2,19 +2,29 @@
 
 #include <algorithm>
 #include <deque>
+#include <ranges>
 #include <stddef.h>
-#include <tuple>
 #include <utility>
 #include <vector>
 
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
-#include "domus/core/graph/segment.hpp"
 
-#include "../core/domus_assert.hpp"
+#include "../core/domus_debug.hpp"
+#include "domus/planarity/embedding.hpp"
 #include "interlacement.hpp"
+#include "segment.hpp"
 
+/**
+ * @brief if every biconnected component is embedded planarly, then merging them is straight forward
+ *
+ * @param graph
+ * @param biconnected_components
+ * @param embeddings
+ * @return Embedding
+ */
 Embedding merge_biconnected_components(
     const Graph& graph,
     const BiconnectedComponents& biconnected_components,
@@ -24,15 +34,24 @@ Embedding merge_biconnected_components(
     for (size_t i = 0; i < biconnected_components.get_components().size(); ++i) {
         const Embedding& embedding = embeddings[i];
         const Graph& component = biconnected_components.get_components()[i];
+        const NodesLabels& labels = biconnected_components.get_labels_of_component(i);
         component.for_each_node([&](size_t node_id) {
+            size_t old_node_id = labels.get_label(node_id);
             embedding.for_each_neighbor(node_id, [&](size_t component_neighbor_id) {
-                output.add_edge(node_id, component_neighbor_id);
+                size_t old_neighbor_id = labels.get_label(component_neighbor_id);
+                output.add_edge(old_node_id, old_neighbor_id);
             });
         });
     }
     return output;
 }
 
+/**
+ * @brief this function embeds a graph for which any embedding is planar (cycles for example)
+ *
+ * @param graph
+ * @return An embedding of the graph
+ */
 Embedding base_case_graph(const Graph& graph) {
     Embedding embedding(graph);
     graph.for_each_node([&](size_t node_id) {
@@ -44,6 +63,13 @@ Embedding base_case_graph(const Graph& graph) {
     return embedding;
 }
 
+/**
+ * @brief this functions embeds a graph which consists of a cycle and a path attached to the cycle
+ *
+ * @param component
+ * @param cycle
+ * @return Embedding
+ */
 Embedding base_case_component(const Graph& component, const Cycle& cycle) {
     Embedding embedding(component);
     component.for_each_node([&](size_t node_id) {
@@ -66,14 +92,14 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
         component.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (neighbor_in_between.has_value())
                 return;
-            if (cycle.at(position + 1) == neighbor_id || cycle.at(position - 1) == neighbor_id) {
+            if (cycle.at(position + 1) == neighbor_id ||
+                cycle.at(position + cycle.size() - 1) == neighbor_id)
                 return;
-            }
             neighbor_in_between = neighbor_id;
         });
         embedding.add_edge(node_id, cycle.at(position + 1));
         embedding.add_edge(node_id, neighbor_in_between.value());
-        embedding.add_edge(node_id, cycle.at(position - 1));
+        embedding.add_edge(node_id, cycle.at(position + cycle.size() - 1));
     });
     DOMUS_ASSERT(
         is_embedding_planar(embedding),
@@ -105,19 +131,23 @@ Cycle change_cycle_with_path(
 }
 
 Cycle make_cycle_good(const Cycle& cycle, const Segment& segment) {
-    std::vector<size_t> attachments_to_use{};
-    cycle.for_each([&](size_t cycle_node_id) {
+    std::vector<size_t> attachments_to_use;
+    for (size_t i = 0; i < cycle.size(); ++i) {
         if (attachments_to_use.size() == 3)
-            return;
-        if (!segment.is_attachment(cycle_node_id))
-            return;
-        attachments_to_use.push_back(cycle_node_id);
-    });
+            break;
+        if (!segment.is_attachment(i))
+            continue;
+        attachments_to_use.push_back(i);
+    }
     const std::deque<size_t> path =
         compute_path_between_attachments(segment, attachments_to_use[0], attachments_to_use[1]);
+    auto& labels = segment.get_new_id_to_old_id();
+    const std::deque<size_t> path_old_ids =
+        path | std::views::transform([&](size_t node_id) { return labels.get_label(node_id); }) |
+        std::ranges::to<std::deque<size_t>>();
     if (attachments_to_use.size() == 3)
-        return change_cycle_with_path(cycle, path, attachments_to_use[2]);
-    return change_cycle_with_path(cycle, path, std::nullopt);
+        return change_cycle_with_path(cycle, path_old_ids, labels.get_label(attachments_to_use[2]));
+    return change_cycle_with_path(cycle, path_old_ids, std::nullopt);
 }
 
 auto compute_min_and_max_segments_attachments(
@@ -128,15 +158,16 @@ auto compute_min_and_max_segments_attachments(
     for (size_t i = 0; i < segments.size(); i++) {
         size_t min = cycle.size();
         size_t max = 0;
-        segments[i].get_attachments().for_each([&](size_t attachment) {
-            const size_t position = cycle.node_position(attachment);
-            min = std::min(min, position);
-            max = std::max(max, position);
-        });
+        for (size_t node_id = 0; node_id < cycle.size(); ++node_id) {
+            if (!segments[i].is_attachment(node_id))
+                continue;
+            min = std::min(min, node_id);
+            max = std::max(max, node_id);
+        }
         segments_min_attachment[i] = min;
         segments_max_attachment[i] = max;
     }
-    return make_tuple(segments_min_attachment, segments_max_attachment);
+    return make_pair(segments_min_attachment, segments_max_attachment);
 }
 
 // true if, when drawing the cycle clockwise, the segment is inside it
@@ -149,10 +180,23 @@ std::vector<bool> are_embeddings_inside_clockwise_cycle(
     for (size_t i = 0; i < segments.size(); ++i) {
         const Segment& segment = segments[i];
         const Embedding& embedding = embeddings[i];
-        size_t attachment_id =
-            segment.get_attachments().get_one_node_id(); // any attachment is good
-        size_t next = cycle.next_of_node(attachment_id);
-        size_t prev = cycle.prev_of_node(attachment_id);
+        size_t attachment_id = cycle.size(); // we want one attachment, anyone is good
+        for (size_t node_id = 0; node_id < cycle.size(); ++node_id) {
+            if (!segment.is_attachment(node_id))
+                continue;
+            attachment_id = node_id;
+            break;
+        }
+        DOMUS_ASSERT(
+            attachment_id != cycle.size(),
+            "are_embeddings_inside_clockwise_cycle: no attachment found"
+        );
+        size_t next = (attachment_id + 1) % cycle.size();
+        size_t prev = (attachment_id + cycle.size() - 1) % cycle.size();
+        DOMUS_ASSERT(
+            0 <= prev && prev < cycle.size(),
+            "are_embeddings_inside_clockwise_cycle: prev should belong to the cycle"
+        );
         is_inside[i] = embedding.next_element_in_adjacency_list(attachment_id, next) != prev;
     }
     return is_inside;
@@ -179,9 +223,9 @@ void compute_sub_order(
                 first = j;
                 continue;
             }
-            const size_t num_attachments_first = segments[first_index].get_attachments().size();
+            const size_t num_attachments_first = segments[first_index].number_of_attachments();
             const size_t num_attachments_candidate =
-                segments[candidate_index].get_attachments().size();
+                segments[candidate_index].number_of_attachments();
             if (num_attachments_first == num_attachments_candidate) {
                 if (first_index > candidate_index)
                     continue;
@@ -238,29 +282,33 @@ std::vector<size_t> compute_order(
 
 void add_middle_edges(
     const Embedding& embedding,
-    size_t cycle_node_id,
-    bool compatible,
+    const size_t cycle_node_position,
+    const bool compatible,
     Embedding& output,
-    const Cycle& cycle
+    const Cycle& cycle,
+    const NodesLabels& labels_to_old_ids
 ) {
-    size_t prev_cycle_node_id = cycle.prev_of_node(cycle_node_id);
-    size_t next_cycle_node_id = cycle.next_of_node(cycle_node_id);
+    const size_t prev_cycle_position = (cycle_node_position + cycle.size() - 1) % cycle.size();
+    const size_t next_cycle_position = (cycle_node_position + 1) % cycle.size();
     std::vector<size_t> neighbors_to_add;
-    size_t current = prev_cycle_node_id;
-    for (size_t i = 1; i < embedding.get_adjacency_list(cycle_node_id).size(); ++i) {
-        current = embedding.next_element_in_adjacency_list(cycle_node_id, current);
-        if (next_cycle_node_id == current)
-            continue;
-        if (prev_cycle_node_id == current)
+    size_t current = prev_cycle_position;
+    for (size_t i = 1; i < embedding.get_node_degree(cycle_node_position); ++i) {
+        current = embedding.next_element_in_adjacency_list(cycle_node_position, current);
+        if (next_cycle_position == current || prev_cycle_position == current)
             continue;
         neighbors_to_add.push_back(current);
     }
+    const size_t cycle_id = cycle[cycle_node_position];
     if (compatible)
-        for (size_t neighbor_id : neighbors_to_add)
-            output.add_edge(cycle_node_id, neighbor_id);
+        for (size_t neighbor_id : neighbors_to_add) {
+            const size_t old_neighbor_id = labels_to_old_ids.get_label(neighbor_id);
+            output.add_edge(cycle_id, old_neighbor_id);
+        }
     else
-        for (size_t j = neighbors_to_add.size(); j > 0; --j)
-            output.add_edge(cycle_node_id, neighbors_to_add[j - 1]);
+        for (size_t j = neighbors_to_add.size(); j > 0; --j) {
+            const size_t old_neighbor_id = labels_to_old_ids.get_label(neighbors_to_add[j - 1]);
+            output.add_edge(cycle_id, old_neighbor_id);
+        }
 }
 
 void add_edges_incident_to_cycle(
@@ -275,11 +323,11 @@ void add_edges_incident_to_cycle(
 ) {
     for (size_t cycle_node_position = 0; cycle_node_position < cycle.size();
          ++cycle_node_position) {
-        size_t cycle_node_id = cycle[cycle_node_position];
+        const size_t cycle_node_id = cycle[cycle_node_position];
         std::vector<size_t> inside_segments{};
         std::vector<size_t> outside_segments{};
         for (size_t i = 0; i < segments.size(); ++i) {
-            if (segments[i].is_attachment(cycle_node_id)) {
+            if (segments[i].is_attachment(cycle_node_position)) {
                 if (is_segment_inside.get_side(i))
                     inside_segments.push_back(i);
                 else
@@ -303,21 +351,37 @@ void add_edges_incident_to_cycle(
             segments,
             cycle_node_position
         );
-        size_t prev_cycle_node = cycle.prev_of_node(cycle_node_id);
-        size_t next_cycle_node = cycle.next_of_node(cycle_node_id);
+        const size_t prev_cycle_node = cycle[cycle_node_position + cycle.size() - 1];
+        const size_t next_cycle_node = cycle[cycle_node_position + 1];
         output.add_edge(cycle_node_id, next_cycle_node);
         for (const size_t segment_index : inside_order) {
             const Embedding& embedding = embeddings[segment_index];
+            const NodesLabels& labels_to_old_ids = segments[segment_index].get_new_id_to_old_id();
             const bool is_embedding_compatible =
                 is_segment_inside.get_side(segment_index) == is_embedding_inside[segment_index];
-            add_middle_edges(embedding, cycle_node_id, is_embedding_compatible, output, cycle);
+            add_middle_edges(
+                embedding,
+                cycle_node_position,
+                is_embedding_compatible,
+                output,
+                cycle,
+                labels_to_old_ids
+            );
         }
         output.add_edge(cycle_node_id, prev_cycle_node);
         for (const size_t segment_index : outside_order) {
             const Embedding& embedding = embeddings[segment_index];
+            const NodesLabels& labels_to_old_ids = segments[segment_index].get_new_id_to_old_id();
             const bool is_embedding_compatible =
                 is_segment_inside.get_side(segment_index) == is_embedding_inside[segment_index];
-            add_middle_edges(embedding, cycle_node_id, is_embedding_compatible, output, cycle);
+            add_middle_edges(
+                embedding,
+                cycle_node_position,
+                is_embedding_compatible,
+                output,
+                cycle,
+                labels_to_old_ids
+            );
         }
     }
 }
@@ -333,19 +397,26 @@ void add_edges_not_incident_to_cycle(
     for (size_t i = 0; i < segments.size(); ++i) {
         const Segment& segment = segments[i];
         const Embedding& embedding = embeddings[i];
+        const NodesLabels& labels_to_old_ids = segment.get_new_id_to_old_id();
         segment.get_segment().for_each_node([&](size_t node_id) {
-            if (cycle.has_node(node_id))
+            if (node_id < cycle.size())
                 return;
+            const size_t old_node_id = labels_to_old_ids.get_label(node_id);
             std::vector<size_t> neighbors_to_add;
             embedding.for_each_neighbor(node_id, [&neighbors_to_add](size_t neighbor_id) {
                 neighbors_to_add.push_back(neighbor_id);
             });
             if (is_segment_inside.get_side(i) == is_embedding_inside[i])
-                for (size_t neighbor_id : neighbors_to_add)
-                    output.add_edge(node_id, neighbor_id);
+                for (size_t neighbor_id : neighbors_to_add) {
+                    const size_t old_neighbor_id = labels_to_old_ids.get_label(neighbor_id);
+                    output.add_edge(old_node_id, old_neighbor_id);
+                }
             else
-                for (size_t j = neighbors_to_add.size(); j > 0; --j)
-                    output.add_edge(node_id, neighbors_to_add[j - 1]);
+                for (size_t j = neighbors_to_add.size(); j > 0; --j) {
+                    const size_t old_neighbor_id =
+                        labels_to_old_ids.get_label(neighbors_to_add[j - 1]);
+                    output.add_edge(old_node_id, old_neighbor_id);
+                }
         });
     }
 }
@@ -385,8 +456,32 @@ Embedding merge_segments_embeddings(
 
 std::optional<Embedding> embed_biconnected_component(const Graph& component);
 
+bool is_embedding_valid(const Segment& segment, const Embedding& embedding) {
+    const Graph& graph = segment.get_segment();
+    if (graph.size() != embedding.size())
+        return false;
+    if (graph.get_number_of_edges() * 2 != embedding.total_number_of_edges())
+        return false;
+    bool is_valid = true;
+    embedding.for_each_node([&](size_t node_id) {
+        if (!is_valid)
+            return;
+        if (!graph.has_node(node_id))
+            is_valid = false;
+        embedding.for_each_neighbor(node_id, [&](size_t neighbor_id) {
+            if (!graph.are_neighbors(node_id, neighbor_id))
+                is_valid = false;
+        });
+        if (embedding.get_node_degree(node_id) != graph.get_degree_of_node(node_id))
+            is_valid = false;
+    });
+    if (!is_valid)
+        return false;
+    return is_embedding_planar(embedding);
+}
+
 std::optional<Embedding> embed_biconnected_component(const Graph& component, const Cycle& cycle) {
-    const std::vector<Segment> segments = compute_segments(component, cycle);
+    const std::vector<Segment> segments = Segment::compute(component, cycle);
     if (segments.empty()) // the entire biconnected component is a cycle
         return base_case_graph(component);
     if (segments.size() == 1) {
@@ -406,6 +501,10 @@ std::optional<Embedding> embed_biconnected_component(const Graph& component, con
         if (!embedding.has_value())
             return std::nullopt;
         embeddings.push_back(std::move(embedding.value()));
+        DOMUS_ASSERT(
+            is_embedding_valid(segment, embeddings.back()),
+            "embed_biconnected_component: invalid embedding"
+        );
     }
     return merge_segments_embeddings(
         component,

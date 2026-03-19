@@ -4,7 +4,7 @@
 
 #include "domus/core/graph/graphs_algorithms.hpp"
 
-#include "../domus_assert.hpp"
+#include "../domus_debug.hpp"
 
 Graph generate_connected_random_graph_degree_max_4(
     const size_t number_of_nodes, const size_t number_of_edges

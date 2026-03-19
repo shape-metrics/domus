@@ -21,7 +21,7 @@
 #include "domus/orthogonal/shape/shape.hpp"
 #include "domus/orthogonal/shape/shape_builder.hpp"
 
-#include "../core/domus_assert.hpp"
+#include "../core/domus_debug.hpp"
 #include "../nlohmann/json.hpp"
 #include "equivalence_classes.hpp"
 
@@ -74,7 +74,7 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
             ordering_edge_to_graph_edge.at({next_class_id, next_next_class_id});
         if (to != next_from) {
             std::vector<size_t> path = path_in_class(graph, to, next_from, shape, go_horizontal);
-            const auto end = static_cast<size_t>(static_cast<int>(path.size()) - 1);
+            const size_t end = static_cast<size_t>(static_cast<int>(path.size()) - 1);
             for (size_t j = 0; j < end; ++j)
                 cycle.push_back(path[j]);
         }

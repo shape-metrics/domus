@@ -2,7 +2,6 @@
 
 #include <functional>
 #include <string>
-#include <unordered_map>
 
 #include "domus/core/circular_sequence.hpp"
 #include "domus/core/graph/graph.hpp"
@@ -10,23 +9,22 @@
 class EmbeddingImpl;
 
 class Embedding {
-
-    std::unordered_map<size_t, CircularSequence> adjacency_list;
+    const Graph& m_graph;
+    std::vector<CircularSequence> adjacency_list;
     size_t number_of_edges_m = 0;
 
   public:
     explicit Embedding(const Graph& graph);
     void add_edge(size_t from_id, size_t to_id);
-    const CircularSequence& get_adjacency_list(size_t node_id) const;
+    size_t get_node_degree(size_t node_id) const;
     size_t next_element_in_adjacency_list(size_t node_id, size_t element) const;
     void for_each_node(std::function<void(size_t)> func) const;
     void for_each_neighbor(size_t node_id, std::function<void(size_t)> func) const;
     std::string to_string() const;
     size_t size() const;
     size_t total_number_of_edges() const;
-    /**
-     */
     bool is_consistent() const;
+    const Graph& get_graph() const;
     void print() const;
 };
 

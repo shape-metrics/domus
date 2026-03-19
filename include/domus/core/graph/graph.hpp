@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "domus/core/graph/graph_utilities.hpp"
+
 class Graph {
     size_t m_total_nodes = 0;
     size_t m_total_edges = 0;
@@ -26,6 +28,9 @@ class Graph {
     size_t size() const;
     size_t get_number_of_edges() const;
     void remove_edge(size_t from_id, size_t to_id);
-    std::string to_string(bool undirected = false) const;
-    void print(bool undirected = false) const;
+    std::string to_string(bool undirected) const;
+    std::string to_string() const;
+    std::string
+    to_string(bool undirected, const NodesLabels& labels, const std::string_view name) const;
+    void print(bool undirected) const;
 };

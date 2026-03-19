@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "domus_assert.hpp"
+#include "domus_debug.hpp"
 
 const std::vector<size_t>& CircularSequence::get_elements() const { return m_elements; }
 

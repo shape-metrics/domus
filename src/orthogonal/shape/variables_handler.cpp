@@ -5,7 +5,7 @@
 
 #include "domus/core/graph/graph.hpp"
 
-#include "../../core/domus_assert.hpp"
+#include "../../core/domus_debug.hpp"
 
 void VariablesHandler::add_variable(size_t i, size_t j, const Direction direction) {
     variable_to_edge.push_back({i, j});

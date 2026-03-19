@@ -8,7 +8,7 @@
 
 #include "domus/sat/cnf.hpp"
 
-#include "../core/domus_assert.hpp"
+#include "../core/domus_debug.hpp"
 #include "../core/memory_file.hpp"
 
 #include "glucose/src/SimpSolver.h"

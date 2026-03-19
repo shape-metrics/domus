@@ -1,6 +1,6 @@
 #include "domus/orthogonal/shape/direction.hpp"
 
-#include "../../core/domus_assert.hpp"
+#include "../../core/domus_debug.hpp"
 
 std::string direction_to_string(const Direction direction) {
     switch (direction) {

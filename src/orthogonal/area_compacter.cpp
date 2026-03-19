@@ -8,7 +8,7 @@
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
-#include "../core/domus_assert.hpp"
+#include "../core/domus_debug.hpp"
 
 class Graph;
 

@@ -3,21 +3,25 @@
 
 #include <cstddef>
 #include <print>
-#include <stack>
 #include <unordered_set>
 
-#include "../core/domus_assert.hpp"
+#include "../core/domus_debug.hpp"
+#include "domus/core/graph/graphs_algorithms.hpp"
 
-Embedding::Embedding(const Graph& graph) {
-    graph.for_each_node([&](size_t node_id) { adjacency_list[node_id]; });
+const Graph& Embedding::get_graph() const { return m_graph; }
+
+Embedding::Embedding(const Graph& graph) : m_graph(graph) {
+    graph.for_each_node([&](size_t) { adjacency_list.push_back({}); });
 }
 
 size_t Embedding::next_element_in_adjacency_list(size_t node_id, size_t element) const {
-    return adjacency_list.at(node_id).next_element(element);
+    const size_t pos = adjacency_list[node_id].element_position(element).value();
+
+    return adjacency_list[node_id][pos + 1];
 }
 
-const CircularSequence& Embedding::get_adjacency_list(size_t node_id) const {
-    return adjacency_list.at(node_id);
+size_t Embedding::get_node_degree(size_t node_id) const {
+    return adjacency_list.at(node_id).size();
 }
 
 void Embedding::add_edge(size_t from_id, size_t to_id) {
@@ -42,8 +46,7 @@ std::string Embedding::to_string() const {
 size_t Embedding::size() const { return adjacency_list.size(); }
 
 void Embedding::for_each_node(std::function<void(size_t)> func) const {
-    for (const auto& [node_id, neighbors] : adjacency_list)
-        func(node_id);
+    m_graph.for_each_node(func);
 }
 
 void Embedding::for_each_neighbor(size_t node_id, std::function<void(size_t)> func) const {
@@ -56,21 +59,21 @@ void Embedding::print() const { std::print("{}", to_string()); }
 
 size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
     size_t number_of_faces = 0;
-    PairIntHashSet visited_edges; // visited oriented edges
+    std::unordered_set<Edge, edge_hash> visited_edges; // visited oriented edges
     embedding.for_each_node([&](size_t node_id) {
         embedding.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            if (visited_edges.has(node_id, neighbor_id))
+            if (visited_edges.contains({node_id, neighbor_id}))
                 return;
             ++number_of_faces;
             size_t current_node = node_id;
             size_t next_node = neighbor_id;
-            visited_edges.add(node_id, neighbor_id);
+            visited_edges.insert({node_id, neighbor_id});
             while (true) {
                 size_t successor =
                     embedding.next_element_in_adjacency_list(next_node, current_node);
-                if (visited_edges.has(next_node, successor))
+                if (visited_edges.contains({next_node, successor}))
                     break;
-                visited_edges.add(next_node, successor);
+                visited_edges.insert({next_node, successor});
                 current_node = next_node;
                 next_node = successor;
                 if (current_node == node_id && next_node == neighbor_id)
@@ -100,38 +103,6 @@ bool Embedding::is_consistent() const {
     return edges.empty();
 }
 
-size_t compute_number_of_connected_components(const Embedding& embedding) {
-    DOMUS_ASSERT(
-        embedding.is_consistent(),
-        "compute_number_of_connected_components: embedding is not fully undirected"
-    );
-    NodesContainer visited;
-    size_t components = 0;
-    const std::function<void(size_t)> explore_component = [&](size_t start_node_id) {
-        std::stack<size_t> stack;
-        stack.push(start_node_id);
-        while (!stack.empty()) {
-            size_t node_id = stack.top();
-            stack.pop();
-            if (!visited.has_node(node_id)) {
-                visited.add_node(node_id);
-                embedding.get_adjacency_list(node_id).for_each([&stack,
-                                                                &visited](size_t neighbor_id) {
-                    if (!visited.has_node(neighbor_id))
-                        stack.push(neighbor_id);
-                });
-            }
-        }
-    };
-    embedding.for_each_node([&](size_t node_id) {
-        if (!visited.has_node(node_id)) {
-            components++;
-            explore_component(node_id);
-        }
-    });
-    return components;
-}
-
 size_t compute_embedding_genus(
     size_t number_of_nodes,
     size_t number_of_edges,
@@ -159,7 +130,7 @@ size_t compute_embedding_genus(const Embedding& embedding) {
     size_t number_of_nodes = embedding.size();
     size_t number_of_edges = embedding.total_number_of_edges() / 2;
     size_t number_of_faces = compute_number_of_faces_in_embedding(embedding);
-    size_t connected_components = compute_number_of_connected_components(embedding);
+    size_t connected_components = compute_number_of_connected_components(embedding.get_graph());
     return compute_embedding_genus(
         number_of_nodes,
         number_of_edges,

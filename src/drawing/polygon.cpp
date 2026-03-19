@@ -4,7 +4,7 @@
 #include <cmath>
 #include <stddef.h>
 
-#include "../core/domus_assert.hpp"
+#include "../core/domus_debug.hpp"
 
 Point2D Point2D::operator+(const Point2D& other) const {
     return {x_m + other.x_m, y_m + other.y_m};

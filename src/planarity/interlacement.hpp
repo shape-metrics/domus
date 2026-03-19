@@ -5,6 +5,6 @@
 #include "domus/core/graph/graph.hpp"
 
 class Cycle;
-struct Segment;
+class Segment;
 
 Graph compute_interlacement_graph(const std::vector<Segment>& segments, const Cycle& cycle);

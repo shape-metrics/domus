@@ -29,6 +29,7 @@ class BiconnectedComponents {
 
   public:
     const std::vector<Graph>& get_components() const;
+    const NodesLabels& get_labels_of_component(size_t component_id) const;
     std::string to_string() const;
     void print() const;
     BiconnectedComponents(

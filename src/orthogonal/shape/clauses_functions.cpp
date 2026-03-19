@@ -7,7 +7,7 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/sat/cnf.hpp"
 
-#include "../../core/domus_assert.hpp"
+#include "../../core/domus_debug.hpp"
 #include "variables_handler.hpp"
 
 void add_constraints_at_most_one_is_true(

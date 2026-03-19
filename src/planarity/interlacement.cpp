@@ -1,25 +1,24 @@
 #include "interlacement.hpp"
 
 #include <stddef.h>
-#include <unordered_map>
 
 #include "domus/core/graph/cycle.hpp"
-#include "domus/core/graph/segment.hpp"
 
-#include "../core/domus_assert.hpp"
+#include "../core/domus_debug.hpp"
+#include "segment.hpp"
 
-std::unordered_map<size_t, int> compute_cycle_labels(const Segment& segment, const Cycle& cycle) {
-    std::unordered_map<size_t, int> cycle_labels;
+std::vector<int> compute_cycle_labels(const Segment& segment, const Cycle& cycle) {
+    std::vector<int> cycle_labels(cycle.size());
     int found_attachments = 0;
-    const int total_attachments = static_cast<int>(segment.get_attachments().size());
-    cycle.for_each([&](size_t node_id) {
-        if (segment.is_attachment(node_id))
-            cycle_labels[node_id] = 2 * (found_attachments++);
+    const int total_attachments = static_cast<int>(segment.number_of_attachments());
+    for (size_t i = 0; i < cycle.size(); ++i) {
+        if (segment.is_attachment(i))
+            cycle_labels[i] = 2 * (found_attachments++);
         else if (found_attachments == 0)
-            cycle_labels[node_id] = 2 * total_attachments - 1;
+            cycle_labels[i] = 2 * total_attachments - 1;
         else
-            cycle_labels[node_id] = 2 * found_attachments - 1;
-    });
+            cycle_labels[i] = 2 * found_attachments - 1;
+    }
     return cycle_labels;
 }
 
@@ -30,18 +29,20 @@ void compute_conflicts(
         return;
     for (size_t i = 0; i < segments.size() - 1; ++i) {
         const Segment& segment = segments[i];
-        std::unordered_map<size_t, int> cycle_labels = compute_cycle_labels(segment, cycle);
-        const size_t number_of_labels = 2 * segment.get_attachments().size();
+        std::vector<int> cycle_labels = compute_cycle_labels(segment, cycle);
+        const size_t number_of_labels = 2 * segment.number_of_attachments();
         std::vector<int> labels(number_of_labels);
         for (size_t j = i + 1; j < segments.size(); ++j) {
             const Segment& other_segment = segments[j];
             for (size_t k = 0; k < number_of_labels; ++k)
                 labels[k] = 0;
-            other_segment.get_attachments().for_each([&](size_t attachment_id) {
-                const int cycle_label = cycle_labels[attachment_id];
+            for (size_t k = 0; k < cycle.size(); ++k) {
+                if (!other_segment.is_attachment(k))
+                    continue;
+                const int cycle_label = cycle_labels[k];
                 DOMUS_ASSERT(cycle_label >= 0, "compute_conflicts: internal errors");
                 labels[static_cast<size_t>(cycle_label)] = 1;
-            });
+            }
             int sum = 0;
             for (size_t k = 0; k < number_of_labels; ++k)
                 sum += labels[k];
@@ -65,7 +66,7 @@ void compute_conflicts(
 Graph compute_interlacement_graph(const std::vector<Segment>& segments, const Cycle& cycle) {
     Graph interlacement_graph;
     for (size_t i = 0; i < segments.size(); ++i)
-        interlacement_graph.add_node(i);
+        interlacement_graph.add_node();
     compute_conflicts(segments, cycle, interlacement_graph);
     return interlacement_graph;
 }

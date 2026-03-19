@@ -24,7 +24,6 @@ class NodesLabels {
 
   public:
     NodesLabels(const Graph& graph);
-    NodesLabels(size_t size);
     void add_label(size_t node_id, size_t label);
     bool has_label(size_t node_id) const;
     size_t get_label(size_t node_id) const;

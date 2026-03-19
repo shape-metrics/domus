@@ -7,7 +7,7 @@
 
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include "../domus_assert.hpp"
+#include "../domus_debug.hpp"
 
 bool Graph::has_node(size_t node_id) const { return node_id < size(); }
 
@@ -44,8 +44,8 @@ size_t Graph::add_node() {
 size_t Graph::get_out_degree_of_node(size_t node_id) const {
     DOMUS_ASSERT(
         has_node(node_id),
-        std::format("Graph::get_out_degree_of_node {} node does not exist", node_id)
-
+        "Graph::get_out_degree_of_node {} node does not exist",
+        node_id
     );
     return m_out_adjacency_list[node_id].size();
 }
@@ -100,6 +100,8 @@ void Graph::remove_edge(size_t from_id, size_t to_id) {
     m_total_edges--;
 }
 
+std::string Graph::to_string() const { return to_string(true); }
+
 std::string Graph::to_string(bool undirected) const {
     std::string result;
     auto out = std::back_inserter(result);
@@ -127,3 +129,34 @@ std::string Graph::to_string(bool undirected) const {
 }
 
 void Graph::print(bool undirected) const { std::print("{}", to_string(undirected)); }
+
+std::string
+Graph::to_string(bool undirected, const NodesLabels& labels, const std::string_view name) const {
+    std::string result;
+    auto out = std::back_inserter(result);
+    std::format_to(out, "{}:\n", name);
+    for_each_node([&](const size_t node_id) {
+        const size_t node_label = labels.get_label(node_id);
+        if (undirected) {
+            std::format_to(out, "{}: [ ", node_label);
+            for_each_neighbor(node_id, [&](size_t neighbor_id) {
+                const size_t neighbor_label = labels.get_label(neighbor_id);
+                std::format_to(out, "{} ", neighbor_label);
+            });
+            std::format_to(out, "]\n");
+        } else {
+            std::format_to(out, "{}: out[ ", node_label);
+            for_each_out_neighbor(node_id, [&](size_t neighbor_id) {
+                const size_t neighbor_label = labels.get_label(neighbor_id);
+                std::format_to(out, "{} ", neighbor_label);
+            });
+            std::format_to(out, "] in[ ");
+            for_each_in_neighbor(node_id, [&](size_t neighbor_id) {
+                const size_t neighbor_label = labels.get_label(neighbor_id);
+                std::format_to(out, "{} ", neighbor_label);
+            });
+            std::format_to(out, "]\n");
+        }
+    });
+    return result;
+}

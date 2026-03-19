@@ -1,6 +1,6 @@
 #include "domus/orthogonal/shape/shape.hpp"
 
-#include "../../core/domus_assert.hpp"
+#include "../../core/domus_debug.hpp"
 
 size_t Shape::direction_to_size_t(Direction direction) const {
     switch (direction) {

@@ -6,7 +6,7 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include "../domus_assert.hpp"
+#include "../domus_debug.hpp"
 
 void Tree::for_each_node(std::function<void(size_t)> f) const {
     for (size_t node_id = 0; node_id < size(); ++node_id)

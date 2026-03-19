@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <unordered_map>
 
-#include "../../core/domus_assert.hpp"
+#include "../../core/domus_debug.hpp"
 
 class NodesTypesImpl {
     std::unordered_map<size_t, NodeType> m_nodes_types;
