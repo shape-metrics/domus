@@ -13,7 +13,6 @@ struct EdgeId {
 };
 
 class Graph {
-    size_t m_total_nodes = 0;
     std::vector<std::vector<size_t>> m_out_adjacency_list;
     std::vector<std::vector<size_t>> m_in_adjacency_list;
     std::vector<std::optional<EdgeId>> m_edges;

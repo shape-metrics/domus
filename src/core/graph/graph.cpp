@@ -39,7 +39,7 @@ void Graph::for_each_neighbor(size_t node_id, std::function<void(size_t)> f) con
 size_t Graph::add_node() {
     m_in_adjacency_list.push_back({});
     m_out_adjacency_list.push_back({});
-    return m_total_nodes++;
+    return m_in_adjacency_list.size() - 1;
 }
 
 size_t Graph::get_out_degree_of_node(size_t node_id) const {
@@ -89,7 +89,7 @@ bool Graph::are_neighbors(size_t node_1_id, size_t node_2_id) const {
     return has_edge(node_1_id, node_2_id) || has_edge(node_2_id, node_1_id);
 }
 
-size_t Graph::size() const { return m_total_nodes; }
+size_t Graph::size() const { return m_in_adjacency_list.size(); }
 
 size_t Graph::get_number_of_edges() const { return m_edges.size() - m_free_edges_ids.size(); }
 
