@@ -345,7 +345,8 @@ void dfs_bic_com(
             // if neighbor can't reach a node strictly prior to node_id
             if (low_point.get_label(neighbor_id) >= old_node_id_to_new_id.get_label(node_id)) {
                 if (prev_of_node.has_label(node_id)) { // Not the root
-                    cut_vertices.add_node(node_id);
+                    if (!cut_vertices.has_node(node_id))
+                        cut_vertices.add_node(node_id);
                 }
 
                 // extract the component: pop edges until we find the one we just traversed
