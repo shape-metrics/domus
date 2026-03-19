@@ -1,7 +1,7 @@
 #include "domus/core/tree/tree.hpp"
 
 #include <print>
-#include <queue>
+#include <stack>
 
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
@@ -75,18 +75,18 @@ std::optional<Tree> Tree::build_spanning_tree(const Graph& graph) {
     if (graph.size() <= 1)
         return std::nullopt;
     NodesLabels parent(graph);
-    std::queue<size_t> queue;
-    queue.push(0u);
-    parent.add_label(queue.front(), graph.size());
+    std::stack<size_t> stack;
+    stack.push(0u);
+    parent.add_label(stack.top(), graph.size());
     size_t number_visited_nodes = 1;
-    while (!queue.empty()) {
-        size_t node_id = queue.front();
-        queue.pop();
+    while (!stack.empty()) {
+        size_t node_id = stack.top();
+        stack.pop();
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (!parent.has_label(neighbor_id)) {
                 parent.add_label(neighbor_id, node_id);
                 ++number_visited_nodes;
-                queue.push(neighbor_id);
+                stack.push(neighbor_id);
             }
         });
     }

@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <list>
 #include <optional>
 #include <print>
 #include <queue>
@@ -206,8 +205,7 @@ void dfs_bic_com(
     NodesLabels& prev_of_node,
     size_t& next_id_to_assign,
     NodesLabels& low_point,
-    std::list<size_t>& stack_of_nodes,
-    std::list<Edge>& stack_of_edges,
+    std::vector<Edge>& edge_stack,
     std::vector<Graph>& components,
     NodesContainer& cut_vertices,
     std::vector<NodesLabels>& components_to_old_nodes,
@@ -222,8 +220,7 @@ BiconnectedComponents compute_biconnected_components(const Graph& graph) {
     std::vector<Graph> components;
     std::vector<NodesLabels> component_to_old_nodes;
     size_t next_id_to_assign = 0;
-    std::list<size_t> stack_of_nodes{};
-    std::list<Edge> stack_of_edges{};
+    std::vector<Edge> edge_stack{};
     NodesLabels old_to_new_nodes(graph);
     graph.for_each_node([&graph, &old_to_new_nodes](size_t node_id) {
         old_to_new_nodes.add_label(node_id, graph.size());
@@ -238,8 +235,7 @@ BiconnectedComponents compute_biconnected_components(const Graph& graph) {
             prev_of_node,
             next_id_to_assign,
             low_point,
-            stack_of_nodes,
-            stack_of_edges,
+            edge_stack,
             components,
             is_cut_vertex,
             component_to_old_nodes,
@@ -247,7 +243,7 @@ BiconnectedComponents compute_biconnected_components(const Graph& graph) {
         );
     });
     DOMUS_ASSERT(
-        stack_of_nodes.empty() && stack_of_edges.empty(),
+        edge_stack.empty(),
         "compute_biconnected_components: some internal error took place"
     ); // assessing algorithm finished correctly
     std::vector<size_t> cut_vectices;
@@ -264,21 +260,34 @@ BiconnectedComponents compute_biconnected_components(const Graph& graph) {
 }
 
 void build_component(
-    const std::list<size_t>& nodes,
-    const std::list<Edge>& edges,
+    const std::vector<Edge>& edges,
     std::vector<Graph>& components,
     std::vector<NodesLabels>& components_to_old_nodes,
     NodesLabels& old_to_new_nodes
 ) {
+    // extracting unique nodes from the edges
+    std::vector<size_t> nodes;
+    for (const auto& [from_id, to_id] : edges) {
+        nodes.push_back(from_id);
+        nodes.push_back(to_id);
+    }
+    std::ranges::sort(nodes);
+    auto ret = std::ranges::unique(nodes);
+    nodes.erase(ret.begin(), ret.end());
+
+    // building the component
     Graph& component = components.emplace_back();
     for (size_t node_id : nodes) {
         size_t new_node_id = component.add_node();
         old_to_new_nodes.update_label(node_id, new_node_id);
     }
+
     components_to_old_nodes.emplace_back(component);
     NodesLabels& labels = components_to_old_nodes.back();
+
     for (size_t node_id : nodes)
         labels.add_label(old_to_new_nodes.get_label(node_id), node_id);
+
     for (const auto& [from_id, to_id] : edges) {
         size_t new_from_id = old_to_new_nodes.get_label(from_id);
         size_t new_to_id = old_to_new_nodes.get_label(to_id);
@@ -289,12 +298,11 @@ void build_component(
 void dfs_bic_com(
     const Graph& graph,
     size_t node_id,
-    NodesLabels& old_node_id_to_new_id,
+    NodesLabels& old_node_id_to_new_id, // acts as discovery time (dfn)
     NodesLabels& prev_of_node,
     size_t& next_id_to_assign,
     NodesLabels& low_point,
-    std::list<size_t>& stack_of_nodes,
-    std::list<Edge>& stack_of_edges,
+    std::vector<Edge>& edge_stack,
     std::vector<Graph>& components,
     NodesContainer& cut_vertices,
     std::vector<NodesLabels>& components_to_old_nodes,
@@ -304,16 +312,17 @@ void dfs_bic_com(
     low_point.add_label(node_id, next_id_to_assign);
     ++next_id_to_assign;
     size_t children_number = 0;
+
     graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-        if (prev_of_node.has_label(node_id) && prev_of_node.get_label(node_id) == neighbor_id)
+        // ignore the edge back to our direct parent in the DFS tree
+        if (prev_of_node.has_label(node_id) && prev_of_node.get_label(node_id) == neighbor_id) {
             return;
-        if (!old_node_id_to_new_id.has_label(neighbor_id)) { // means the node is not visited
-            std::list<size_t> new_stack_of_nodes{};
-            std::list<Edge> new_stack_of_edges{};
+        }
+
+        if (!old_node_id_to_new_id.has_label(neighbor_id)) { // unvisited
             ++children_number;
             prev_of_node.add_label(neighbor_id, node_id);
-            new_stack_of_nodes.push_back(neighbor_id);
-            new_stack_of_edges.emplace_back(node_id, neighbor_id);
+            edge_stack.push_back({node_id, neighbor_id});
             dfs_bic_com(
                 graph,
                 neighbor_id,
@@ -321,45 +330,57 @@ void dfs_bic_com(
                 prev_of_node,
                 next_id_to_assign,
                 low_point,
-                new_stack_of_nodes,
-                new_stack_of_edges,
+                edge_stack,
                 components,
                 cut_vertices,
                 components_to_old_nodes,
                 old_to_new_nodes
             );
-            if (low_point.get_label(neighbor_id) < low_point.get_label(node_id))
+
+            // update low point of the current node
+            if (low_point.get_label(neighbor_id) < low_point.get_label(node_id)) {
                 low_point.update_label(node_id, low_point.get_label(neighbor_id));
-            if (low_point.get_label(neighbor_id) >= old_node_id_to_new_id.get_label(node_id)) {
-                new_stack_of_nodes.push_back(node_id);
-                build_component(
-                    new_stack_of_nodes,
-                    new_stack_of_edges,
-                    components,
-                    components_to_old_nodes,
-                    old_to_new_nodes
-                );
-                if (prev_of_node.has_label(node_id)) // the root needs to be handled differently
-                    // (handled at the end of the function)
-                    if (!cut_vertices.has_node(node_id))
-                        cut_vertices.add_node(node_id);
-            } else {
-                stack_of_nodes.splice(stack_of_nodes.end(), new_stack_of_nodes);
-                stack_of_edges.splice(stack_of_edges.end(), new_stack_of_edges);
             }
-        } else { // node got already visited
-            const size_t neighbor_node_id = old_node_id_to_new_id.get_label(neighbor_id);
-            if (neighbor_node_id < old_node_id_to_new_id.get_label(node_id)) {
-                stack_of_edges.emplace_back(node_id, neighbor_id);
-                if (neighbor_node_id < low_point.get_label(node_id))
-                    low_point.update_label(node_id, neighbor_node_id);
+
+            // if neighbor can't reach a node strictly prior to node_id
+            if (low_point.get_label(neighbor_id) >= old_node_id_to_new_id.get_label(node_id)) {
+                if (prev_of_node.has_label(node_id)) { // Not the root
+                    cut_vertices.add_node(node_id);
+                }
+
+                // extract the component: pop edges until we find the one we just traversed
+                std::vector<Edge> comp_edges;
+                bool done = false;
+                while (!edge_stack.empty() && !done) {
+                    Edge e = edge_stack.back();
+                    edge_stack.pop_back();
+                    comp_edges.push_back(e);
+
+                    auto [u, v] = e;
+                    if ((u == node_id && v == neighbor_id) || (u == neighbor_id && v == node_id)) {
+                        done = true;
+                    }
+                }
+
+                build_component(comp_edges, components, components_to_old_nodes, old_to_new_nodes);
+            }
+        } else { // visited (Back Edge)
+            // only push back-edges going UP the DFS tree
+            if (old_node_id_to_new_id.get_label(neighbor_id) <
+                old_node_id_to_new_id.get_label(node_id)) {
+                edge_stack.push_back({node_id, neighbor_id});
+                if (old_node_id_to_new_id.get_label(neighbor_id) < low_point.get_label(node_id)) {
+                    low_point.update_label(node_id, old_node_id_to_new_id.get_label(neighbor_id));
+                }
             }
         }
     });
-    if (!prev_of_node.has_label(node_id)) { // handling of node with no parents (the root)
-        if (children_number >= 2)
+
+    // handle the root node separately
+    if (!prev_of_node.has_label(node_id)) {
+        if (children_number >= 2) {
             cut_vertices.add_node(node_id);
-        else if (children_number == 0) { // node is isolated
+        } else if (children_number == 0) { // isolated node
             size_t new_node = components.emplace_back().add_node();
             components_to_old_nodes.emplace_back(components.back());
             components_to_old_nodes.back().add_label(new_node, node_id);
@@ -388,18 +409,18 @@ void BiconnectedComponents::print() const { println("{}", to_string()); }
 
 bool bfs_bipartition(const Graph& graph, size_t node_id, Bipartition& bipartition) {
     bipartition.set_side(node_id, false);
-    std::queue<size_t> queue;
-    queue.push(node_id);
+    std::stack<size_t> stack;
+    stack.push(node_id);
     bool is_bipartite = true;
-    while (!queue.empty() && is_bipartite) {
-        size_t current_id = queue.front();
-        queue.pop();
+    while (!stack.empty() && is_bipartite) {
+        size_t current_id = stack.top();
+        stack.pop();
         graph.for_each_neighbor(current_id, [&](size_t neighbor_id) {
             if (!is_bipartite)
                 return;
             if (!bipartition.has_node(neighbor_id)) {
                 bipartition.set_side(neighbor_id, !bipartition.get_side(current_id));
-                queue.push(neighbor_id);
+                stack.push(neighbor_id);
             } else if (bipartition.are_in_same_side(neighbor_id, current_id))
                 is_bipartite = false;
         });
