@@ -23,7 +23,7 @@ class EquivalenceClasses {
         const Graph& graph,
         size_t node_id,
         size_t class_id,
-        const std::function<bool(const Shape&, size_t, size_t)>& is_direction_wrong
+        const std::function<bool(const Shape&, size_t)>& is_direction_wrong
     );
     void horizontal_node_expander(const Shape& shape, const Graph& graph, size_t node_id);
     void vertical_node_expander(const Shape& shape, const Graph& graph, size_t node_id);

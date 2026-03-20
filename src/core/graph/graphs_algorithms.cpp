@@ -15,7 +15,7 @@
 #include "../domus_debug.hpp"
 
 bool is_graph_connected(const Graph& graph) {
-    if (graph.size() <= 1)
+    if (graph.get_number_of_nodes() <= 1)
         return true;
     NodesContainer visited(graph);
     std::stack<size_t> stack;
@@ -31,7 +31,7 @@ bool is_graph_connected(const Graph& graph) {
                 stack.push(neighbor_id);
         });
     }
-    return visited.size() == graph.size();
+    return visited.size() == graph.get_number_of_nodes();
 }
 
 bool dfs_find_cycle(
@@ -135,7 +135,7 @@ std::optional<std::vector<size_t>> make_topological_ordering(const Graph& graph)
                 queue.push(neighbor_id);
         });
     }
-    if (count != graph.size())
+    if (count != graph.get_number_of_nodes())
         return std::nullopt; // graph contains a cycle
     return topological_order;
 }
@@ -223,7 +223,7 @@ BiconnectedComponents compute_biconnected_components(const Graph& graph) {
     std::vector<Edge> edge_stack{};
     NodesLabels old_to_new_nodes(graph);
     graph.for_each_node([&graph, &old_to_new_nodes](size_t node_id) {
-        old_to_new_nodes.add_label(node_id, graph.size());
+        old_to_new_nodes.add_label(node_id, graph.get_number_of_nodes());
     });
     graph.for_each_node([&](size_t node_id) {
         if (old_node_id_to_new_id.has_label(node_id)) // node visited
@@ -495,7 +495,7 @@ BiconnectedComponents::BiconnectedComponents(
     : m_cutvertices{cutvertices}, m_components{components},
       m_components_nodes_to_original_nodes{old_nodes} {}
 
-Bipartition::Bipartition(const Graph& graph) : m_size(graph.size()), m_side(graph) {}
+Bipartition::Bipartition(const Graph& graph) : m_size(graph.get_number_of_nodes()), m_side(graph) {}
 
 bool Bipartition::get_side(size_t node_id) const {
     DOMUS_ASSERT(has_node(node_id), "Bipartition::get_side: node {} does not exist", node_id);

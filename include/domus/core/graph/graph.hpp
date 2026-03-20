@@ -13,15 +13,16 @@ struct EdgeId {
 };
 
 class Graph {
-    std::vector<std::vector<size_t>> m_out_adjacency_list;
-    std::vector<std::vector<size_t>> m_in_adjacency_list;
-    std::vector<std::optional<EdgeId>> m_edges;
-    std::stack<size_t> m_free_edges_ids;
+    std::vector<std::vector<size_t>> m_out_adjacency_list{};
+    std::vector<std::vector<size_t>> m_in_adjacency_list{};
+    std::vector<std::optional<EdgeId>> m_edges{};
+    std::stack<size_t> m_free_edges_ids{};
 
   public:
     size_t add_node();
-    void add_edge(size_t from_id, size_t to_id);
-    void remove_edge(size_t from_id, size_t to_id);
+    size_t add_edge(size_t from_id, size_t to_id);
+    size_t remove_edge(size_t from_id, size_t to_id);
+    void remove_edge(size_t edge_id);
 
     void for_each_node(std::function<void(size_t)> f) const;
 
@@ -38,10 +39,12 @@ class Graph {
     size_t get_degree_of_node(size_t node_id) const;
 
     bool has_node(size_t node_id) const;
+    bool has_edge_id(size_t edge_id) const;
     bool has_edge(size_t from_id, size_t to_id) const;
     bool are_neighbors(size_t node_1_id, size_t node_2_id) const;
+    Edge get_edge(size_t edge_id) const;
 
-    size_t size() const;
+    size_t get_number_of_nodes() const;
     size_t get_number_of_edges() const;
 
     std::string to_string(bool undirected) const;

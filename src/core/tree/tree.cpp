@@ -72,12 +72,12 @@ std::string Tree::to_string() const {
 void Tree::print() const { println("{}", to_string()); }
 
 std::optional<Tree> Tree::build_spanning_tree(const Graph& graph) {
-    if (graph.size() <= 1)
+    if (graph.get_number_of_nodes() <= 1)
         return std::nullopt;
     NodesLabels parent(graph);
     std::stack<size_t> stack;
     stack.push(0u);
-    parent.add_label(stack.top(), graph.size());
+    parent.add_label(stack.top(), graph.get_number_of_nodes());
     size_t number_visited_nodes = 1;
     while (!stack.empty()) {
         size_t node_id = stack.top();
@@ -90,13 +90,13 @@ std::optional<Tree> Tree::build_spanning_tree(const Graph& graph) {
             }
         });
     }
-    if (number_visited_nodes != graph.size())
+    if (number_visited_nodes != graph.get_number_of_nodes())
         return std::nullopt;
     Tree tree;
-    tree.m_nodeid_to_childrenid.resize(graph.size());
-    tree.m_nodeid_to_parentid.reserve(graph.size());
-    tree.m_nodeid_to_parentid.push_back(graph.size());
-    for (size_t node_id = 1; node_id < graph.size(); ++node_id) {
+    tree.m_nodeid_to_childrenid.resize(graph.get_number_of_nodes());
+    tree.m_nodeid_to_parentid.reserve(graph.get_number_of_nodes());
+    tree.m_nodeid_to_parentid.push_back(graph.get_number_of_nodes());
+    for (size_t node_id = 1; node_id < graph.get_number_of_nodes(); ++node_id) {
         tree.m_nodeid_to_parentid.push_back(parent.get_label(node_id));
         tree.m_nodeid_to_childrenid.at(parent.get_label(node_id)).push_back(node_id);
     }

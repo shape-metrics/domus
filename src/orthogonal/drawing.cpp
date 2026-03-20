@@ -47,15 +47,11 @@ save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, std::filesystem
     graph.for_each_node([&](size_t node_id) {
         if (error_msg.has_value())
             return;
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
+        graph.for_each_out_edge(node_id, [&](size_t edge_id, size_t) {
             if (error_msg.has_value())
                 return;
-            if (neighbor_id < node_id)
-                return;
-            Direction direction = result.shape.get_direction(node_id, neighbor_id);
-            shape_array.push_back(
-                {{"u", node_id}, {"v", neighbor_id}, {"dir", direction_to_string(direction)}}
-            );
+            Direction direction = result.shape.get_direction(edge_id);
+            shape_array.push_back({{"edge_id", edge_id}, {"dir", direction_to_string(direction)}});
         });
     });
     data["shape"] = shape_array;
@@ -100,7 +96,7 @@ load_orthogonal_drawing_from_file(std::filesystem::path path) {
     }
     for (const auto& item : data.at("shape")) {
         Direction direction = string_to_direction(item.at("dir"));
-        result.shape.set_direction(item.at("u"), item.at("v"), direction);
+        result.shape.set_direction(item.at("edge_id"), direction);
     }
     return result;
 }
@@ -183,7 +179,10 @@ compute_node_to_index_position(const Graph& graph, const GraphAttributes& attrib
         coordinate_x_to_nodes[x].push_back(node_id);
     });
     size_t y_index = 0;
-    std::vector<std::optional<size_t>> node_to_coordinate_y(graph.size(), std::nullopt);
+    std::vector<std::optional<size_t>> node_to_coordinate_y(
+        graph.get_number_of_nodes(),
+        std::nullopt
+    );
     int min_y = min_coordinate(coordinate_y_to_nodes);
     while (true) {
         for (size_t node_id : coordinate_y_to_nodes[min_y])
@@ -197,7 +196,10 @@ compute_node_to_index_position(const Graph& graph, const GraphAttributes& attrib
         min_y = next_min_y;
     }
     size_t x_index = 0;
-    std::vector<std::optional<size_t>> node_to_coordinate_x(graph.size(), std::nullopt);
+    std::vector<std::optional<size_t>> node_to_coordinate_x(
+        graph.get_number_of_nodes(),
+        std::nullopt
+    );
     int min_x = min_coordinate(coordinate_x_to_nodes);
     while (true) {
         for (size_t node_id : coordinate_x_to_nodes[min_x])

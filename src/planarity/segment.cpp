@@ -182,7 +182,7 @@ void Segment::find_segments(
 ) {
     NodesContainer visited(graph);
     graph.for_each_node([&](size_t node_id) {
-        old_id_to_new_id.add_label(node_id, graph.size());
+        old_id_to_new_id.add_label(node_id, graph.get_number_of_nodes());
         if (cycle.has_node(node_id))
             visited.add_node(node_id);
     });

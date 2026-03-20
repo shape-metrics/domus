@@ -29,12 +29,9 @@ Shape result_to_shape(
     }
     Shape shape;
     graph.for_each_node([&](size_t node_id) {
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            shape.set_direction(
-                node_id,
-                neighbor_id,
-                handler.get_direction_of_edge(node_id, neighbor_id)
-            );
+        graph.for_each_out_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
+            Direction direction = handler.get_direction_of_edge(node_id, neighbor_id);
+            shape.set_direction(edge_id, direction);
         });
     });
     return shape;
@@ -145,5 +142,7 @@ std::optional<Shape> build_shape_or_add_corner(
         add_corner_inside_edge(from_id, to_id, graph, attributes, cycles);
         return std::nullopt;
     }
-    return result_to_shape(graph, numbers, handler);
+    Shape shape = result_to_shape(graph, numbers, handler);
+    DOMUS_ASSERT(is_shape_valid(graph, shape), "build_shape_or_add_corner: shape is not valid");
+    return shape;
 }

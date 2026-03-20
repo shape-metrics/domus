@@ -1,87 +1,140 @@
 #include "domus/orthogonal/shape/shape.hpp"
 
+#include "domus/core/graph/graph.hpp"
+
 #include "../../core/domus_debug.hpp"
 
-size_t Shape::direction_to_size_t(Direction direction) const {
-    switch (direction) {
-    case Direction::LEFT:
-        return 0;
-    case Direction::RIGHT:
-        return 1;
-    case Direction::UP:
-        return 2;
-    case Direction::DOWN:
-        return 3;
-    default:
-        DOMUS_ASSERT(false, "Shape::direction_to_size_t: invalid direction");
-        return 4;
+void Shape::set_direction(size_t edge_id, const Direction direction) {
+    DOMUS_ASSERT(!contains(edge_id), "Shape::set_direction: direction already set");
+    while (m_edge_id_to_direction.size() <= edge_id)
+        m_edge_id_to_direction.push_back(std::nullopt);
+    m_edge_id_to_direction[edge_id] = direction;
+}
+
+Direction Shape::get_direction(size_t edge_id) const {
+    DOMUS_ASSERT(contains(edge_id), "Shape::get_direction: direction does not exist");
+    return *m_edge_id_to_direction.at(edge_id);
+}
+
+Direction
+Shape::get_direction(const Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const {
+    auto [_from_id, _to_id] = graph.get_edge(edge_id);
+    if (_from_id == from_id) {
+        DOMUS_ASSERT(
+            to_id == _to_id,
+            "Shape::get_direction: from_id and to_id do not match with edge"
+        );
+        return get_direction(edge_id);
+    } else {
+        DOMUS_ASSERT(
+            to_id == _from_id,
+            "Shape::get_direction: from_id and to_id do not match with edge"
+        );
+        DOMUS_ASSERT(
+            from_id == _to_id,
+            "Shape::get_direction: from_id and to_id do not match with edge"
+        );
+        return opposite_direction(get_direction(edge_id));
     }
 }
 
-Direction Shape::size_t_to_direction(size_t direction) const {
-    switch (direction) {
-    case 0:
-        return Direction::LEFT;
-    case 1:
-        return Direction::RIGHT;
-    case 2:
-        return Direction::UP;
-    case 3:
-        return Direction::DOWN;
-    default:
-        DOMUS_ASSERT(false, "Shape::size_t_to_direction: invalid direction");
-        return Direction::INVALID;
+bool Shape::contains(size_t edge_id) const {
+    if (m_edge_id_to_direction.size() <= edge_id)
+        return false;
+    return m_edge_id_to_direction[edge_id].has_value();
+}
+
+bool Shape::is_up(size_t edge_id) const { return get_direction(edge_id) == Direction::UP; }
+
+bool Shape::is_down(size_t edge_id) const { return get_direction(edge_id) == Direction::DOWN; }
+
+bool Shape::is_right(size_t edge_id) const { return get_direction(edge_id) == Direction::RIGHT; }
+
+bool Shape::is_left(size_t edge_id) const { return get_direction(edge_id) == Direction::LEFT; }
+
+bool Shape::is_horizontal(size_t edge_id) const {
+    Direction d = get_direction(edge_id);
+    return d == Direction::RIGHT || d == Direction::LEFT;
+}
+
+bool Shape::is_vertical(size_t edge_id) const {
+    Direction d = get_direction(edge_id);
+    return d == Direction::UP || d == Direction::DOWN;
+}
+
+void Shape::remove_direction(size_t edge_id) {
+    DOMUS_ASSERT(
+        contains(edge_id),
+        "Shape::remove_direction: direction does not exist for this edge"
+    );
+    m_edge_id_to_direction[edge_id] = std::nullopt;
+}
+
+bool Shape::is_up(const Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const {
+    return get_direction(graph, edge_id, from_id, to_id) == Direction::UP;
+}
+
+bool Shape::is_down(const Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const {
+    return get_direction(graph, edge_id, from_id, to_id) == Direction::DOWN;
+}
+
+bool Shape::is_right(const Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const {
+    return get_direction(graph, edge_id, from_id, to_id) == Direction::RIGHT;
+}
+
+bool Shape::is_left(const Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const {
+    return get_direction(graph, edge_id, from_id, to_id) == Direction::LEFT;
+}
+
+void Shape::set_direction(
+    const Graph& graph, size_t edge_id, size_t from_id, size_t to_id, Direction direction
+) {
+    auto [_from_id, _to_id] = graph.get_edge(edge_id);
+    if (_from_id == from_id) {
+        DOMUS_ASSERT(
+            to_id == _to_id,
+            "Shape::set_direction: from_id and to_id do not match with edge"
+        );
+        set_direction(edge_id, direction);
+    } else {
+        DOMUS_ASSERT(
+            to_id == _from_id,
+            "Shape::set_direction: from_id and to_id do not match with edge"
+        );
+        DOMUS_ASSERT(
+            from_id == _to_id,
+            "Shape::set_direction: from_id and to_id do not match with edge"
+        );
+        set_direction(edge_id, opposite_direction(direction));
     }
 }
 
-void Shape::set_direction(size_t node_id_1, size_t node_id_2, const Direction direction) {
-    DOMUS_ASSERT(
-        !m_shape.contains({node_id_1, node_id_2}),
-        "Shape::set_direction: direction already set for this pair"
-    );
-    m_shape[{node_id_1, node_id_2}] = direction_to_size_t(direction);
+bool Shape::are_perpendicular(size_t edge_id_1, size_t edge_id_2) const {
+    DOMUS_ASSERT(contains(edge_id_1), "Shape::are_perpendicular: edge_id_1 not in shape");
+    DOMUS_ASSERT(contains(edge_id_2), "Shape::are_perpendicular: edge_id_2 not in shape");
+    return is_horizontal(edge_id_1) != is_horizontal(edge_id_2);
 }
 
-Direction Shape::get_direction(size_t node_id_1, size_t node_id_2) const {
-    DOMUS_ASSERT(
-        m_shape.contains({node_id_1, node_id_2}),
-        "Shape::get_direction: direction does not exist"
-    );
-    return size_t_to_direction(m_shape.at({node_id_1, node_id_2}));
+bool Shape::are_parallel(size_t edge_id_1, size_t edge_id_2) const {
+    DOMUS_ASSERT(contains(edge_id_1), "Shape::are_parallel: edge_id_1 not in shape");
+    DOMUS_ASSERT(contains(edge_id_2), "Shape::are_parallel: edge_id_2 not in shape");
+    return is_horizontal(edge_id_1) == is_horizontal(edge_id_2);
 }
 
-bool Shape::contains(size_t node_id_1, size_t node_id_2) const {
-    return m_shape.contains({node_id_1, node_id_2});
-}
-
-bool Shape::is_up(size_t node_id_1, size_t node_id_2) const {
-    return get_direction(node_id_1, node_id_2) == Direction::UP;
-}
-
-bool Shape::is_down(size_t node_id_1, size_t node_id_2) const {
-    return get_direction(node_id_1, node_id_2) == Direction::DOWN;
-}
-
-bool Shape::is_right(size_t node_id_1, size_t node_id_2) const {
-    return get_direction(node_id_1, node_id_2) == Direction::RIGHT;
-}
-
-bool Shape::is_left(size_t node_1_id, size_t node_2_id) const {
-    return get_direction(node_1_id, node_2_id) == Direction::LEFT;
-}
-
-bool Shape::is_horizontal(size_t node_id_1, size_t node_id_2) const {
-    return is_right(node_id_1, node_id_2) || is_left(node_id_1, node_id_2);
-}
-
-bool Shape::is_vertical(size_t node_id_1, size_t node_id_2) const {
-    return is_up(node_id_1, node_id_2) || is_down(node_id_1, node_id_2);
-}
-
-void Shape::remove_direction(size_t node_id_1, size_t node_id_2) {
-    DOMUS_ASSERT(
-        contains(node_id_1, node_id_2),
-        "Shape::remove_direction: direction does not exist for this pair"
-    );
-    m_shape.erase({node_id_1, node_id_2});
+bool is_shape_valid(const Graph& graph, const Shape& shape) {
+    bool is_valid = true;
+    graph.for_each_node([&](size_t node_id) {
+        if (!is_valid)
+            return;
+        graph.for_each_out_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
+            if (!is_valid)
+                return;
+            if (!shape.contains(edge_id))
+                is_valid = false;
+            if (shape.get_direction(graph, edge_id, node_id, neighbor_id) !=
+                opposite_direction(shape.get_direction(graph, edge_id, neighbor_id, node_id)))
+                is_valid = false;
+        });
+    });
+    return is_valid;
 }

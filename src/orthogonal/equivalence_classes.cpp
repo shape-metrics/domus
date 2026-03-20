@@ -58,13 +58,13 @@ void EquivalenceClasses::directional_node_expander(
     const Graph& graph,
     size_t node_id,
     size_t class_id,
-    const std::function<bool(const Shape&, size_t, size_t)>& is_direction_wrong
+    const std::function<bool(const Shape&, size_t)>& is_direction_wrong
 ) {
     set_class(node_id, class_id);
-    graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
+    graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
         if (has_elem_a_class(neighbor_id))
             return;
-        if (is_direction_wrong(shape, node_id, neighbor_id))
+        if (is_direction_wrong(shape, edge_id))
             return;
         directional_node_expander(shape, graph, neighbor_id, class_id, is_direction_wrong);
     });
@@ -74,9 +74,7 @@ void EquivalenceClasses::horizontal_node_expander(
     const Shape& shape, const Graph& graph, size_t node_id
 ) {
     size_t class_id = add_class();
-    auto is_direction_wrong = [](const Shape& s, size_t i, size_t j) {
-        return s.is_vertical(i, j);
-    };
+    auto is_direction_wrong = [](const Shape& s, size_t edge_id) { return s.is_vertical(edge_id); };
     directional_node_expander(shape, graph, node_id, class_id, is_direction_wrong);
 }
 
@@ -84,8 +82,8 @@ void EquivalenceClasses::vertical_node_expander(
     const Shape& shape, const Graph& graph, size_t node_id
 ) {
     size_t class_id = add_class();
-    auto is_direction_wrong = [](const Shape& s, size_t i, size_t j) {
-        return s.is_horizontal(i, j);
+    auto is_direction_wrong = [](const Shape& s, size_t edge_id) {
+        return s.is_horizontal(edge_id);
     };
     directional_node_expander(shape, graph, node_id, class_id, is_direction_wrong);
 }
@@ -129,8 +127,8 @@ equivalence_classes_to_ordering(
     std::unordered_map<Edge, Edge, edge_hash> ordering_y_edge_to_graph_edge;
 
     graph.for_each_node([&](size_t node_id) {
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            if (shape.is_right(node_id, neighbor_id)) {
+        graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
+            if (shape.is_right(graph, edge_id, node_id, neighbor_id)) {
                 size_t node_class_x = equivalence_classes_x.get_class_of_elem(node_id);
                 size_t neighbor_class_x = equivalence_classes_x.get_class_of_elem(neighbor_id);
                 if (node_class_x == neighbor_class_x)
@@ -142,7 +140,7 @@ equivalence_classes_to_ordering(
                     node_id,
                     neighbor_id
                 };
-            } else if (shape.is_up(node_id, neighbor_id)) {
+            } else if (shape.is_up(graph, edge_id, node_id, neighbor_id)) {
                 size_t node_class_y = equivalence_classes_y.get_class_of_elem(node_id);
                 size_t neighbor_class_y = equivalence_classes_y.get_class_of_elem(neighbor_id);
                 if (node_class_y == neighbor_class_y)

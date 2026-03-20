@@ -457,7 +457,7 @@ std::optional<Embedding> embed_biconnected_component(const Graph& component);
 
 bool is_embedding_valid(const Segment& segment, const Embedding& embedding) {
     const Graph& graph = segment.get_segment();
-    if (graph.size() != embedding.size())
+    if (graph.get_number_of_nodes() != embedding.size())
         return false;
     if (graph.get_number_of_edges() * 2 != embedding.total_number_of_edges())
         return false;
@@ -522,9 +522,9 @@ std::optional<Embedding> embed_biconnected_component(const Graph& component) {
 }
 
 std::optional<Embedding> embed_graph(const Graph& graph) {
-    if (graph.size() < 4)
+    if (graph.get_number_of_nodes() < 4)
         return base_case_graph(graph);
-    if (graph.get_number_of_edges() / 2 > 3 * graph.size() - 6)
+    if (graph.get_number_of_edges() / 2 > 3 * graph.get_number_of_nodes() - 6)
         return std::nullopt;
     const BiconnectedComponents bic_comps = compute_biconnected_components(graph);
     std::vector<Embedding> embeddings;

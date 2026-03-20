@@ -3,7 +3,8 @@
 #include "../domus_debug.hpp"
 #include "domus/core/graph/graph.hpp"
 
-NodesContainer::NodesContainer(const Graph& graph) : m_has_node(graph.size(), false) {}
+NodesContainer::NodesContainer(const Graph& graph)
+    : m_has_node(graph.get_number_of_nodes(), false) {}
 
 void NodesContainer::add_node(size_t node_id) {
     DOMUS_ASSERT(!has_node(node_id), "NodesContainer::add_node: node already exists");
@@ -23,7 +24,7 @@ void NodesContainer::erase(size_t node_id) {
     m_number_of_nodes--;
 }
 
-NodesLabels::NodesLabels(const Graph& graph) { m_labels.resize(graph.size()); }
+NodesLabels::NodesLabels(const Graph& graph) { m_labels.resize(graph.get_number_of_nodes()); }
 
 void NodesLabels::add_label(size_t node_id, size_t label) {
     DOMUS_ASSERT(!has_label(node_id), "NodesLabels::add_label: node already has a label");
