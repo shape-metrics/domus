@@ -6,7 +6,11 @@
 
 #include "domus/orthogonal/drawing.hpp"
 
+namespace domus::graph {
 class Graph;
+}
+
+namespace domus::orthogonal {
 
 struct ShapeMetricsDrawing {
     OrthogonalDrawing drawing;
@@ -22,3 +26,5 @@ save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, std::files
 
 std::expected<ShapeMetricsDrawing, std::string>
 load_shape_metrics_drawing_from_file(std::filesystem::path path);
+
+} // namespace domus::orthogonal

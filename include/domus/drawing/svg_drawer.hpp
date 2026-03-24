@@ -13,6 +13,7 @@ struct Path2D;
 class Polygon2D;
 class Square2D;
 
+// TODO usare format non sstream?
 class SvgDrawer {
     std::stringstream m_svg;
     int m_width, m_height;

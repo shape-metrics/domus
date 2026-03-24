@@ -8,6 +8,8 @@
 #include "../core/domus_debug.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 
+namespace domus::planarity {
+
 const Graph& Embedding::get_graph() const { return m_graph; }
 
 Embedding::Embedding(const Graph& graph) : m_graph(graph) {
@@ -57,9 +59,18 @@ size_t Embedding::total_number_of_edges() const { return number_of_edges_m; }
 
 void Embedding::print() const { std::print("{}", to_string()); }
 
+struct edge_hash {
+    size_t operator()(const graph::Edge& edge) const {
+        size_t h1 = std::hash<size_t>{}(edge.from_id);
+        size_t h2 = std::hash<size_t>{}(edge.to_id);
+        size_t mult = h2 * 0x9e3779b9;
+        return h1 ^ (mult + (h1 << 6) + (h1 >> 2));
+    }
+};
+
 size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
     size_t number_of_faces = 0;
-    std::unordered_set<Edge, edge_hash> visited_edges; // visited oriented edges
+    std::unordered_set<graph::Edge, edge_hash> visited_edges; // visited oriented edges
     embedding.for_each_node([&](size_t node_id) {
         embedding.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (visited_edges.contains({node_id, neighbor_id}))
@@ -91,7 +102,7 @@ bool is_embedding_planar(const Embedding& embedding) {
 // This function verifies that for every edge from_id-to_id there is the edge to_id-from_id
 // It is intended to be used only for debug purposes
 bool Embedding::is_consistent() const {
-    std::unordered_set<Edge, edge_hash> edges;
+    std::unordered_set<graph::Edge, edge_hash> edges;
     for_each_node([this, &edges](size_t node_id) {
         for_each_neighbor(node_id, [&edges, node_id](size_t neighbor_id) {
             if (edges.contains({neighbor_id, node_id}))
@@ -130,7 +141,8 @@ size_t compute_embedding_genus(const Embedding& embedding) {
     size_t number_of_nodes = embedding.size();
     size_t number_of_edges = embedding.total_number_of_edges() / 2;
     size_t number_of_faces = compute_number_of_faces_in_embedding(embedding);
-    size_t connected_components = compute_number_of_connected_components(embedding.get_graph());
+    size_t connected_components =
+        graph::algorithms::compute_number_of_connected_components(embedding.get_graph());
     return compute_embedding_genus(
         number_of_nodes,
         number_of_edges,
@@ -138,3 +150,5 @@ size_t compute_embedding_genus(const Embedding& embedding) {
         connected_components
     );
 }
+
+} // namespace domus::planarity

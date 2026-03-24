@@ -10,7 +10,7 @@
 
 #include "../core/domus_debug.hpp"
 
-class Graph;
+namespace domus::orthogonal {
 
 auto build_index_to_nodes(const Graph& graph, const GraphAttributes& attributes) {
     const auto [node_to_index_x, node_to_index_y] =
@@ -137,3 +137,5 @@ void compact_area(const Graph& graph, GraphAttributes& attributes) {
         index_to_min_max_x[index].clear();
     }
 }
+
+} // namespace domus::orthogonal

@@ -21,7 +21,8 @@ class CircularSequence {
     size_t next_index(const size_t index) const;
     void remove_if_exists(size_t element);
     bool has_element(size_t element) const;
-    std::optional<size_t> element_position(size_t element) const;
+    std::optional<size_t>
+    element_position(size_t element) const; // TODO should use assert and return size_t
     size_t operator[](const size_t index) const;
     size_t at(const size_t index) const;
     void for_each(std::function<void(size_t)> func) const;

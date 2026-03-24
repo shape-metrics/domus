@@ -6,6 +6,8 @@
 
 #include "domus/core/graph/attributes.hpp"
 
+namespace domus::graph::loader {
+
 std::expected<Graph, std::string> load_graph_from_txt_file(std::filesystem::path path) {
     Graph graph;
     std::vector<size_t> nodes;
@@ -124,3 +126,5 @@ std::expected<void, std::string> save_graph_to_graphml_file(
     save_to_graphml(outfile, graph, attributes);
     return {};
 }
+
+} // namespace domus::graph::loader

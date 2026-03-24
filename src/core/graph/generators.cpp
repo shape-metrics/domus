@@ -6,6 +6,8 @@
 
 #include "../domus_debug.hpp"
 
+namespace domus::graph::generators {
+
 Graph generate_connected_random_graph_degree_max_4(
     const size_t number_of_nodes, const size_t number_of_edges
 ) {
@@ -33,7 +35,7 @@ Graph generate_connected_random_graph_degree_max_4(
         graph.add_edge(i, j);
         ++added_edges;
     }
-    if (!is_graph_connected(graph))
+    if (!algorithms::is_graph_connected(graph))
         return generate_connected_random_graph_degree_max_4(number_of_nodes, number_of_edges);
     return graph;
 }
@@ -55,7 +57,7 @@ Graph generate_connected_random_graph(size_t number_of_nodes, size_t number_of_e
         graph.add_edge(i, j);
         ++added_edges;
     }
-    if (!is_graph_connected(graph))
+    if (!algorithms::is_graph_connected(graph))
         return generate_connected_random_graph(number_of_nodes, number_of_edges);
     return graph;
 }
@@ -94,3 +96,5 @@ Graph generate_triangle_graph(size_t num_nodes) {
     }
     return graph;
 }
+
+} // namespace domus::graph::generators

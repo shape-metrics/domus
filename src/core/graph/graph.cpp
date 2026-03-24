@@ -10,6 +10,8 @@
 
 #include "../domus_debug.hpp"
 
+using namespace domus::graph;
+
 bool Graph::has_node(size_t node_id) const { return node_id < get_number_of_nodes(); }
 
 void Graph::for_each_node(std::function<void(size_t)> f) const {
@@ -144,6 +146,18 @@ size_t Graph::remove_edge(size_t from_id, size_t to_id) {
     return edge_id;
 }
 
+Subdivision Graph::subdivide_edge(size_t edge_id) {
+    DOMUS_ASSERT(has_edge_id(edge_id), "Graph::subdivide_edge: edge does not exist");
+    const auto [from_id, to_id] = m_edges[edge_id]->edge;
+    remove_edge(edge_id);
+    const size_t in_between_id = add_node();
+
+    const size_t edge_from_between_id = add_edge(from_id, in_between_id);
+    const size_t edge_between_to_id = add_edge(in_between_id, to_id);
+    return {from_id, in_between_id, to_id, edge_from_between_id, edge_between_to_id};
+}
+
+// TODO fare in modo che dipenda dal nodo col grado minore tra i due
 void Graph::remove_edge(size_t edge_id) {
     DOMUS_ASSERT(has_edge_id(edge_id), "Graph::remove_edge: edge does not exist");
     auto [from_id, to_id] = m_edges[edge_id]->edge;
@@ -184,8 +198,9 @@ std::string Graph::to_string(bool undirected) const {
 
 void Graph::print(bool undirected) const { std::print("{}", to_string(undirected)); }
 
-std::string
-Graph::to_string(bool undirected, const NodesLabels& labels, const std::string_view name) const {
+std::string Graph::to_string(
+    bool undirected, const utilities::NodesLabels& labels, const std::string_view name
+) const {
     std::string result;
     auto out = std::back_inserter(result);
     std::format_to(out, "{}:\n", name);
@@ -213,4 +228,50 @@ Graph::to_string(bool undirected, const NodesLabels& labels, const std::string_v
         }
     });
     return result;
+}
+
+bool Graph::add_subdivision_to_cycle(const Subdivision& subdivision, Cycle& cycle) const {
+    DOMUS_ASSERT(
+        has_node(subdivision.from_id) && has_node(subdivision.to_id) &&
+            has_node(subdivision.in_between_id),
+        "Graph::add_subdivision_to_cycle: node does not exist"
+    );
+    DOMUS_ASSERT(
+        has_edge_id(subdivision.edge_between_to_id) &&
+            has_edge_id(subdivision.edge_from_between_id),
+        "Graph::add_subdivision_to_cycle: edge does not exist"
+    );
+    const size_t from_node_id = subdivision.from_id;
+    const size_t to_node_id = subdivision.to_id;
+    const size_t in_between_node_id = subdivision.in_between_id;
+
+    for (size_t i = 0; i < cycle.size(); ++i) {
+        const size_t node_id = cycle.node_id_at(i);
+        const size_t next_id = cycle.node_id_at(i + 1);
+
+        if (node_id == from_node_id && next_id == to_node_id) {
+            cycle.m_edges_ids[i] = subdivision.edge_from_between_id;
+            cycle.m_edges_ids.insert(
+                cycle.m_edges_ids.begin() + static_cast<long>(i + 1),
+                subdivision.edge_between_to_id
+            );
+            cycle.m_nodes_ids.insert(
+                cycle.m_nodes_ids.begin() + static_cast<long>(i + 1),
+                in_between_node_id
+            );
+            return true;
+        } else if (node_id == to_node_id && next_id == from_node_id) {
+            cycle.m_edges_ids[i] = subdivision.edge_between_to_id;
+            cycle.m_edges_ids.insert(
+                cycle.m_edges_ids.begin() + static_cast<long>(i + 1),
+                subdivision.edge_from_between_id
+            );
+            cycle.m_nodes_ids.insert(
+                cycle.m_nodes_ids.begin() + static_cast<long>(i + 1),
+                in_between_node_id
+            );
+            return true;
+        }
+    }
+    return false;
 }

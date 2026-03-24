@@ -5,7 +5,7 @@ project(DOMUS
     LANGUAGES C CXX
 )
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -97,7 +97,6 @@ set(COMMON_SRCS
     src/planarity/auslander_parter.cpp
     src/planarity/embedding.cpp
     src/planarity/interlacement.cpp
-    src/core/graph/palm_tree.cpp
 )
 
 add_library(core ${COMMON_SRCS})

@@ -9,10 +9,14 @@
 
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
-#include "domus/core/tree/tree.hpp"
 #include "domus/core/tree/tree_algorithms.hpp"
 
 #include "../domus_debug.hpp"
+
+namespace domus::graph::algorithms {
+using namespace domus::graph;
+using namespace domus::tree::algorithms;
+using namespace domus::graph::utilities;
 
 bool is_graph_connected(const Graph& graph) {
     if (graph.get_number_of_nodes() <= 1)
@@ -38,22 +42,32 @@ bool dfs_find_cycle(
     size_t node_id,
     const Graph& graph,
     NodesLabels& state,
-    NodesLabels& parent,
+    NodesLabels& child_to_parent_edge,
     std::optional<size_t>& cycle_start,
-    std::optional<size_t>& cycle_end
+    std::optional<size_t>& cycle_end,
+    std::optional<size_t>& last_edge_id
 ) {
     DOMUS_ASSERT(state.get_label(node_id) == 0, "dfs_find_cycle: visiting already visited node");
     state.update_label(node_id, 1); // mark as visiting
     bool found_cycle = false;
-    graph.for_each_out_neighbor(node_id, [&](size_t neighbor_id) {
+    graph.for_each_out_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
         if (found_cycle)
             return;
         if (state.get_label(neighbor_id) == 0) { // unvisited
-            parent.add_label(neighbor_id, node_id);
-            found_cycle = dfs_find_cycle(neighbor_id, graph, state, parent, cycle_start, cycle_end);
-        } else if (state.get_label(neighbor_id) == 1) {
+            child_to_parent_edge.add_label(neighbor_id, edge_id);
+            found_cycle = dfs_find_cycle(
+                neighbor_id,
+                graph,
+                state,
+                child_to_parent_edge,
+                cycle_start,
+                cycle_end,
+                last_edge_id
+            );
+        } else if (state.get_label(neighbor_id) == 1) { // found cycle
             cycle_start = neighbor_id;
             cycle_end = node_id;
+            last_edge_id = edge_id;
             found_cycle = true;
         }
     });
@@ -63,37 +77,53 @@ bool dfs_find_cycle(
 
 std::optional<Cycle> find_a_directed_cycle_in_graph(const Graph& graph) {
     NodesLabels state(graph); // 0 means unvisited
-    graph.for_each_node([&state](size_t node_id) { state.add_label(node_id, 0u); });
-    NodesLabels parent(graph);
+    for (size_t node_id : graph.get_node_ids())
+        state.add_label(node_id, 0u);
+    NodesLabels child_to_parent_edge(graph);
     std::optional<size_t> cycle_start = std::nullopt;
     std::optional<size_t> cycle_end = std::nullopt;
+    std::optional<size_t> last_edge_id = std::nullopt;
     std::optional<Cycle> cycle;
-    graph.for_each_node([&](size_t node_id) {
-        if (cycle.has_value())
-            return;
+    for (size_t node_id : graph.get_node_ids()) {
         if (state.get_label(node_id) == 0)
-            if (dfs_find_cycle(node_id, graph, state, parent, cycle_start, cycle_end)) {
-                std::vector<size_t> cycle_vec;
-                for (size_t v = cycle_end.value(); v != cycle_start; v = parent.get_label(v))
-                    cycle_vec.push_back(v);
-                cycle_vec.push_back(cycle_start.value());
-                std::ranges::reverse(cycle_vec);
-                cycle.emplace(cycle_vec);
+            if (dfs_find_cycle(
+                    node_id,
+                    graph,
+                    state,
+                    child_to_parent_edge,
+                    cycle_start,
+                    cycle_end,
+                    last_edge_id
+                )) {
+                size_t current_edge = child_to_parent_edge.get_label(*cycle_end);
+                GraphPath path;
+                while (true) {
+                    auto [prev_id, next_id] = graph.get_edge(current_edge);
+                    path.push_front(graph, next_id, current_edge);
+                    if (*cycle_start == prev_id)
+                        break;
+                    current_edge = child_to_parent_edge.get_label(prev_id);
+                }
+                path.push_back(graph, *cycle_end, *last_edge_id);
+                cycle.emplace(path);
+                return cycle;
             }
-    });
+    }
     return cycle;
 }
 
 std::vector<Cycle> compute_cycle_basis(const Graph& graph) {
     DOMUS_ASSERT(is_graph_connected(graph), "compute_cycle_basis: input graph is not connected");
-    const Tree spanning = *Tree::build_spanning_tree(graph);
+
+    const SpanningTree spanning_tree = *SpanningTree::compute(graph);
+    const Tree& spanning = spanning_tree.get_tree();
+    const NodesLabels& labels = spanning_tree.get_edge_ids();
+
     std::vector<Cycle> cycles;
-    graph.for_each_node([&](size_t node_id) {
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            if (node_id > neighbor_id)
-                return;
+    for (size_t node_id : graph.get_node_ids()) {
+        for (auto [edge_id, neighbor_id] : graph.get_out_edges(node_id)) {
             if (spanning.has_edge(node_id, neighbor_id))
-                return;
+                continue;
             size_t common_ancestor = compute_common_ancestor(spanning, node_id, neighbor_id);
             std::vector<size_t> path1 = get_path_from_root(spanning, node_id);
             std::vector<size_t> path2 = get_path_from_root(spanning, neighbor_id);
@@ -103,25 +133,30 @@ std::vector<Cycle> compute_cycle_basis(const Graph& graph) {
                 path1.pop_back();
             while (path2.back() != common_ancestor)
                 path2.pop_back();
-            std::ranges::reverse(path1);
-            path1.insert(path1.end(), path2.begin(), path2.end());
+
             path1.pop_back();
-            cycles.emplace_back(path1);
-        });
-    });
+            path2.pop_back();
+
+            GraphPath path;
+            for (size_t n_id : path1)
+                path.push_back(graph, n_id, labels.get_label(n_id));
+            path.push_front(graph, node_id, edge_id);
+            for (size_t n_id : path2)
+                path.push_front(graph, n_id, labels.get_label(n_id));
+            cycles.emplace_back(path);
+        }
+    }
     return cycles;
 }
 
 std::optional<std::vector<size_t>> make_topological_ordering(const Graph& graph) {
     NodesLabels in_degree(graph);
-    graph.for_each_node([&](size_t node_id) {
+    for (size_t node_id : graph.get_node_ids())
         in_degree.add_label(node_id, graph.get_in_degree_of_node(node_id));
-    });
     std::queue<size_t> queue;
-    graph.for_each_node([&](size_t node_id) {
+    for (size_t node_id : graph.get_node_ids())
         if (in_degree.get_label(node_id) == 0)
             queue.push(node_id);
-    });
     std::vector<size_t> topological_order;
     size_t count = 0;
     while (!queue.empty()) {
@@ -153,21 +188,20 @@ std::pair<std::vector<Graph>, NodesLabels> compute_connected_components(const Gr
                 visited.add_node(neighbor_id);
                 size_t new_node = component.add_node();
                 new_node_ids.add_label(neighbor_id, new_node);
+                explore_component(neighbor_id, component);
             }
             size_t new_neighbor_id = new_node_ids.get_label(neighbor_id);
             if (!component.are_neighbors(new_node_id, new_neighbor_id))
                 component.add_edge(new_node_id, new_neighbor_id);
-            if (!visited.has_node(neighbor_id))
-                explore_component(neighbor_id, component);
         });
     };
-    graph.for_each_node([&](size_t node_id) {
+    for (size_t node_id : graph.get_node_ids()) {
         if (!visited.has_node(node_id)) {
             size_t new_node_id = components.emplace_back().add_node();
             new_node_ids.add_label(node_id, new_node_id);
             explore_component(node_id, components.back());
         }
-    });
+    }
     return {std::move(components), std::move(new_node_ids)};
 }
 
@@ -189,12 +223,12 @@ size_t compute_number_of_connected_components(const Graph& graph) {
             }
         }
     };
-    graph.for_each_node([&](size_t node_id) {
+    for (size_t node_id : graph.get_node_ids()) {
         if (!visited.has_node(node_id)) {
             components++;
             explore_component(node_id);
         }
-    });
+    }
     return components;
 }
 
@@ -212,7 +246,7 @@ void dfs_bic_com(
     NodesLabels& old_to_new_nodes
 );
 
-BiconnectedComponents compute_biconnected_components(const Graph& graph) {
+BiconnectedComponents BiconnectedComponents::compute(const Graph& graph) {
     NodesLabels old_node_id_to_new_id(graph);
     NodesLabels prev_of_node(graph);
     NodesLabels low_point(graph);
@@ -222,12 +256,12 @@ BiconnectedComponents compute_biconnected_components(const Graph& graph) {
     size_t next_id_to_assign = 0;
     std::vector<Edge> edge_stack{};
     NodesLabels old_to_new_nodes(graph);
-    graph.for_each_node([&graph, &old_to_new_nodes](size_t node_id) {
+    for (size_t node_id : graph.get_node_ids()) {
         old_to_new_nodes.add_label(node_id, graph.get_number_of_nodes());
-    });
-    graph.for_each_node([&](size_t node_id) {
+    }
+    for (size_t node_id : graph.get_node_ids()) {
         if (old_node_id_to_new_id.has_label(node_id)) // node visited
-            return;
+            continue;
         dfs_bic_com(
             graph,
             node_id,
@@ -241,16 +275,16 @@ BiconnectedComponents compute_biconnected_components(const Graph& graph) {
             component_to_old_nodes,
             old_to_new_nodes
         );
-    });
+    }
     DOMUS_ASSERT(
         edge_stack.empty(),
         "compute_biconnected_components: some internal error took place"
     ); // assessing algorithm finished correctly
     std::vector<size_t> cut_vectices;
-    graph.for_each_node([&cut_vectices, &is_cut_vertex](size_t node_id) {
+    for (size_t node_id : graph.get_node_ids()) {
         if (is_cut_vertex.has_node(node_id))
             cut_vectices.push_back(node_id);
-    });
+    }
     BiconnectedComponents result{
         std::move(cut_vectices),
         std::move(components),
@@ -408,7 +442,7 @@ std::string BiconnectedComponents::to_string() const {
 
 void BiconnectedComponents::print() const { println("{}", to_string()); }
 
-bool bfs_bipartition(const Graph& graph, size_t node_id, Bipartition& bipartition) {
+bool dfs_bipartition(const Graph& graph, size_t node_id, Bipartition& bipartition) {
     bipartition.set_side(node_id, false);
     std::stack<size_t> stack;
     stack.push(node_id);
@@ -429,55 +463,49 @@ bool bfs_bipartition(const Graph& graph, size_t node_id, Bipartition& bipartitio
     return is_bipartite;
 }
 
-std::optional<Bipartition> compute_bipartition(const Graph& graph) {
+std::optional<Bipartition> Bipartition::compute(const Graph& graph) {
     Bipartition bipartition{graph};
-    bool is_bipartite = true;
-    graph.for_each_node([&](size_t node_id) {
-        if (!is_bipartite)
-            return;
+    for (size_t node_id : graph.get_node_ids())
         if (!bipartition.has_node(node_id))
-            if (!bfs_bipartition(graph, node_id, bipartition))
-                is_bipartite = false;
-    });
-    if (!is_bipartite)
-        return std::nullopt;
+            if (!dfs_bipartition(graph, node_id, bipartition))
+                return std::nullopt;
     return bipartition;
 }
 
 std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
     NodesContainer visited(graph);
-    NodesLabels parent(graph);
+    NodesLabels edge_to_parent(graph);
     std::optional<Cycle> found_cycle;
     std::function<void(size_t, int)> dfs = [&](size_t node_id, int parent_id) {
         if (found_cycle)
             return;
         visited.add_node(node_id);
-        parent.add_label(node_id, static_cast<size_t>(parent_id));
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
+        graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
             if (found_cycle)
                 return;
-            if (neighbor_id == static_cast<size_t>(parent_id))
+            if (parent_id != -1 && neighbor_id == static_cast<size_t>(parent_id))
                 return;
             if (visited.has_node(neighbor_id)) {
-                // reconstruct cycle from u to v
-                std::vector<size_t> cycle_vec;
                 size_t curr = node_id;
+                GraphPath path;
                 while (curr != neighbor_id) {
-                    cycle_vec.push_back(curr);
-                    curr = parent.get_label(curr);
+                    size_t e_id = edge_to_parent.get_label(curr);
+                    path.push_back(graph, curr, e_id);
+                    auto [u, v] = graph.get_edge(e_id);
+                    curr = (u == curr) ? v : u;
                 }
-                cycle_vec.push_back(neighbor_id);
-                found_cycle.emplace(cycle_vec);
+                path.push_back(graph, neighbor_id, edge_id);
+                found_cycle.emplace(path);
                 return;
             } else {
+                edge_to_parent.add_label(neighbor_id, edge_id);
                 dfs(neighbor_id, static_cast<int>(node_id));
             }
         });
     };
-    graph.for_each_node([&](size_t start_node_id) {
+    for (size_t start_node_id : graph.get_node_ids())
         if (!visited.has_node(start_node_id) && !found_cycle)
             dfs(start_node_id, -1);
-    });
     return found_cycle;
 }
 
@@ -529,3 +557,64 @@ std::string Bipartition::to_string() const {
 }
 
 void Bipartition::print() const { std::print("{}", to_string()); }
+
+std::optional<SpanningTree> SpanningTree::compute(const Graph& graph) {
+    if (graph.get_number_of_nodes() <= 1)
+        return std::nullopt;
+    NodesLabels edge_id_to_parent(graph);
+    std::stack<size_t> stack;
+    stack.push(0u);
+    edge_id_to_parent.add_label(0, 0);
+    size_t number_visited_nodes = 1;
+    while (!stack.empty()) {
+        size_t node_id = stack.top();
+        stack.pop();
+        graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
+            if (!edge_id_to_parent.has_label(neighbor_id)) {
+                edge_id_to_parent.add_label(neighbor_id, edge_id);
+                ++number_visited_nodes;
+                stack.push(neighbor_id);
+            }
+        });
+    }
+    if (number_visited_nodes != graph.get_number_of_nodes())
+        return std::nullopt;
+    Tree tree;
+    for (size_t node_id = 1; node_id < graph.get_number_of_nodes(); ++node_id)
+        tree.add_node();
+    for (size_t node_id = 1; node_id < graph.get_number_of_nodes(); ++node_id) {
+        size_t edge_id = edge_id_to_parent.get_label(node_id);
+        auto [from_id, to_id] = graph.get_edge(edge_id);
+        if (from_id == node_id)
+            tree.set_parent(node_id, to_id);
+        else
+            tree.set_parent(node_id, from_id);
+    }
+    return SpanningTree(std::move(tree), std::move(edge_id_to_parent));
+}
+
+const Tree& SpanningTree::get_tree() const { return m_tree; }
+
+const NodesLabels& SpanningTree::get_edge_ids() const { return m_edge_ids; }
+
+SpanningTree::SpanningTree(const Tree&& tree, const NodesLabels&& edge_ids)
+    : m_tree(tree), m_edge_ids(edge_ids) {}
+
+bool is_cycle_in_graph(const Graph& graph, const Cycle& cycle) {
+    for (size_t i = 0; i < cycle.size(); i++) {
+        const size_t cycle_node_id = cycle.node_id_at(i);
+        const size_t next_cycle_node_id = cycle.node_id_at(i + 1);
+        const size_t edge_id = cycle.edge_id_at(i);
+        if (!graph.are_neighbors(cycle_node_id, next_cycle_node_id))
+            return false;
+        const auto [from_id, to_id] = graph.get_edge(edge_id);
+        if (from_id == cycle_node_id && to_id == next_cycle_node_id)
+            continue;
+        if (from_id == next_cycle_node_id && to_id == cycle_node_id)
+            continue;
+        return false;
+    }
+    return true;
+}
+
+} // namespace domus::graph::algorithms

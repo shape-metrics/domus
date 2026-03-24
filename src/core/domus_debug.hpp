@@ -13,7 +13,7 @@
                 __VA_ARGS__ __VA_OPT__(, ) __FILE__,                                               \
                 __LINE__                                                                           \
             );                                                                                     \
-            std::abort();                                                                          \
+            std::terminate();                                                                      \
         }                                                                                          \
     } while (0)
 

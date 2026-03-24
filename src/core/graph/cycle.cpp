@@ -1,66 +1,67 @@
 
 #include "domus/core/graph/cycle.hpp"
 
+#include <algorithm>
 #include <format>
 #include <print>
 
 #include "../domus_debug.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 
-Cycle::Cycle(const Cycle& other) {
-    other.for_each([this](size_t node_id) { m_nodes_ids.append(node_id); });
-};
+namespace domus::graph {
+using GraphPath = domus::graph::utilities::GraphPath;
 
-Cycle& Cycle::operator=(const Cycle& other) {
-    if (this != &other) {
-        m_nodes_ids.clear();
-        other.for_each([this](size_t node_id) { m_nodes_ids.append(node_id); });
-    }
-    return *this;
+Cycle::Cycle(const GraphPath& path) {
+    DOMUS_ASSERT(
+        path.get_first_node_id() == path.get_last_node_id(),
+        "Cycle::Cycle: path is not a cycle"
+    );
+    path.for_each([this](size_t edge_id, size_t prev_node_id) {
+        m_nodes_ids.push_back(prev_node_id);
+        m_edges_ids.push_back(edge_id);
+    });
 }
 
 bool Cycle::empty() const { return m_nodes_ids.empty(); }
 
 size_t Cycle::size() const { return m_nodes_ids.size(); }
 
-void Cycle::insert(size_t index, size_t node_id) { m_nodes_ids.insert(index, node_id); }
-
-void Cycle::add_in_between_if_exists(
-    size_t node_id_1, size_t node_id_2, size_t in_between_node_id
-) {
-    DOMUS_ASSERT(node_id_1 != node_id_2, "Cycle::add_in_between_if_exists: elements are equal");
-    DOMUS_ASSERT(
-        !has_node(in_between_node_id),
-        "Cycle::add_in_between_if_exists: element already exists"
-    );
-    if (!has_node(node_id_1) || !has_node(node_id_2))
-        return;
-    size_t node_position_1 = node_position(node_id_1);
-    size_t node_position_2 = node_position(node_id_2);
-    if (at(node_position_1 + 1) == node_id_2)
-        insert(node_position_1, in_between_node_id);
-    else if (at(node_position_2 + 1) == node_id_1)
-        insert(node_position_2, in_between_node_id);
-}
-
-size_t Cycle::operator[](size_t index) const { return m_nodes_ids[index]; }
-
-size_t Cycle::at(size_t index) const { return m_nodes_ids.at(index); }
+size_t Cycle::node_id_at(size_t index) const { return m_nodes_ids[index % size()]; }
 
 std::string Cycle::to_string() const {
     std::string result;
     auto out = std::back_inserter(result);
     std::format_to(out, "Cycle: [ ");
-    for_each([&](size_t node_id) { std::format_to(out, "{} ", node_id); });
-    std::format_to(out, "]\n");
+    for (size_t i = 0; i < size(); ++i) {
+        size_t node_id = node_id_at(i);
+        size_t edge_id = edge_id_at(i);
+        std::format_to(out, "{} <{}> ", node_id, edge_id);
+    }
+    std::format_to(out, "{} ]\n", node_id_at(0));
     return result;
 }
 
-void Cycle::print() const { std::println("{}", to_string()); }
+void Cycle::print() const { std::print("{}", to_string()); }
 
-bool Cycle::has_node(size_t node_id) const { return m_nodes_ids.has_element(node_id); }
-
-size_t Cycle::node_position(size_t node_id) const {
-    return m_nodes_ids.element_position(node_id).value();
+bool Cycle::has_node(size_t node_id) const {
+    return std::ranges::find(m_nodes_ids, node_id) != m_nodes_ids.end();
 }
 
-void Cycle::for_each(std::function<void(size_t)> func) const { m_nodes_ids.for_each(func); }
+size_t Cycle::node_position(size_t node_id) const {
+    auto it = std::ranges::find(m_nodes_ids, node_id);
+    DOMUS_ASSERT(it != m_nodes_ids.end(), "Cycle::node_position: node {} is not in cycle", node_id);
+    return static_cast<size_t>(std::distance(m_nodes_ids.begin(), it));
+}
+
+void Cycle::for_each(std::function<void(size_t)> func) const {
+    for (size_t i = 0; i < size(); ++i)
+        func(node_id_at(i));
+}
+
+size_t Cycle::edge_id_at(size_t index) const { return m_edges_ids[index % size()]; }
+
+bool Cycle::has_edge_id(size_t edge_id) const {
+    return std::ranges::contains(m_edges_ids, edge_id);
+}
+
+} // namespace domus::graph

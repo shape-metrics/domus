@@ -4,6 +4,8 @@
 
 #include "../../core/domus_debug.hpp"
 
+namespace domus::orthogonal::shape {
+
 void Shape::set_direction(size_t edge_id, const Direction direction) {
     DOMUS_ASSERT(!contains(edge_id), "Shape::set_direction: direction already set");
     while (m_edge_id_to_direction.size() <= edge_id)
@@ -138,3 +140,5 @@ bool is_shape_valid(const Graph& graph, const Shape& shape) {
     });
     return is_valid;
 }
+
+} // namespace domus::orthogonal::shape

@@ -2,6 +2,8 @@
 
 #include <string>
 
+namespace domus::orthogonal {
+
 struct OrthogonalDrawing;
 
 size_t compute_total_edge_length(const OrthogonalDrawing& result);
@@ -34,3 +36,5 @@ struct OrthogonalStats {
 };
 
 OrthogonalStats compute_all_orthogonal_stats(const OrthogonalDrawing& result);
+
+} // namespace domus::orthogonal

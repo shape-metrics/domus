@@ -11,12 +11,16 @@
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/sat/cnf.hpp"
 #include "domus/sat/sat.hpp"
 
 #include "../../core/domus_debug.hpp"
 #include "clauses_functions.hpp"
 #include "variables_handler.hpp"
+
+namespace domus::orthogonal::shape {
+using namespace domus::graph::algorithms;
 
 Shape result_to_shape(
     const Graph& graph, const std::vector<int>& numbers, VariablesHandler& handler
@@ -28,16 +32,15 @@ Shape result_to_shape(
             handler.set_variable_value(static_cast<size_t>(-var), false);
     }
     Shape shape;
-    graph.for_each_node([&](size_t node_id) {
-        graph.for_each_out_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
-            Direction direction = handler.get_direction_of_edge(node_id, neighbor_id);
+    for (size_t node_id : graph.get_node_ids())
+        for (auto [edge_id, neighbor_id] : graph.get_out_edges(node_id)) {
+            Direction direction = handler.get_direction_of_edge(edge_id);
             shape.set_direction(edge_id, direction);
-        });
-    });
+        }
     return shape;
 }
 
-Edge find_edges_to_split(
+size_t find_edge_id_to_split(
     const std::vector<std::string>& proof_lines,
     std::mt19937& random_engine,
     const VariablesHandler& handler,
@@ -74,7 +77,7 @@ Edge find_edges_to_split(
     // pick one of the first two unit clauses
     size_t random_index = random_engine() % std::min(unit_clauses.size(), static_cast<size_t>(2));
     size_t variable = static_cast<size_t>(std::abs(unit_clauses[random_index]));
-    return handler.get_edge_of_variable(variable);
+    return handler.get_edge_id_of_variable(variable);
 }
 
 std::optional<Shape> build_shape_or_add_corner(
@@ -89,6 +92,15 @@ Shape build_shape(
 ) {
     const size_t seed = randomize ? std::random_device{}() : 42;
     std::mt19937 random_engine(seed);
+    DOMUS_ASSERT(
+        [&]() {
+            for (const Cycle& cycle : cycles)
+                if (!is_cycle_in_graph(graph, cycle))
+                    return false;
+            return true;
+        }(),
+        "build_shape: a cycle is not valid"
+    );
     std::optional<Shape> shape =
         build_shape_or_add_corner(graph, attributes, cycles, random_engine);
     while (!shape.has_value())
@@ -97,28 +109,18 @@ Shape build_shape(
 }
 
 void add_corner_inside_edge(
-    size_t from_id,
-    size_t to_id,
-    Graph& graph,
-    GraphAttributes& attributes,
-    std::vector<Cycle>& cycles
+    size_t edge_id, Graph& graph, GraphAttributes& attributes, std::vector<Cycle>& cycles
 ) {
-    DOMUS_ASSERT(graph.are_neighbors(from_id, to_id), "add_corner_inside_edge: not neighbors");
-    size_t new_node_id = graph.add_node();
-    attributes.set_node_color(new_node_id, Color::RED);
-    graph.remove_edge(from_id, to_id);
-    graph.add_edge(from_id, new_node_id);
-    graph.add_edge(to_id, new_node_id);
-    for (Cycle& cycle : cycles) {
-        if (!cycle.has_node(from_id) || !cycle.has_node(to_id))
-            continue;
-        size_t from_pos = cycle.node_position(from_id);
-        size_t to_pos = cycle.node_position(to_id);
-        if (cycle.at(from_pos + 1) == to_id)
-            cycle.insert(to_pos, new_node_id);
-        else if (cycle.at(to_pos + 1) == from_id)
-            cycle.insert(from_pos, new_node_id);
-    }
+    graph::Subdivision subdivision = graph.subdivide_edge(edge_id);
+    attributes.set_node_color(subdivision.in_between_id, Color::RED);
+    for (Cycle& cycle : cycles)
+        if (cycle.has_edge_id(edge_id)) {
+            graph.add_subdivision_to_cycle(subdivision, cycle);
+            DOMUS_ASSERT(
+                is_cycle_in_graph(graph, cycle),
+                "add_corner_inside_edge: after subdividing cycle is not valid"
+            );
+        }
 }
 
 std::optional<Shape> build_shape_or_add_corner(
@@ -134,15 +136,21 @@ std::optional<Shape> build_shape_or_add_corner(
     // cnf.add_comment("constraints nodes");
     add_nodes_constraints(graph, cnf, handler);
     // cnf.add_comment("constraints cycles");
-    add_cycles_constraints(cnf, cycles, handler);
+    add_cycles_constraints(graph, cnf, cycles, handler);
     const auto [result, numbers, proof_lines] = launch_glucose(cnf);
     if (result == SatSolverResultType::UNSAT) {
-        const auto [from_id, to_id] =
-            find_edges_to_split(proof_lines, random_engine, handler, cnf.get_number_of_variables());
-        add_corner_inside_edge(from_id, to_id, graph, attributes, cycles);
+        const size_t edge_id = find_edge_id_to_split(
+            proof_lines,
+            random_engine,
+            handler,
+            cnf.get_number_of_variables()
+        );
+        add_corner_inside_edge(edge_id, graph, attributes, cycles);
         return std::nullopt;
     }
     Shape shape = result_to_shape(graph, numbers, handler);
     DOMUS_ASSERT(is_shape_valid(graph, shape), "build_shape_or_add_corner: shape is not valid");
     return shape;
 }
+
+} // namespace domus::orthogonal::shape

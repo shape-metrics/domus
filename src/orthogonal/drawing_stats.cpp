@@ -14,11 +14,13 @@
 #include "domus/core/utils.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
+namespace domus::orthogonal {
+
 std::vector<size_t> compute_edge_lengths(const Graph& graph, const GraphAttributes& attributes) {
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     std::vector<size_t> edge_lengths;
-    NodesContainer visited(graph);
+    graph::utilities::NodesContainer visited(graph);
     graph.for_each_node([&](size_t node_id) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
             return;
@@ -94,7 +96,7 @@ std::vector<size_t> compute_bends_counts(const Graph& graph, const GraphAttribut
     graph.for_each_node([&](size_t node_id) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
             return;
-        NodesContainer visited(graph);
+        graph::utilities::NodesContainer visited(graph);
         std::function<void(size_t, size_t, size_t, size_t)> dfs =
             [&](size_t current, size_t black, size_t count, size_t previous_id) {
                 visited.add_node(current);
@@ -251,7 +253,7 @@ size_t compute_total_crossings(const OrthogonalDrawing& result) {
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     size_t total_crossings = 0;
-    std::vector<Edge> edges;
+    std::vector<graph::Edge> edges;
     graph.for_each_node([&](size_t node_id) {
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (neighbor_id < node_id)
@@ -310,3 +312,5 @@ std::string OrthogonalStats::to_string() const {
 }
 
 void OrthogonalStats::print() const { std::print("{}", to_string()); }
+
+} // namespace domus::orthogonal

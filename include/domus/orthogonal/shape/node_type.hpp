@@ -6,6 +6,8 @@ enum class NodeType { VERTEX, BEND, MINI_BEND };
 
 class NodesTypesImpl;
 
+// TODO usare questa invece di usare i colori del GraphAttributes per rappresentare i corner
+// TODO cambiare implementazione (non serve map e memory)
 class NodesTypes {
     std::unique_ptr<NodesTypesImpl> m_nodes_types;
 

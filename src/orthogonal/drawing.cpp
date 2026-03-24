@@ -14,6 +14,8 @@
 
 #include "../nlohmann/json.hpp"
 
+namespace domus::orthogonal {
+
 using json = nlohmann::json;
 
 std::expected<void, std::string>
@@ -83,13 +85,13 @@ load_orthogonal_drawing_from_file(std::filesystem::path path) {
             return std::unexpected("load_orthogonal_drawing_from_file: invalid graph");
     for (const auto& edge_arr : data.at("edges"))
         result.augmented_graph.add_edge(edge_arr[0], edge_arr[1]);
-    result.attributes.add_attribute(Attribute::NODES_COLOR);
+    result.attributes.add_attribute(graph::Attribute::NODES_COLOR);
     for (auto& [id_str, color_str] : data.at("node_colors").items()) {
         std::string color = std::string(color_str);
         size_t id = static_cast<size_t>(std::stoi(id_str));
         result.attributes.set_node_color(id, string_to_color(color));
     }
-    result.attributes.add_attribute(Attribute::NODES_POSITION);
+    result.attributes.add_attribute(graph::Attribute::NODES_POSITION);
     for (auto& [id_str, pos_arr] : data.at("node_positions").items()) {
         size_t id = static_cast<size_t>(std::stoi(id_str));
         result.attributes.set_position(id, pos_arr[0], pos_arr[1]);
@@ -120,15 +122,19 @@ make_svg(const Graph& graph, const GraphAttributes& attributes, std::filesystem:
     SvgDrawer drawer{width, height};
     auto scale_x = ScaleLinear(min_x - 100, max_x + 100, 0, width);
     auto scale_y = ScaleLinear(min_y - 100, max_y + 100, 0, height);
-    std::unordered_map<size_t, Point2D> points;
+    std::vector<std::unique_ptr<Point2D>> points;
+    points.resize(graph.get_number_of_nodes());
     graph.for_each_node([&](size_t node_id) {
         const double x = scale_x.map(attributes.get_position_x(node_id));
         const double y = scale_y.map(attributes.get_position_y(node_id));
-        points.emplace(node_id, Point2D(x, y));
+        while (points.size() <= node_id) {
+            points.push_back(nullptr);
+        }
+        points[node_id].reset(new Point2D(x, y));
     });
     graph.for_each_node([&](size_t node_id) {
         graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            Line2D line(points.at(node_id), points.at(neighbor_id));
+            Line2D line(*points.at(node_id), *points.at(neighbor_id));
             drawer.add(line);
         });
     });
@@ -152,7 +158,9 @@ make_svg(const Graph& graph, const GraphAttributes& attributes, std::filesystem:
                 : static_cast<size_t>(
                       ceil(25 * sqrt(static_cast<double>(graph.get_degree_of_node(node_id) - 3)))
                   );
-        Square2D square{points.at(node_id), static_cast<double>(side)};
+        // TODO fare in modo che le dimensioni dei nodi nei disegni dipendano dalla porta con piu
+        // archi uscenti nel grafo shaped
+        Square2D square{*points.at(node_id), static_cast<double>(side)};
         square.setColor(color_to_string(color));
         square.setColor("cornflowerblue");
         square.setLabel(std::to_string(node_id));
@@ -222,3 +230,5 @@ compute_node_to_index_position(const Graph& graph, const GraphAttributes& attrib
         }) | std::ranges::to<std::vector<size_t>>()
     );
 }
+
+} // namespace domus::orthogonal

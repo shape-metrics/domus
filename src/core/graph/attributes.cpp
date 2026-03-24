@@ -7,6 +7,8 @@
 
 #include "../domus_debug.hpp"
 
+namespace domus::graph {
+
 class GraphAttributesImpl {
     std::unordered_map<Attribute, std::unordered_map<size_t, std::any>> mattribute_to_node;
     bool has_attribute_by_id(Attribute attribute, size_t id) const;
@@ -279,3 +281,5 @@ void GraphAttributes::remove_position(size_t node_id) {
 }
 
 GraphAttributes::~GraphAttributes() = default;
+
+} // namespace domus::graph

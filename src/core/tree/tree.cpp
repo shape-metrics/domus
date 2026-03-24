@@ -1,15 +1,13 @@
 #include "domus/core/tree/tree.hpp"
 
 #include <print>
-#include <stack>
-
-#include "domus/core/graph/graph.hpp"
-#include "domus/core/graph/graph_utilities.hpp"
 
 #include "../domus_debug.hpp"
 
+namespace domus::tree {
+
 void Tree::for_each_node(std::function<void(size_t)> f) const {
-    for (size_t node_id = 0; node_id < size(); ++node_id)
+    for (size_t node_id = 0; node_id < get_number_of_nodes(); ++node_id)
         f(node_id);
 }
 
@@ -37,21 +35,25 @@ bool Tree::has_edge(size_t node_id_1, size_t node_id_2) const {
 size_t Tree::get_parent(size_t node_id) const {
     DOMUS_ASSERT(has_node(node_id), "Tree::get_parent: node does not exist");
     DOMUS_ASSERT(!is_root(node_id), "Tree::get_parent: node is root");
-    return m_nodeid_to_parentid.at(node_id);
+    DOMUS_ASSERT(
+        m_nodeid_to_parentid.at(node_id).has_value(),
+        "Tree::get_parent: node has no parent yet"
+    );
+    return *m_nodeid_to_parentid.at(node_id);
 }
 
-bool Tree::has_node(size_t id) const { return id < size(); }
+bool Tree::has_node(size_t id) const { return id < get_number_of_nodes(); }
 
 size_t Tree::add_node(size_t parent_id) {
     DOMUS_ASSERT(has_node(parent_id), "Tree::add_node: parent node does not exist");
-    size_t new_node_id = size();
+    size_t new_node_id = get_number_of_nodes();
     m_nodeid_to_parentid.push_back(parent_id);
     m_nodeid_to_childrenid.push_back({});
     m_nodeid_to_childrenid.at(parent_id).push_back(new_node_id);
     return new_node_id;
 }
 
-size_t Tree::size() const { return m_nodeid_to_parentid.size(); }
+size_t Tree::get_number_of_nodes() const { return m_nodeid_to_parentid.size(); }
 
 std::string Tree::to_string() const {
     std::string result;
@@ -71,34 +73,23 @@ std::string Tree::to_string() const {
 
 void Tree::print() const { println("{}", to_string()); }
 
-std::optional<Tree> Tree::build_spanning_tree(const Graph& graph) {
-    if (graph.get_number_of_nodes() <= 1)
-        return std::nullopt;
-    NodesLabels parent(graph);
-    std::stack<size_t> stack;
-    stack.push(0u);
-    parent.add_label(stack.top(), graph.get_number_of_nodes());
-    size_t number_visited_nodes = 1;
-    while (!stack.empty()) {
-        size_t node_id = stack.top();
-        stack.pop();
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            if (!parent.has_label(neighbor_id)) {
-                parent.add_label(neighbor_id, node_id);
-                ++number_visited_nodes;
-                stack.push(neighbor_id);
-            }
-        });
-    }
-    if (number_visited_nodes != graph.get_number_of_nodes())
-        return std::nullopt;
-    Tree tree;
-    tree.m_nodeid_to_childrenid.resize(graph.get_number_of_nodes());
-    tree.m_nodeid_to_parentid.reserve(graph.get_number_of_nodes());
-    tree.m_nodeid_to_parentid.push_back(graph.get_number_of_nodes());
-    for (size_t node_id = 1; node_id < graph.get_number_of_nodes(); ++node_id) {
-        tree.m_nodeid_to_parentid.push_back(parent.get_label(node_id));
-        tree.m_nodeid_to_childrenid.at(parent.get_label(node_id)).push_back(node_id);
-    }
-    return tree;
+size_t Tree::add_node() {
+    m_nodeid_to_childrenid.push_back({});
+    m_nodeid_to_parentid.push_back(std::nullopt);
+    return get_number_of_nodes() - 1;
 }
+
+bool Tree::has_parent(size_t node_id) const {
+    DOMUS_ASSERT(has_node(node_id), "Tree::has_parent: node does not exist");
+    return m_nodeid_to_parentid.at(node_id).has_value();
+}
+
+void Tree::set_parent(size_t child_id, size_t parent_id) {
+    DOMUS_ASSERT(has_node(child_id), "Tree::set_parent: child node does not exist");
+    DOMUS_ASSERT(has_node(parent_id), "Tree::set_parent: parent node does not exist");
+    DOMUS_ASSERT(!has_parent(child_id), "Tree::set_parent: child node already has a parent");
+    m_nodeid_to_parentid.at(child_id) = parent_id;
+    m_nodeid_to_childrenid.at(parent_id).push_back(child_id);
+}
+
+} // namespace domus::tree

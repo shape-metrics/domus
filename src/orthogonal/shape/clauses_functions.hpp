@@ -3,10 +3,15 @@
 #include <vector>
 
 class Cnf;
+namespace domus::graph {
 class Cycle;
 class Graph;
-class VariablesHandler;
+} // namespace domus::graph
 enum class Direction;
+
+namespace domus::orthogonal::shape {
+using Graph = graph::Graph;
+class VariablesHandler;
 
 // each edge can only be in one direction
 void add_constraints_one_direction_per_edge(
@@ -34,5 +39,10 @@ void add_one_edge_per_direction_clauses(
 void add_nodes_constraints(const Graph& graph, Cnf& cnf_builder, const VariablesHandler& handler);
 
 void add_cycles_constraints(
-    Cnf& cnf_builder, const std::vector<Cycle>& cycles, const VariablesHandler& handler
+    const Graph& graph,
+    Cnf& cnf_builder,
+    const std::vector<graph::Cycle>& cycles,
+    const VariablesHandler& handler
 );
+
+} // namespace domus::orthogonal::shape

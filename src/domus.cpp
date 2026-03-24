@@ -10,8 +10,12 @@
 #include "domus/planarity/auslander_parter.hpp"
 #include "domus/planarity/embedding.hpp"
 
-int planarity() {
-    const auto graph = load_graph_from_txt_file("graph.txt");
+using namespace domus;
+using namespace domus::planarity;
+using namespace domus::orthogonal;
+
+int planarity_test() {
+    const auto graph = graph::loader::load_graph_from_txt_file("graph.txt");
     if (!graph) {
         println("{}", graph.error());
         return 1;
@@ -38,7 +42,7 @@ int main() {
     }
     std::string svg_filename = "drawing.svg";
     std::string input_graph_filename = "graph.txt";
-    const auto graph = load_graph_from_txt_file(input_graph_filename);
+    const auto graph = graph::loader::load_graph_from_txt_file(input_graph_filename);
     if (!graph) {
         println("{}", graph.error());
         return 1;
@@ -54,6 +58,6 @@ int main() {
     std::println("Initial number of cycles: {}", result->initial_number_of_cycles);
     std::println("Number of added cycles: {}", result->number_of_added_cycles);
     std::println("Number of useless bends: {}", result->number_of_useless_bends);
-    planarity();
+    planarity_test();
     return 0;
 }

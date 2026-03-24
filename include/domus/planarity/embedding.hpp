@@ -6,6 +6,9 @@
 #include "domus/core/circular_sequence.hpp"
 #include "domus/core/graph/graph.hpp"
 
+namespace domus::planarity {
+using Graph = domus::graph::Graph;
+
 class EmbeddingImpl;
 
 class Embedding {
@@ -40,3 +43,5 @@ size_t compute_embedding_genus(
 size_t compute_embedding_genus(const Embedding& embedding);
 
 bool is_embedding_planar(const Embedding& embedding);
+
+} // namespace domus::planarity

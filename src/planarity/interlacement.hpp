@@ -4,7 +4,13 @@
 
 #include "domus/core/graph/graph.hpp"
 
+namespace domus::graph {
 class Cycle;
+}
+
+namespace domus::planarity {
 class Segment;
 
-Graph compute_interlacement_graph(const std::vector<Segment>& segments, const Cycle& cycle);
+graph::Graph
+compute_interlacement_graph(const std::vector<Segment>& segments, const domus::graph::Cycle& cycle);
+} // namespace domus::planarity

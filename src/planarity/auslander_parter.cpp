@@ -1,8 +1,6 @@
 #include "domus/planarity/auslander_parter.hpp"
 
 #include <algorithm>
-#include <deque>
-#include <ranges>
 #include <utility>
 #include <vector>
 
@@ -15,6 +13,9 @@
 #include "domus/planarity/embedding.hpp"
 #include "interlacement.hpp"
 #include "segment.hpp"
+
+namespace domus::planarity {
+using namespace domus::graph::algorithms;
 
 /**
  * @brief if every biconnected component is embedded planarly, then merging them is straight forward
@@ -91,14 +92,14 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
         component.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (neighbor_in_between.has_value())
                 return;
-            if (cycle.at(position + 1) == neighbor_id ||
-                cycle.at(position + cycle.size() - 1) == neighbor_id)
+            if (cycle.node_id_at(position + 1) == neighbor_id ||
+                cycle.node_id_at(position + cycle.size() - 1) == neighbor_id)
                 return;
             neighbor_in_between = neighbor_id;
         });
-        embedding.add_edge(node_id, cycle.at(position + 1));
+        embedding.add_edge(node_id, cycle.node_id_at(position + 1));
         embedding.add_edge(node_id, neighbor_in_between.value());
-        embedding.add_edge(node_id, cycle.at(position + cycle.size() - 1));
+        embedding.add_edge(node_id, cycle.node_id_at(position + cycle.size() - 1));
     });
     DOMUS_ASSERT(
         is_embedding_planar(embedding),
@@ -108,28 +109,33 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
 }
 
 Cycle change_cycle_with_path(
-    const Cycle& cycle, const std::deque<size_t>& path, const std::optional<size_t> node_to_include
+    const Graph& graph,
+    const Cycle& cycle,
+    GraphPath& path,
+    const std::optional<size_t> node_to_include
 ) {
-    std::deque<size_t> nodes_copy(path); // newCycleList
-    size_t first_of_path = path.front();
-    size_t last_of_path = path.back();
+    GraphPath path_copy(path); // newCycleList
+    size_t first_of_path = path.get_first_node_id();
+    size_t last_of_path = path.get_last_node_id();
     size_t position = cycle.node_position(last_of_path);
-    size_t current = cycle.at(++position);
+    size_t curr_node_id = cycle.node_id_at(position);
+    size_t curr_edge_id = cycle.edge_id_at(position);
     bool foundNodeToInclude = !node_to_include.has_value();
-    while (current != first_of_path) {
-        nodes_copy.push_back(current);
-        if (!foundNodeToInclude && current == *node_to_include)
+    while (curr_node_id != first_of_path) {
+        path_copy.push_back(graph, curr_node_id, curr_edge_id);
+        if (!foundNodeToInclude && curr_node_id == *node_to_include)
             foundNodeToInclude = true;
-        current = cycle.at(++position);
+        curr_node_id = cycle.node_id_at(++position);
+        curr_edge_id = cycle.edge_id_at(position);
     }
     if (!foundNodeToInclude) {
-        const std::deque reversed_path(path.rbegin(), path.rend());
-        return change_cycle_with_path(cycle, reversed_path, node_to_include);
+        path.reverse();
+        return change_cycle_with_path(graph, cycle, path, node_to_include);
     }
-    return Cycle(nodes_copy);
+    return Cycle(path_copy);
 }
 
-Cycle make_cycle_good(const Cycle& cycle, const Segment& segment) {
+Cycle make_cycle_good(const Graph& graph, const Cycle& cycle, const Segment& segment) {
     std::vector<size_t> attachments_to_use;
     for (size_t i = 0; i < cycle.size(); ++i) {
         if (attachments_to_use.size() == 3)
@@ -138,15 +144,25 @@ Cycle make_cycle_good(const Cycle& cycle, const Segment& segment) {
             continue;
         attachments_to_use.push_back(i);
     }
-    const std::deque<size_t> path =
+    const GraphPath path =
         compute_path_between_attachments(segment, attachments_to_use[0], attachments_to_use[1]);
-    auto& labels = segment.get_new_id_to_old_id();
-    const std::deque<size_t> path_old_ids =
-        path | std::views::transform([&](size_t node_id) { return labels.get_label(node_id); }) |
-        std::ranges::to<std::deque<size_t>>();
-    if (attachments_to_use.size() == 3)
-        return change_cycle_with_path(cycle, path_old_ids, labels.get_label(attachments_to_use[2]));
-    return change_cycle_with_path(cycle, path_old_ids, std::nullopt);
+    auto& nodes_labels = segment.get_new_id_to_old_id();
+    auto& edge_labels = segment.get_edge_labels();
+    GraphPath old_path;
+    path.for_each([&](size_t edge_id, size_t prev_node_id) {
+        size_t old_edge_id = edge_labels.get_label(edge_id);
+        size_t old_prev_node_id = nodes_labels.get_label(prev_node_id);
+        old_path.push_back(graph, old_prev_node_id, old_edge_id);
+    });
+    if (attachments_to_use.size() == 3) {
+        return change_cycle_with_path(
+            graph,
+            cycle,
+            old_path,
+            nodes_labels.get_label(attachments_to_use[2])
+        );
+    }
+    return change_cycle_with_path(graph, cycle, old_path, std::nullopt);
 }
 
 auto compute_min_and_max_segments_attachments(
@@ -297,7 +313,7 @@ void add_middle_edges(
             continue;
         neighbors_to_add.push_back(current);
     }
-    const size_t cycle_id = cycle[cycle_node_position];
+    const size_t cycle_id = cycle.node_id_at(cycle_node_position);
     if (compatible)
         for (size_t neighbor_id : neighbors_to_add) {
             const size_t old_neighbor_id = labels_to_old_ids.get_label(neighbor_id);
@@ -322,7 +338,7 @@ void add_edges_incident_to_cycle(
 ) {
     for (size_t cycle_node_position = 0; cycle_node_position < cycle.size();
          ++cycle_node_position) {
-        const size_t cycle_node_id = cycle[cycle_node_position];
+        const size_t cycle_node_id = cycle.node_id_at(cycle_node_position);
         std::vector<size_t> inside_segments{};
         std::vector<size_t> outside_segments{};
         for (size_t i = 0; i < segments.size(); ++i) {
@@ -350,8 +366,8 @@ void add_edges_incident_to_cycle(
             segments,
             cycle_node_position
         );
-        const size_t prev_cycle_node = cycle[cycle_node_position + cycle.size() - 1];
-        const size_t next_cycle_node = cycle[cycle_node_position + 1];
+        const size_t prev_cycle_node = cycle.node_id_at(cycle_node_position + cycle.size() - 1);
+        const size_t next_cycle_node = cycle.node_id_at(cycle_node_position + 1);
         output.add_edge(cycle_node_id, next_cycle_node);
         for (const size_t segment_index : inside_order) {
             const Embedding& embedding = embeddings[segment_index];
@@ -488,10 +504,10 @@ std::optional<Embedding> embed_biconnected_component(const Graph& component, con
         if (is_segment_a_path(segment))
             return base_case_component(component, cycle);
         // the chosen cycle is bad
-        return embed_biconnected_component(component, make_cycle_good(cycle, segment));
+        return embed_biconnected_component(component, make_cycle_good(component, cycle, segment));
     }
     const Graph interlacement_graph = compute_interlacement_graph(segments, cycle);
-    const std::optional<Bipartition> is_segment_inside = compute_bipartition(interlacement_graph);
+    const std::optional<Bipartition> is_segment_inside = Bipartition::compute(interlacement_graph);
     if (!is_segment_inside.has_value())
         return std::nullopt; // if no bipartition exists, the component is not planar
     std::vector<Embedding> embeddings;
@@ -526,7 +542,7 @@ std::optional<Embedding> embed_graph(const Graph& graph) {
         return base_case_graph(graph);
     if (graph.get_number_of_edges() / 2 > 3 * graph.get_number_of_nodes() - 6)
         return std::nullopt;
-    const BiconnectedComponents bic_comps = compute_biconnected_components(graph);
+    const BiconnectedComponents bic_comps = BiconnectedComponents::compute(graph);
     std::vector<Embedding> embeddings;
     for (const auto& component : bic_comps.get_components()) {
         std::optional<Embedding> embedding = embed_biconnected_component(component);
@@ -536,3 +552,5 @@ std::optional<Embedding> embed_graph(const Graph& graph) {
     }
     return merge_biconnected_components(graph, bic_comps, embeddings);
 }
+
+} // namespace domus::planarity

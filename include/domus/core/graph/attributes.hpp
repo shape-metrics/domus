@@ -5,6 +5,8 @@
 
 #include "domus/core/color.hpp"
 
+namespace domus::graph {
+
 enum class Attribute {
     NODES_COLOR,
     NODES_POSITION,
@@ -47,3 +49,5 @@ class GraphAttributes {
     void remove_position(size_t node_id);
     ~GraphAttributes();
 };
+
+} // namespace domus::graph

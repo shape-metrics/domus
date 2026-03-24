@@ -2,13 +2,14 @@
 
 #include <cstddef>
 #include <functional>
-#include <unordered_map>
 #include <utility>
 
 #include "domus/core/graph/graph_utilities.hpp"
-#include "domus/orthogonal/shape/shape.hpp"
 
 #include "../core/domus_debug.hpp"
+
+namespace domus::orthogonal {
+using Graph = graph::Graph;
 
 EquivalenceClasses::EquivalenceClasses(const Graph& graph) : m_elem_to_class(graph) {}
 
@@ -107,12 +108,7 @@ EquivalenceClasses::build(const Shape& shape, const Graph& graph) {
     return std::make_pair(std::move(equivalence_classes_x), std::move(equivalence_classes_y));
 }
 
-std::tuple<
-    Graph,
-    Graph,
-    std::unordered_map<Edge, Edge, edge_hash>,
-    std::unordered_map<Edge, Edge, edge_hash>>
-equivalence_classes_to_ordering(
+Ordering Ordering::build(
     const EquivalenceClasses& equivalence_classes_x,
     const EquivalenceClasses& equivalence_classes_y,
     const Graph& graph,
@@ -123,8 +119,8 @@ equivalence_classes_to_ordering(
 
     equivalence_classes_x.for_each_class([&ordering_x](size_t) { ordering_x.add_node(); });
     equivalence_classes_y.for_each_class([&ordering_y](size_t) { ordering_y.add_node(); });
-    std::unordered_map<Edge, Edge, edge_hash> ordering_x_edge_to_graph_edge;
-    std::unordered_map<Edge, Edge, edge_hash> ordering_y_edge_to_graph_edge;
+    EdgesLabels ordering_x_edge_to_graph_edge(ordering_x);
+    EdgesLabels ordering_y_edge_to_graph_edge(ordering_y);
 
     graph.for_each_node([&](size_t node_id) {
         graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
@@ -135,11 +131,9 @@ equivalence_classes_to_ordering(
                     return;
                 if (ordering_x.has_edge(node_class_x, neighbor_class_x))
                     return;
-                ordering_x.add_edge(node_class_x, neighbor_class_x);
-                ordering_x_edge_to_graph_edge[{node_class_x, neighbor_class_x}] = {
-                    node_id,
-                    neighbor_id
-                };
+                size_t ordering_edge_id = ordering_x.add_edge(node_class_x, neighbor_class_x);
+                ordering_x_edge_to_graph_edge.update_size(ordering_edge_id);
+                ordering_x_edge_to_graph_edge.add_label(ordering_edge_id, edge_id);
             } else if (shape.is_up(graph, edge_id, node_id, neighbor_id)) {
                 size_t node_class_y = equivalence_classes_y.get_class_of_elem(node_id);
                 size_t neighbor_class_y = equivalence_classes_y.get_class_of_elem(neighbor_id);
@@ -147,18 +141,40 @@ equivalence_classes_to_ordering(
                     return;
                 if (ordering_y.has_edge(node_class_y, neighbor_class_y))
                     return;
-                ordering_y.add_edge(node_class_y, neighbor_class_y);
-                ordering_y_edge_to_graph_edge[{node_class_y, neighbor_class_y}] = {
-                    node_id,
-                    neighbor_id
-                };
+                size_t ordering_edge_id = ordering_y.add_edge(node_class_y, neighbor_class_y);
+                ordering_y_edge_to_graph_edge.update_size(ordering_edge_id);
+                ordering_y_edge_to_graph_edge.add_label(ordering_edge_id, edge_id);
             }
         });
     });
-    return make_tuple(
+    return Ordering(
         std::move(ordering_x),
         std::move(ordering_y),
         std::move(ordering_x_edge_to_graph_edge),
         std::move(ordering_y_edge_to_graph_edge)
     );
 }
+
+const Graph& Ordering::get_ordering_x() const { return m_ordering_x; }
+
+const Graph& Ordering::get_ordering_y() const { return m_ordering_y; }
+
+const EdgesLabels& Ordering::get_ordering_x_edge_to_graph_edge() const {
+    return m_ordering_x_edge_to_graph_edge;
+}
+
+const EdgesLabels& Ordering::get_ordering_y_edge_to_graph_edge() const {
+    return m_ordering_y_edge_to_graph_edge;
+}
+
+Ordering::Ordering(
+    const Graph&& ordering_x,
+    const Graph&& ordering_y,
+    const EdgesLabels&& ordering_x_edge_to_graph_edge,
+    const EdgesLabels&& ordering_y_edge_to_graph_edge
+)
+    : m_ordering_x(ordering_x), m_ordering_y(ordering_y),
+      m_ordering_x_edge_to_graph_edge(ordering_x_edge_to_graph_edge),
+      m_ordering_y_edge_to_graph_edge(ordering_y_edge_to_graph_edge) {}
+
+} // namespace domus::orthogonal

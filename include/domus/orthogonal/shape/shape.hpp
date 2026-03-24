@@ -6,7 +6,12 @@
 
 #include "domus/orthogonal/shape/direction.hpp"
 
+namespace domus::graph {
 class Graph;
+}
+
+namespace domus::orthogonal::shape {
+using Graph = domus::graph::Graph;
 
 class Shape {
     std::vector<std::optional<Direction>> m_edge_id_to_direction;
@@ -42,3 +47,5 @@ class Shape {
 };
 
 bool is_shape_valid(const Graph& graph, const Shape& shape);
+
+} // namespace domus::orthogonal::shape

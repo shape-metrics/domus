@@ -7,6 +7,9 @@
 #include "../core/domus_debug.hpp"
 #include "segment.hpp"
 
+namespace domus::planarity {
+using Cycle = domus::graph::Cycle;
+
 std::vector<int> compute_cycle_labels(const Segment& segment, const Cycle& cycle) {
     std::vector<int> cycle_labels(cycle.size());
     int found_attachments = 0;
@@ -70,3 +73,5 @@ Graph compute_interlacement_graph(const std::vector<Segment>& segments, const Cy
     compute_conflicts(segments, cycle, interlacement_graph);
     return interlacement_graph;
 }
+
+} // namespace domus::planarity
