@@ -17,7 +17,10 @@ struct OrthogonalDrawing {
 };
 
 std::expected<void, std::string> make_svg(
-    const graph::Graph& graph, const graph::Attributes& attributes, std::filesystem::path path
+    const graph::Graph& graph,
+    const graph::Attributes& attributes,
+    const shape::Shape& shape,
+    std::filesystem::path path
 );
 
 std::expected<void, std::string>

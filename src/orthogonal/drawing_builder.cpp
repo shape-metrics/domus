@@ -61,7 +61,7 @@ const Path path_in_class(
     return path;
 }
 
-std::pair<size_t, size_t>
+inline std::pair<size_t, size_t>
 get_other_edge_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
     DOMUS_ASSERT(
         graph.get_degree_of_node(node_id) == 2,
@@ -84,7 +84,7 @@ get_other_edge_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
     return {other.value(), other_edge_id.value()};
 }
 
-size_t get_other_neighbor_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
+inline size_t get_other_neighbor_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
     return get_other_edge_id(graph, node_id, neighbor_id).first;
 }
 

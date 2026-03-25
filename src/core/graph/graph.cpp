@@ -157,7 +157,6 @@ Subdivision Graph::subdivide_edge(size_t edge_id) {
     return {from_id, in_between_id, to_id, edge_from_between_id, edge_between_to_id};
 }
 
-// TODO fare in modo che dipenda dal nodo col grado minore tra i due
 void Graph::remove_edge(size_t edge_id) {
     DOMUS_ASSERT(has_edge_id(edge_id), "Graph::remove_edge: edge does not exist");
     auto [from_id, to_id] = m_edges[edge_id]->edge;

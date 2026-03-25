@@ -23,7 +23,7 @@ class SvgDrawer {
 
   public:
     SvgDrawer(int width, int height);
-    void add(Square2D& square, int corner_radious = 0);
+    void add(Square2D& square, double corner_radious = 0);
     void add(Circle2D& circle);
     void add(Line2D& line, const std::string_view color = "black");
     void add(Polygon2D& polygon, const std::string_view color = "black");

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "domus/core/color.hpp"
+#include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/drawing/linear_scale.hpp"
 #include "domus/drawing/polygon.hpp"
@@ -14,6 +15,8 @@
 
 #include "../nlohmann/json.hpp"
 #include "domus/orthogonal/shape/direction.hpp"
+
+#include "../core/domus_debug.hpp"
 
 namespace domus::orthogonal {
 
@@ -107,8 +110,86 @@ load_orthogonal_drawing_from_file(std::filesystem::path path) {
     return result;
 }
 
-std::expected<void, std::string>
-make_svg(const Graph& graph, const Attributes& attributes, std::filesystem::path path) {
+size_t direction_to_index(Direction direction) {
+    switch (direction) {
+    case Direction::UP:
+        return 0;
+    case Direction::RIGHT:
+        return 1;
+    case Direction::DOWN:
+        return 2;
+    case Direction::LEFT:
+        return 3;
+    default:
+        return 4;
+    }
+}
+
+inline std::pair<size_t, size_t>
+get_other_edge_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
+    DOMUS_ASSERT(
+        graph.get_degree_of_node(node_id) == 2,
+        "get_other_neighbor_id: function only for degree 2 nodes"
+    );
+    std::optional<size_t> other;
+    std::optional<size_t> other_edge_id;
+    graph.for_each_edge(node_id, [&](size_t edge_id, size_t other_id) {
+        if (other.has_value())
+            return;
+        if (other_id != neighbor_id) {
+            other = other_id;
+            other_edge_id = edge_id;
+        }
+    });
+    DOMUS_ASSERT(
+        other.has_value(),
+        "get_other_neighbor_id: internal error happened, no other neighbor found for node"
+    );
+    return {other.value(), other_edge_id.value()};
+}
+
+inline size_t get_other_neighbor_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
+    return get_other_edge_id(graph, node_id, neighbor_id).first;
+}
+
+std::array<size_t, 4> nodes_at_direction(
+    const Graph& graph, size_t node_id, const shape::Shape& shape, const Attributes& attributes
+) {
+    std::array<size_t, 4> result{0, 0, 0, 0};
+    for (auto [edge_id, neighbor_id] : graph.get_edges(node_id)) {
+        Color color = attributes.get_node_color(neighbor_id);
+        if (color == Color::RED || color == Color::BLACK) {
+            size_t index =
+                direction_to_index(shape.get_direction(graph, edge_id, node_id, neighbor_id));
+            result[index] = result[index] + 1;
+            continue;
+        }
+        auto [other_id, other_edge_id] = get_other_edge_id(graph, neighbor_id, node_id);
+        size_t index =
+            direction_to_index(shape.get_direction(graph, other_edge_id, neighbor_id, other_id));
+        result[index] = result[index] + 1;
+    }
+    return result;
+}
+
+double
+compute_side_length(const Graph& graph, const shape::Shape& shape, const Attributes& attributes) {
+    size_t max_per_side = 0;
+    for (size_t node_id : graph.get_node_ids()) {
+        auto n_per_direction = nodes_at_direction(graph, node_id, shape, attributes);
+        size_t max = *std::max_element(n_per_direction.begin(), n_per_direction.end());
+        max_per_side = std::max(max_per_side, max);
+    }
+    std::println("{}", max_per_side);
+    return 20.0 + 6.0 * static_cast<double>(max_per_side);
+}
+
+std::expected<void, std::string> make_svg(
+    const Graph& graph,
+    const Attributes& attributes,
+    const shape::Shape& shape,
+    std::filesystem::path path
+) {
     int max_x = -INT_MAX;
     int max_y = -INT_MAX;
     graph.for_each_node([&](size_t node_id) {
@@ -142,6 +223,7 @@ make_svg(const Graph& graph, const Attributes& attributes, std::filesystem::path
             drawer.add(line);
         });
     });
+    const double side = compute_side_length(graph, shape, attributes);
     graph.for_each_node([&](size_t node_id) {
         Color color = attributes.get_node_color(node_id);
         if (color == Color::RED)
@@ -156,19 +238,11 @@ make_svg(const Graph& graph, const Attributes& attributes, std::filesystem::path
             return;
         if (color == Color::GREEN_DARK)
             return;
-        size_t side =
-            graph.get_degree_of_node(node_id) <= 4
-                ? 25
-                : static_cast<size_t>(
-                      ceil(25 * sqrt(static_cast<double>(graph.get_degree_of_node(node_id) - 3)))
-                  );
-        // TODO fare in modo che le dimensioni dei nodi nei disegni dipendano dalla porta con piu
-        // archi uscenti nel grafo shaped
-        Square2D square{*points.at(node_id), static_cast<double>(side)};
+        Square2D square{*points.at(node_id), side};
         square.setColor(color_to_string(color));
         square.setColor("cornflowerblue");
         square.setLabel(std::to_string(node_id));
-        drawer.add(square, 5);
+        drawer.add(square, side / 4);
     });
     return drawer.save_to_file(path);
 }

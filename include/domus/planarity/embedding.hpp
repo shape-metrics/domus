@@ -3,16 +3,13 @@
 #include <functional>
 #include <string>
 
-#include "domus/core/circular_sequence.hpp"
 #include "domus/core/graph/graph.hpp"
 
 namespace domus::planarity {
 
-class EmbeddingImpl;
-
 class Embedding {
     const graph::Graph& m_graph;
-    std::vector<CircularSequence> adjacency_list;
+    std::vector<std::vector<size_t>> adjacency_list;
     size_t number_of_edges_m = 0;
 
   public:

@@ -49,7 +49,13 @@ int main() {
     }
     graph->print(true);
     const auto result = make_orthogonal_drawing(*graph);
-    make_svg(result.drawing.augmented_graph, result.drawing.attributes, svg_filename).value();
+    make_svg(
+        result.drawing.augmented_graph,
+        result.drawing.attributes,
+        result.drawing.shape,
+        svg_filename
+    )
+        .value();
     stats::compute_all_orthogonal_stats(result.drawing).print();
     std::println("Initial number of cycles: {}", result.initial_number_of_cycles);
     std::println("Number of added cycles: {}", result.number_of_added_cycles);

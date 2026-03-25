@@ -16,7 +16,7 @@ SvgDrawer::SvgDrawer(int width, int height)
     m_svg << "x=\"0\" y=\"0\" fill=\"white\" />";
 }
 
-void SvgDrawer::add(Square2D& square, int corner_radious) {
+void SvgDrawer::add(Square2D& square, double corner_radious) {
     std::string color;
     if (square.hasColor())
         color = square.getColor().value();

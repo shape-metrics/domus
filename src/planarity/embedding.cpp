@@ -18,9 +18,14 @@ Embedding::Embedding(const Graph& graph) : m_graph(graph) {
 }
 
 size_t Embedding::next_element_in_adjacency_list(size_t node_id, size_t element) const {
-    const size_t pos = adjacency_list[node_id].element_position(element).value();
-
-    return adjacency_list[node_id][pos + 1];
+    auto it = std::find(adjacency_list[node_id].begin(), adjacency_list[node_id].end(), element);
+    DOMUS_ASSERT(
+        it != adjacency_list[node_id].end(),
+        "next_element_in_adjacency_list: element not in adjacency list"
+    );
+    if (it + 1 == adjacency_list[node_id].end())
+        return adjacency_list[node_id].front();
+    return *(++it);
 }
 
 size_t Embedding::get_node_degree(size_t node_id) const {
@@ -28,7 +33,7 @@ size_t Embedding::get_node_degree(size_t node_id) const {
 }
 
 void Embedding::add_edge(size_t from_id, size_t to_id) {
-    adjacency_list.at(from_id).append(to_id);
+    adjacency_list.at(from_id).push_back(to_id);
     number_of_edges_m++;
 }
 
@@ -53,7 +58,8 @@ void Embedding::for_each_node(std::function<void(size_t)> func) const {
 }
 
 void Embedding::for_each_neighbor(size_t node_id, std::function<void(size_t)> func) const {
-    adjacency_list.at(node_id).for_each(func);
+    for (size_t neighbor_id : adjacency_list.at(node_id))
+        func(neighbor_id);
 }
 
 size_t Embedding::total_number_of_edges() const { return number_of_edges_m; }
