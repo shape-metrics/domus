@@ -5,6 +5,7 @@
 #include "../../core/domus_debug.hpp"
 
 namespace domus::orthogonal::shape {
+using namespace graph;
 
 void Shape::set_direction(size_t edge_id, const Direction direction) {
     DOMUS_ASSERT(!contains(edge_id), "Shape::set_direction: direction already set");

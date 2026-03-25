@@ -2,6 +2,8 @@
 
 #include "../../core/domus_debug.hpp"
 
+namespace domus::orthogonal::shape {
+
 std::string direction_to_string(const Direction direction) {
     switch (direction) {
     case Direction::LEFT:
@@ -68,3 +70,5 @@ bool is_horizontal(Direction direction) {
 }
 
 bool is_vertical(Direction direction) { return !is_horizontal(direction); }
+
+} // namespace domus::orthogonal::shape

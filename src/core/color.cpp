@@ -2,6 +2,8 @@
 
 #include "domus_debug.hpp"
 
+namespace domus {
+
 std::string color_to_string(const Color color) {
     switch (color) {
     case Color::RED:
@@ -32,3 +34,5 @@ Color string_to_color(const std::string_view color) {
     DOMUS_ASSERT(false, "string_to_color: invalid color string");
     return Color::BLACK;
 }
+
+} // namespace domus

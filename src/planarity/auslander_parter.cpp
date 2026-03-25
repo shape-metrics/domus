@@ -5,9 +5,9 @@
 #include <vector>
 
 #include "domus/core/graph/cycle.hpp"
-#include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
+#include "domus/core/graph/path.hpp"
 
 #include "../core/domus_debug.hpp"
 #include "domus/planarity/embedding.hpp"
@@ -16,6 +16,7 @@
 
 namespace domus::planarity {
 using namespace domus::graph::algorithms;
+using namespace domus::graph::utilities;
 
 /**
  * @brief if every biconnected component is embedded planarly, then merging them is straight forward
@@ -109,12 +110,9 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
 }
 
 Cycle change_cycle_with_path(
-    const Graph& graph,
-    const Cycle& cycle,
-    GraphPath& path,
-    const std::optional<size_t> node_to_include
+    const Graph& graph, const Cycle& cycle, Path& path, const std::optional<size_t> node_to_include
 ) {
-    GraphPath path_copy(path); // newCycleList
+    Path path_copy(path); // newCycleList
     size_t first_of_path = path.get_first_node_id();
     size_t last_of_path = path.get_last_node_id();
     size_t position = cycle.node_position(last_of_path);
@@ -144,11 +142,11 @@ Cycle make_cycle_good(const Graph& graph, const Cycle& cycle, const Segment& seg
             continue;
         attachments_to_use.push_back(i);
     }
-    const GraphPath path =
+    const Path path =
         compute_path_between_attachments(segment, attachments_to_use[0], attachments_to_use[1]);
     auto& nodes_labels = segment.get_new_id_to_old_id();
     auto& edge_labels = segment.get_edge_labels();
-    GraphPath old_path;
+    Path old_path;
     path.for_each([&](size_t edge_id, size_t prev_node_id) {
         size_t old_edge_id = edge_labels.get_label(edge_id);
         size_t old_prev_node_id = nodes_labels.get_label(prev_node_id);

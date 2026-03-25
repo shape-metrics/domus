@@ -13,10 +13,13 @@
 #include "domus/drawing/svg_drawer.hpp"
 
 #include "../nlohmann/json.hpp"
+#include "domus/orthogonal/shape/direction.hpp"
 
 namespace domus::orthogonal {
 
 using json = nlohmann::json;
+using namespace domus::graph;
+using shape::Direction;
 
 std::expected<void, std::string>
 save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, std::filesystem::path path) {
@@ -97,7 +100,7 @@ load_orthogonal_drawing_from_file(std::filesystem::path path) {
         result.attributes.set_position(id, pos_arr[0], pos_arr[1]);
     }
     for (const auto& item : data.at("shape")) {
-        Direction direction = string_to_direction(item.at("dir"));
+        Direction direction = shape::string_to_direction(item.at("dir"));
         result.shape.set_direction(item.at("edge_id"), direction);
     }
     return result;

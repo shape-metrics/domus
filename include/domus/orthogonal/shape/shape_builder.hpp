@@ -11,11 +11,11 @@ class Graph;
 } // namespace domus::graph
 
 namespace domus::orthogonal::shape {
-using Graph = domus::graph::Graph;
-using Cycle = domus::graph::Cycle;
-using GraphAttributes = domus::graph::GraphAttributes;
 
 Shape build_shape(
-    Graph& graph, GraphAttributes& attributes, std::vector<Cycle>& cycles, bool randomize = false
+    graph::Graph& graph,
+    graph::GraphAttributes& attributes,
+    std::vector<graph::Cycle>& cycles,
+    bool randomize = false
 );
 } // namespace domus::orthogonal::shape

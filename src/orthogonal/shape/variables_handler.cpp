@@ -40,7 +40,7 @@ void VariablesHandler::add_edge_variables(size_t edge_id) {
     add_variable(edge_id, Direction::RIGHT);
 }
 
-VariablesHandler::VariablesHandler(const Graph& graph) {
+VariablesHandler::VariablesHandler(const graph::Graph& graph) {
     m_variable_to_edge_id.push_back(graph.get_number_of_edges());
     m_variable_to_direction.push_back(Direction::INVALID);
     m_variable_to_value.push_back(-1);

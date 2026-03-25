@@ -8,13 +8,14 @@
 #include <utility>
 #include <vector>
 
-#include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/utils.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
-namespace domus::orthogonal {
+namespace domus::orthogonal::stats {
+using namespace domus::graph;
+using OrthogonalDrawing = domus::orthogonal::OrthogonalDrawing;
 
 std::vector<size_t> compute_edge_lengths(const Graph& graph, const GraphAttributes& attributes) {
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
@@ -86,7 +87,7 @@ double compute_edge_length_std_dev(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
     const GraphAttributes& attributes = result.attributes;
     const std::vector<size_t> edge_lengths = compute_edge_lengths(graph, attributes);
-    return compute_stddev(edge_lengths);
+    return domus::utilities::compute_stddev(edge_lengths);
 }
 
 std::vector<size_t> compute_bends_counts(const Graph& graph, const GraphAttributes& attributes) {
@@ -149,7 +150,7 @@ size_t compute_max_bends_per_edge(const OrthogonalDrawing& result) {
 double compute_bends_std_dev(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
     const auto& attributes = result.attributes;
-    return compute_stddev(compute_bends_counts(graph, attributes));
+    return domus::utilities::compute_stddev(compute_bends_counts(graph, attributes));
 }
 
 size_t compute_total_area(const OrthogonalDrawing& result) {
@@ -313,4 +314,4 @@ std::string OrthogonalStats::to_string() const {
 
 void OrthogonalStats::print() const { std::print("{}", to_string()); }
 
-} // namespace domus::orthogonal
+} // namespace domus::orthogonal::stats

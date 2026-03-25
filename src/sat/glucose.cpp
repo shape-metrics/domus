@@ -15,7 +15,11 @@
 #include "glucose/src/SolverTypes.h"
 #include "glucose/src/Vec.h"
 
+namespace domus::sat {
+
 using namespace Glucose;
+
+using namespace cnf;
 
 void read_clause(const CnfRow& row, SimpSolver& S, vec<Lit>& lits) {
     int var;
@@ -85,3 +89,5 @@ SatSolverResult launch_glucose(const Cnf& cnf) {
     }
     return result;
 }
+
+} // namespace domus::sat

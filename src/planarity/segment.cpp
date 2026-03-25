@@ -9,6 +9,8 @@
 #include "../core/domus_debug.hpp"
 
 namespace domus::planarity {
+using namespace domus::graph;
+using namespace domus::graph::utilities;
 
 Segment::Segment(
     const Graph&& segment, const NodesLabels&& labels, const EdgesLabels&& edges_labels
@@ -56,7 +58,7 @@ bool is_segment_a_path(const Segment& segment) {
     return number_degree_3_nodes == 2;
 }
 
-GraphPath compute_path_between_attachments(
+Path compute_path_between_attachments(
     const Segment& segment, const size_t attachment_1, const size_t attachment_2
 ) {
     NodesLabels edge_id_to_prev(segment.get_segment());
@@ -82,7 +84,7 @@ GraphPath compute_path_between_attachments(
         if (edge_id_to_prev.has_label(attachment_2))
             break;
     }
-    GraphPath path;
+    Path path;
     size_t crawl = attachment_2;
     while (crawl != attachment_1) {
         size_t edge_id = edge_id_to_prev.get_label(crawl);

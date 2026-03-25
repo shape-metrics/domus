@@ -7,6 +7,8 @@
 #include <string>
 #include <string_view>
 
+namespace domus {
+
 class Config {
   public:
     virtual ~Config() = default;
@@ -19,3 +21,5 @@ class Config {
   protected:
     Config() = default;
 };
+
+} // namespace domus

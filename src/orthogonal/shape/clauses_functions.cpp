@@ -12,14 +12,17 @@
 #include "variables_handler.hpp"
 
 namespace domus::orthogonal::shape {
+using namespace sat::cnf;
+using namespace sat;
+using namespace graph;
 
 int get_variable(
     const Graph& graph,
     const VariablesHandler& handler,
-    size_t node_id,
-    size_t neighbor_id,
-    size_t edge_id,
-    Direction direction
+    const size_t node_id,
+    const size_t neighbor_id,
+    const size_t edge_id,
+    const Direction direction
 ) {
     auto [from_id, to_id] = graph.get_edge(edge_id);
     if (from_id == node_id && to_id == neighbor_id)

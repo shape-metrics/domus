@@ -14,6 +14,9 @@ extern "C" {
 #include "../core/memory_file.hpp"
 #include "domus/sat/cnf.hpp"
 
+namespace domus::sat {
+using namespace cnf;
+
 class KissatSolver {
   private:
     kissat* m_solver = nullptr;
@@ -97,3 +100,5 @@ std::expected<SatSolverResult, std::string> launch_kissat(const Cnf& cnf) {
         }
     );
 }
+
+} // namespace domus::sat

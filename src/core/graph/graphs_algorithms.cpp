@@ -9,6 +9,7 @@
 
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
+#include "domus/core/graph/path.hpp"
 #include "domus/core/tree/tree_algorithms.hpp"
 
 #include "../domus_debug.hpp"
@@ -17,6 +18,7 @@ namespace domus::graph::algorithms {
 using namespace domus::graph;
 using namespace domus::tree::algorithms;
 using namespace domus::graph::utilities;
+using namespace domus::tree;
 
 bool is_graph_connected(const Graph& graph) {
     if (graph.get_number_of_nodes() <= 1)
@@ -96,7 +98,7 @@ std::optional<Cycle> find_a_directed_cycle_in_graph(const Graph& graph) {
                     last_edge_id
                 )) {
                 size_t current_edge = child_to_parent_edge.get_label(*cycle_end);
-                GraphPath path;
+                Path path;
                 while (true) {
                     auto [prev_id, next_id] = graph.get_edge(current_edge);
                     path.push_front(graph, next_id, current_edge);
@@ -137,7 +139,7 @@ std::vector<Cycle> compute_cycle_basis(const Graph& graph) {
             path1.pop_back();
             path2.pop_back();
 
-            GraphPath path;
+            Path path;
             for (size_t n_id : path1)
                 path.push_back(graph, n_id, labels.get_label(n_id));
             path.push_front(graph, node_id, edge_id);
@@ -487,7 +489,7 @@ std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
                 return;
             if (visited.has_node(neighbor_id)) {
                 size_t curr = node_id;
-                GraphPath path;
+                Path path;
                 while (curr != neighbor_id) {
                     size_t e_id = edge_to_parent.get_label(curr);
                     path.push_back(graph, curr, e_id);

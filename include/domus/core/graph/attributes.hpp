@@ -1,7 +1,8 @@
 #pragma once
 
-#include <memory>
+#include <optional>
 #include <string>
+#include <vector>
 
 #include "domus/core/color.hpp"
 
@@ -19,17 +20,19 @@ enum class Attribute {
 
 std::string attribute_to_string(Attribute attribute);
 
-class GraphAttributesImpl;
-
 class GraphAttributes {
-    std::unique_ptr<GraphAttributesImpl> m_graph_attributes;
+    struct NodePosition {
+        int x_m;
+        int y_m;
+        NodePosition(int x, int y) : x_m(x), y_m(y) {}
+        bool operator==(const NodePosition& other) const {
+            return x_m == other.x_m && y_m == other.y_m;
+        }
+    };
+    std::optional<std::vector<std::optional<Color>>> m_nodes_color = std::nullopt;
+    std::optional<std::vector<std::optional<NodePosition>>> m_nodes_position = std::nullopt;
 
   public:
-    explicit GraphAttributes();
-    GraphAttributes(const GraphAttributes&) = delete;
-    GraphAttributes& operator=(const GraphAttributes&) = delete;
-    GraphAttributes(GraphAttributes&&) noexcept;
-    GraphAttributes& operator=(GraphAttributes&&) noexcept;
     bool has_attribute(Attribute attribute) const;
     void add_attribute(Attribute attribute);
     void remove_attribute(Attribute attribute);
@@ -47,7 +50,6 @@ class GraphAttributes {
     int get_position_y(size_t node_id) const;
     bool has_position(size_t node_id) const;
     void remove_position(size_t node_id);
-    ~GraphAttributes();
 };
 
 } // namespace domus::graph

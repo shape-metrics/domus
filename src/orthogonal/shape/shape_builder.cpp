@@ -20,7 +20,9 @@
 #include "variables_handler.hpp"
 
 namespace domus::orthogonal::shape {
-using namespace domus::graph::algorithms;
+using namespace graph::algorithms;
+using namespace sat;
+using namespace graph;
 
 Shape result_to_shape(
     const Graph& graph, const std::vector<int>& numbers, VariablesHandler& handler
@@ -130,7 +132,7 @@ std::optional<Shape> build_shape_or_add_corner(
     std::mt19937& random_engine
 ) {
     VariablesHandler handler(graph);
-    Cnf cnf{};
+    cnf::Cnf cnf{};
     // cnf.add_comment("constraints one direction per edge");
     add_constraints_one_direction_per_edge(graph, cnf, handler);
     // cnf.add_comment("constraints nodes");

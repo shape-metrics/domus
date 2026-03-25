@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+namespace domus::sat::cnf {
+
 enum class CnfRowType {
     CLAUSE,
     COMMENT,
@@ -30,3 +32,5 @@ class Cnf {
     const std::vector<CnfRow>& get_rows() const;
     void print() const;
 };
+
+} // namespace domus::sat::cnf

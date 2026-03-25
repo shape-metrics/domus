@@ -9,6 +9,7 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 
 namespace domus::planarity {
+using graph::Graph;
 
 const Graph& Embedding::get_graph() const { return m_graph; }
 

@@ -54,7 +54,7 @@ int main() {
         return 1;
     }
     make_svg(result->drawing.augmented_graph, result->drawing.attributes, svg_filename).value();
-    compute_all_orthogonal_stats(result->drawing).print();
+    stats::compute_all_orthogonal_stats(result->drawing).print();
     std::println("Initial number of cycles: {}", result->initial_number_of_cycles);
     std::println("Number of added cycles: {}", result->number_of_added_cycles);
     std::println("Number of useless bends: {}", result->number_of_useless_bends);

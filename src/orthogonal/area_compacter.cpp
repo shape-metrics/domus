@@ -11,6 +11,7 @@
 #include "../core/domus_debug.hpp"
 
 namespace domus::orthogonal {
+using namespace graph;
 
 auto build_index_to_nodes(const Graph& graph, const GraphAttributes& attributes) {
     const auto [node_to_index_x, node_to_index_y] =

@@ -6,9 +6,7 @@ class Graph;
 } // namespace domus::graph
 
 namespace domus::orthogonal {
-using Graph = domus::graph::Graph;
-using GraphAttributes = domus::graph::GraphAttributes;
 
-void compact_area(const Graph& graph, GraphAttributes& attributes);
+void compact_area(const graph::Graph& graph, graph::GraphAttributes& attributes);
 
 } // namespace domus::orthogonal

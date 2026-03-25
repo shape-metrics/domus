@@ -5,13 +5,13 @@
 #include <format>
 #include <print>
 
+#include "domus/core/graph/path.hpp"
+
 #include "../domus_debug.hpp"
-#include "domus/core/graph/graph_utilities.hpp"
 
 namespace domus::graph {
-using GraphPath = domus::graph::utilities::GraphPath;
 
-Cycle::Cycle(const GraphPath& path) {
+Cycle::Cycle(const Path& path) {
     DOMUS_ASSERT(
         path.get_first_node_id() == path.get_last_node_id(),
         "Cycle::Cycle: path is not a cycle"

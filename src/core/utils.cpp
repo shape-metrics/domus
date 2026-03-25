@@ -4,6 +4,8 @@
 #include <format>
 #include <fstream>
 
+namespace domus::utilities {
+
 std::expected<void, std::string>
 save_string_to_file(std::filesystem::path path, const std::string_view content) {
     std::ofstream outfile(path);
@@ -47,3 +49,5 @@ double compute_stddev(const std::vector<size_t>& values) {
     variance /= (size - 1.0);
     return std::sqrt(variance);
 }
+
+} // namespace domus::utilities

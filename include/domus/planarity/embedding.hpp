@@ -7,17 +7,16 @@
 #include "domus/core/graph/graph.hpp"
 
 namespace domus::planarity {
-using Graph = domus::graph::Graph;
 
 class EmbeddingImpl;
 
 class Embedding {
-    const Graph& m_graph;
+    const graph::Graph& m_graph;
     std::vector<CircularSequence> adjacency_list;
     size_t number_of_edges_m = 0;
 
   public:
-    explicit Embedding(const Graph& graph);
+    explicit Embedding(const graph::Graph& graph);
     void add_edge(size_t from_id, size_t to_id);
     size_t get_node_degree(size_t node_id) const;
     size_t next_element_in_adjacency_list(size_t node_id, size_t element) const;
@@ -27,7 +26,7 @@ class Embedding {
     size_t size() const;
     size_t total_number_of_edges() const;
     bool is_consistent() const;
-    const Graph& get_graph() const;
+    const graph::Graph& get_graph() const;
     void print() const;
 };
 

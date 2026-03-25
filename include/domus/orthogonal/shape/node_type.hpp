@@ -8,6 +8,7 @@ class NodesTypesImpl;
 
 // TODO usare questa invece di usare i colori del GraphAttributes per rappresentare i corner
 // TODO cambiare implementazione (non serve map e memory)
+// TODO aggiungere namespace
 class NodesTypes {
     std::unique_ptr<NodesTypesImpl> m_nodes_types;
 

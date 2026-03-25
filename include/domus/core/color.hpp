@@ -3,6 +3,8 @@
 #include <string>
 #include <string_view>
 
+namespace domus {
+
 enum class Color {
     RED,
     RED_SPECIAL,
@@ -19,3 +21,5 @@ enum class Color {
 std::string color_to_string(Color color);
 
 Color string_to_color(const std::string_view color);
+
+} // namespace domus

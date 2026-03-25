@@ -1,37 +1,8 @@
 #include "domus/core/graph/attributes.hpp"
 
-#include <any>
-#include <initializer_list>
-#include <ranges>
-#include <unordered_map>
-
 #include "../domus_debug.hpp"
 
 namespace domus::graph {
-
-class GraphAttributesImpl {
-    std::unordered_map<Attribute, std::unordered_map<size_t, std::any>> mattribute_to_node;
-    bool has_attribute_by_id(Attribute attribute, size_t id) const;
-
-  public:
-    bool has_attribute(Attribute attribute) const;
-    void add_attribute(Attribute attribute);
-    void remove_attribute(Attribute attribute);
-    void remove_nodes_attribute(size_t node_id);
-    // node color
-    void set_node_color(size_t node_id, Color color);
-    Color get_node_color(size_t node_id) const;
-    void change_node_color(size_t node_id, Color color);
-    // position
-    void set_position(size_t node_id, int x, int y);
-    void change_position(size_t node_id, int x, int y);
-    void change_position_x(size_t node_id, int x);
-    void change_position_y(size_t node_id, int y);
-    int get_position_x(size_t node_id) const;
-    int get_position_y(size_t node_id) const;
-    bool has_position(size_t node_id) const;
-    void remove_position(size_t node_id);
-};
 
 std::string attribute_to_string(Attribute attribute) {
     switch (attribute) {
@@ -45,241 +16,149 @@ std::string attribute_to_string(Attribute attribute) {
     }
 }
 
-struct NodePosition {
-    int x_m;
-    int y_m;
-    NodePosition(int x, int y) : x_m(x), y_m(y) {}
-    bool operator==(const NodePosition& other) const {
-        return x_m == other.x_m && y_m == other.y_m;
-    }
-};
-
-bool GraphAttributesImpl::has_attribute(const Attribute attribute) const {
-    return mattribute_to_node.contains(attribute);
-}
-
-void GraphAttributesImpl::add_attribute(const Attribute attribute) {
-    DOMUS_ASSERT(
-        !has_attribute(attribute),
-        "GraphAttributes::add_attribute: already has attribute"
-    );
-    mattribute_to_node[attribute] = {};
-}
-
-void GraphAttributesImpl::remove_attribute(const Attribute attribute) {
-    DOMUS_ASSERT(
-        has_attribute(attribute),
-        "GraphAttributes::remove_attribute: does not have attribute"
-    );
-    mattribute_to_node.erase(attribute);
-}
-
-void GraphAttributesImpl::remove_nodes_attribute(size_t node_id) {
-    for (auto nodes_attributes : mattribute_to_node | std::views::values)
-        nodes_attributes.erase(node_id);
-}
-
-bool GraphAttributesImpl::has_attribute_by_id(const Attribute attribute, size_t id) const {
-    DOMUS_ASSERT(
-        has_attribute(attribute),
-        "GraphAttributes::has_attribute_by_id: does not have attribute"
-    );
-    return mattribute_to_node.at(attribute).contains(id);
-}
-
-void GraphAttributesImpl::set_node_color(size_t node_id, const Color color) {
-    DOMUS_ASSERT(
-        !has_attribute_by_id(Attribute::NODES_COLOR, node_id),
-        "GraphAttributes::set_node_color: the node does not have a color"
-    );
-    mattribute_to_node.at(Attribute::NODES_COLOR)[node_id] = color;
-}
-
-Color GraphAttributesImpl::get_node_color(size_t node_id) const {
-    DOMUS_ASSERT(
-        has_attribute_by_id(Attribute::NODES_COLOR, node_id),
-        "GraphAttributes::get_node_color: the node does not have a color"
-    );
-    return std::any_cast<Color>(mattribute_to_node.at(Attribute::NODES_COLOR).at(node_id));
-}
-
-void GraphAttributesImpl::change_node_color(size_t node_id, const Color color) {
-    DOMUS_ASSERT(
-        has_attribute_by_id(Attribute::NODES_COLOR, node_id),
-        "GraphAttributes::change_node_color: the node does not have a color"
-    );
-    mattribute_to_node.at(Attribute::NODES_COLOR)[node_id] = color;
-}
-
-void GraphAttributesImpl::change_position(size_t node_id, const int x, const int y) {
-    DOMUS_ASSERT(
-        has_attribute(Attribute::NODES_POSITION),
-        "GraphAttributes::change_position: does not have NODES_POSITION attribute"
-    );
-    DOMUS_ASSERT(
-        has_position(node_id),
-        "GraphAttributes::change_position: node does not have a position"
-    );
-    auto& position =
-        std::any_cast<NodePosition&>(mattribute_to_node.at(Attribute::NODES_POSITION).at(node_id));
-    position.x_m = x;
-    position.y_m = y;
-}
-
-void GraphAttributesImpl::change_position_x(size_t node_id, const int x) {
-    DOMUS_ASSERT(
-        has_attribute(Attribute::NODES_POSITION),
-        "GraphAttributes::change_position_x: does not have NODES_POSITION attribute"
-    );
-    DOMUS_ASSERT(
-        has_position(node_id),
-        "GraphAttributes::change_position: node does not have a position"
-    );
-    auto& position =
-        std::any_cast<NodePosition&>(mattribute_to_node.at(Attribute::NODES_POSITION).at(node_id));
-    position.x_m = x;
-}
-
-void GraphAttributesImpl::change_position_y(size_t node_id, const int y) {
-    DOMUS_ASSERT(
-        has_attribute(Attribute::NODES_POSITION),
-        "GraphAttributes::change_position_y: does not have NODES_POSITION attribute"
-    );
-    DOMUS_ASSERT(
-        has_position(node_id),
-        "GraphAttributes::change_position_y: node does not have a position"
-    );
-    auto& position =
-        std::any_cast<NodePosition&>(mattribute_to_node.at(Attribute::NODES_POSITION).at(node_id));
-    position.y_m = y;
-}
-
-void GraphAttributesImpl::set_position(size_t node_id, const int x, const int y) {
-    DOMUS_ASSERT(
-        !has_position(node_id),
-        "GraphAttributes::set_position_x: node already has a position"
-    );
-    DOMUS_ASSERT(
-        has_attribute(Attribute::NODES_POSITION),
-        "GraphAttributes::set_position_x Does not have NODES_POSITION attribute"
-    );
-    mattribute_to_node[Attribute::NODES_POSITION][node_id] = NodePosition(x, y);
-}
-
-int GraphAttributesImpl::get_position_x(size_t node_id) const {
-    DOMUS_ASSERT(
-        has_attribute(Attribute::NODES_POSITION),
-        "GraphAttributes::get_position_x: does not have NODES_POSITION attribute"
-    );
-    DOMUS_ASSERT(
-        has_position(node_id),
-        "GraphAttributes::get_position_x: node does not have a position"
-    );
-    return std::any_cast<NodePosition>(mattribute_to_node.at(Attribute::NODES_POSITION).at(node_id))
-        .x_m;
-}
-
-int GraphAttributesImpl::get_position_y(size_t node_id) const {
-    DOMUS_ASSERT(
-        has_attribute(Attribute::NODES_POSITION),
-        "GraphAttributes::get_position_y: does not have NODES_POSITION attribute"
-    );
-    DOMUS_ASSERT(
-        has_position(node_id),
-        "GraphAttributes::get_position_y: node does not have a position"
-    );
-    return std::any_cast<NodePosition>(mattribute_to_node.at(Attribute::NODES_POSITION).at(node_id))
-        .y_m;
-}
-
-bool GraphAttributesImpl::has_position(size_t node_id) const {
-    DOMUS_ASSERT(
-        has_attribute(Attribute::NODES_POSITION),
-        "GraphAttributes::has_position: does not have NODES_POSITION attribute"
-    );
-    return mattribute_to_node.at(Attribute::NODES_POSITION).contains(node_id);
-}
-
-void GraphAttributesImpl::remove_position(size_t node_id) {
-    DOMUS_ASSERT(
-        has_attribute(Attribute::NODES_POSITION),
-        "GraphAttributes::remove_position: does not have NODES_POSITION attribute"
-    );
-    DOMUS_ASSERT(
-        has_position(node_id),
-        "NodesPositions::remove_position: node does not have a position"
-    );
-    mattribute_to_node.at(Attribute::NODES_POSITION).erase(node_id);
-}
-
-GraphAttributes::GraphAttributes() { m_graph_attributes = std::make_unique<GraphAttributesImpl>(); }
-
-GraphAttributes::GraphAttributes(GraphAttributes&&) noexcept = default;
-
-GraphAttributes& GraphAttributes::operator=(GraphAttributes&&) noexcept = default;
-
 bool GraphAttributes::has_attribute(Attribute attribute) const {
-    return m_graph_attributes->has_attribute(attribute);
+    switch (attribute) {
+    case Attribute::NODES_COLOR:
+        return m_nodes_color.has_value();
+    case Attribute::NODES_POSITION:
+        return m_nodes_position.has_value();
+    default:
+        DOMUS_ASSERT(false, "GraphAttributes::has_attribute: invalid attribute");
+        return false;
+    }
 }
 
 void GraphAttributes::add_attribute(Attribute attribute) {
-    m_graph_attributes->add_attribute(attribute);
+    DOMUS_ASSERT(
+        !has_attribute(attribute),
+        "GraphAttributes::add_attribute: attribute already exists"
+    );
+    switch (attribute) {
+    case Attribute::NODES_COLOR:
+        m_nodes_color = std::vector<std::optional<Color>>();
+        break;
+    case Attribute::NODES_POSITION:
+        m_nodes_position = std::vector<std::optional<NodePosition>>();
+        break;
+    default:
+        DOMUS_ASSERT(false, "GraphAttributes::add_attribute: invalid attribute");
+        break;
+    }
 }
 
 void GraphAttributes::remove_attribute(Attribute attribute) {
-    m_graph_attributes->remove_attribute(attribute);
+    DOMUS_ASSERT(
+        has_attribute(attribute),
+        "GraphAttributes::remove_attribute: attribute does not exist"
+    );
+    switch (attribute) {
+    case Attribute::NODES_COLOR:
+        m_nodes_color.reset();
+        break;
+    case Attribute::NODES_POSITION:
+        m_nodes_position.reset();
+        break;
+    default:
+        DOMUS_ASSERT(false, "GraphAttributes::remove_attribute: invalid attribute");
+        break;
+    }
 }
 
 void GraphAttributes::remove_nodes_attribute(size_t node_id) {
-    m_graph_attributes->remove_nodes_attribute(node_id);
+    if (has_attribute(Attribute::NODES_COLOR))
+        m_nodes_color->at(node_id) = std::nullopt;
+    if (has_attribute(Attribute::NODES_POSITION))
+        m_nodes_position->at(node_id) = std::nullopt;
 }
 
 // node color
 void GraphAttributes::set_node_color(size_t node_id, Color color) {
-    m_graph_attributes->set_node_color(node_id, color);
+    while (m_nodes_color->size() <= node_id)
+        m_nodes_color->push_back(std::nullopt);
+    DOMUS_ASSERT(
+        !m_nodes_color->at(node_id).has_value(),
+        "GraphAttributes::set_node_color: node already has a color"
+    );
+    m_nodes_color->at(node_id) = color;
 }
 
 Color GraphAttributes::get_node_color(size_t node_id) const {
-    return m_graph_attributes->get_node_color(node_id);
+    DOMUS_ASSERT(
+        m_nodes_color->at(node_id).has_value(),
+        "GraphAttributes::get_node_color: node does not have a color"
+    );
+    return m_nodes_color->at(node_id).value();
 }
 
 void GraphAttributes::change_node_color(size_t node_id, Color color) {
-    m_graph_attributes->change_node_color(node_id, color);
+    DOMUS_ASSERT(
+        m_nodes_color->at(node_id).has_value(),
+        "GraphAttributes::change_node_color: node does not have a color"
+    );
+    m_nodes_color->at(node_id) = color;
 }
 
 // position
 void GraphAttributes::set_position(size_t node_id, int x, int y) {
-    m_graph_attributes->set_position(node_id, x, y);
+    while (m_nodes_position->size() <= node_id)
+        m_nodes_position->push_back(std::nullopt);
+    DOMUS_ASSERT(
+        !m_nodes_position->at(node_id).has_value(),
+        "GraphAttributes::set_position: node already has a position"
+    );
+    m_nodes_position->at(node_id) = NodePosition(x, y);
 }
 
 void GraphAttributes::change_position(size_t node_id, int x, int y) {
-    m_graph_attributes->change_position(node_id, x, y);
+    DOMUS_ASSERT(
+        m_nodes_position->at(node_id).has_value(),
+        "GraphAttributes::change_position: node does not have a position"
+    );
+    m_nodes_position->at(node_id) = NodePosition(x, y);
 }
 
 void GraphAttributes::change_position_x(size_t node_id, int x) {
-    m_graph_attributes->change_position_x(node_id, x);
+    DOMUS_ASSERT(
+        m_nodes_position->at(node_id).has_value(),
+        "GraphAttributes::change_position_x: node does not have a position"
+    );
+    m_nodes_position->at(node_id)->x_m = x;
 }
 
 void GraphAttributes::change_position_y(size_t node_id, int y) {
-    m_graph_attributes->change_position_y(node_id, y);
+    DOMUS_ASSERT(
+        m_nodes_position->at(node_id).has_value(),
+        "GraphAttributes::change_position_y: node does not have a position"
+    );
+    m_nodes_position->at(node_id)->y_m = y;
 }
 
 int GraphAttributes::get_position_x(size_t node_id) const {
-    return m_graph_attributes->get_position_x(node_id);
+    DOMUS_ASSERT(
+        m_nodes_position->at(node_id).has_value(),
+        "GraphAttributes::get_position_x: node does not have a position"
+    );
+    return m_nodes_position->at(node_id)->x_m;
 }
 
 int GraphAttributes::get_position_y(size_t node_id) const {
-    return m_graph_attributes->get_position_y(node_id);
+    DOMUS_ASSERT(
+        m_nodes_position->at(node_id).has_value(),
+        "GraphAttributes::get_position_y: node does not have a position"
+    );
+    return m_nodes_position->at(node_id)->y_m;
 }
 
 bool GraphAttributes::has_position(size_t node_id) const {
-    return m_graph_attributes->has_position(node_id);
+    return m_nodes_position->at(node_id).has_value();
 }
 
 void GraphAttributes::remove_position(size_t node_id) {
-    m_graph_attributes->remove_position(node_id);
+    DOMUS_ASSERT(
+        m_nodes_position->at(node_id).has_value(),
+        "GraphAttributes::remove_position: node does not have a position"
+    );
+    m_nodes_position->at(node_id) = std::nullopt;
 }
-
-GraphAttributes::~GraphAttributes() = default;
 
 } // namespace domus::graph

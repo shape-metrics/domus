@@ -11,7 +11,6 @@ class Graph;
 }
 
 namespace domus::orthogonal::shape {
-using Graph = domus::graph::Graph;
 
 class Shape {
     std::vector<std::optional<Direction>> m_edge_id_to_direction;
@@ -19,16 +18,17 @@ class Shape {
   public:
     bool contains(size_t edge_id) const;
     Direction get_direction(size_t edge_id) const;
-    Direction get_direction(const Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const;
+    Direction
+    get_direction(const graph::Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const;
 
     bool is_up(size_t edge_id) const;
-    bool is_up(const Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const;
+    bool is_up(const graph::Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const;
     bool is_down(size_t edge_id) const;
-    bool is_down(const Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const;
+    bool is_down(const graph::Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const;
     bool is_right(size_t edge_id) const;
-    bool is_right(const Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const;
+    bool is_right(const graph::Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const;
     bool is_left(size_t edge_id) const;
-    bool is_left(const Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const;
+    bool is_left(const graph::Graph& graph, size_t edge_id, size_t from_id, size_t to_id) const;
 
     bool is_horizontal(size_t edge_id) const;
     bool is_vertical(size_t edge_id) const;
@@ -37,7 +37,7 @@ class Shape {
 
     void set_direction(size_t edge_id, Direction direction);
     void set_direction(
-        const Graph& graph, size_t edge_id, size_t from_id, size_t to_id, Direction direction
+        const graph::Graph& graph, size_t edge_id, size_t from_id, size_t to_id, Direction direction
     );
     void remove_direction(size_t edge_id);
     void update_direction(size_t edge_id, Direction direction);
@@ -46,6 +46,6 @@ class Shape {
     void print() const;
 };
 
-bool is_shape_valid(const Graph& graph, const Shape& shape);
+bool is_shape_valid(const graph::Graph& graph, const Shape& shape);
 
 } // namespace domus::orthogonal::shape

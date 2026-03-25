@@ -82,6 +82,7 @@ set(COMMON_SRCS
     src/core/graph/graphs_algorithms.cpp
     src/core/graph/graph.cpp
     src/core/graph/graph_utilities.cpp
+    src/core/graph/path.cpp
     src/core/graph/cycle.cpp
     src/core/graph/attributes.cpp
     src/core/graph/file_loader.cpp

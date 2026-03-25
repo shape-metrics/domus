@@ -2,6 +2,8 @@
 
 #include <print>
 
+namespace domus::sat {
+
 std::string SatSolverResult::to_string() const {
     std::string result_str;
     auto out = std::back_inserter(result_str);
@@ -16,3 +18,5 @@ std::string SatSolverResult::to_string() const {
 }
 
 void SatSolverResult::print() const { std::print("{}", to_string()); }
+
+} // namespace domus::sat

@@ -3,9 +3,8 @@
 #include <functional>
 #include <string>
 
-#include "domus/core/graph/graph_utilities.hpp"
-
 namespace domus::graph {
+class Path;
 
 class Cycle {
     friend class Graph;
@@ -13,7 +12,7 @@ class Cycle {
     std::vector<size_t> m_edges_ids;
 
   public:
-    Cycle(const utilities::GraphPath& path);
+    Cycle(const Path& path);
     bool empty() const;
     size_t size() const;
     // void insert(size_t index, size_t node_id);

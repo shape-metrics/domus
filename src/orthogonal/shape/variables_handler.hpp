@@ -10,8 +10,6 @@ class Graph;
 }
 
 namespace domus::orthogonal::shape {
-using Graph = domus::graph::Graph;
-
 class VariablesHandler {
     size_t m_next_var = 1; // 0 is reserved for the empty clause
     std::vector<size_t> m_variable_to_edge_id;
@@ -25,7 +23,7 @@ class VariablesHandler {
     void add_edge_variables(size_t edge_id);
 
   public:
-    VariablesHandler(const Graph& graph);
+    VariablesHandler(const graph::Graph& graph);
     size_t get_up_variable(size_t edge_id) const;
     size_t get_down_variable(size_t edge_id) const;
     size_t get_left_variable(size_t edge_id) const;

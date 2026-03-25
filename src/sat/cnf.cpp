@@ -9,6 +9,8 @@
 #include <print>
 #include <utility>
 
+namespace domus::sat::cnf {
+
 const std::string project_path = std::filesystem::current_path().string() + "/";
 const std::string cnf_logs_file = "cnf_logs.txt";
 std::mutex cnf_logs_mutex;
@@ -69,3 +71,5 @@ std::string Cnf::to_string() const {
 void Cnf::print() const { println("{}", to_string()); }
 
 const std::vector<CnfRow>& Cnf::get_rows() const { return m_rows; }
+
+} // namespace domus::sat::cnf

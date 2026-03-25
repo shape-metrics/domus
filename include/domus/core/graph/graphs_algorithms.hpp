@@ -10,7 +10,6 @@
 #include "domus/core/tree/tree.hpp"
 
 namespace domus::graph::algorithms {
-using Tree = domus::tree::Tree;
 
 bool is_graph_connected(const Graph& graph);
 std::pair<std::vector<Graph>, utilities::NodesLabels>
@@ -18,12 +17,12 @@ compute_connected_components(const Graph& graph);
 size_t compute_number_of_connected_components(const Graph& graph);
 
 class SpanningTree {
-    const Tree m_tree;
+    const domus::tree::Tree m_tree;
     const utilities::NodesLabels m_edge_ids;
-    SpanningTree(const Tree&& tree, const utilities::NodesLabels&& edges_ids);
+    SpanningTree(const domus::tree::Tree&& tree, const utilities::NodesLabels&& edges_ids);
 
   public:
-    const Tree& get_tree() const;
+    const domus::tree::Tree& get_tree() const;
     const utilities::NodesLabels& get_edge_ids() const;
 
     static std::optional<SpanningTree> compute(const Graph& graph);

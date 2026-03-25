@@ -3,6 +3,8 @@
 #include <fstream>
 #include <unordered_map>
 
+namespace domus {
+
 class ConfigImpl final : public Config {
     std::unordered_map<std::string, std::string> m_map;
 
@@ -38,3 +40,5 @@ std::expected<std::unique_ptr<Config>, std::string> Config::create(std::filesyst
             return std::make_unique<ConfigImpl>(std::move(map));
         });
 }
+
+} // namespace domus

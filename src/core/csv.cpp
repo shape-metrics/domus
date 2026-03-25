@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 
+namespace domus {
+
 std::vector<std::string> parse_csv_line(const std::string_view line, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
@@ -55,3 +57,5 @@ std::expected<CSVData, std::string> parse_csv(std::filesystem::path path) {
     file.close();
     return data;
 }
+
+} // namespace domus

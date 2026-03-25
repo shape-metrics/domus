@@ -4,7 +4,10 @@
 #include <string>
 #include <vector>
 
+namespace domus::sat {
+namespace cnf {
 class Cnf;
+}
 
 enum class SatSolverResultType { SAT, UNSAT };
 
@@ -16,6 +19,8 @@ struct SatSolverResult {
     void print() const;
 };
 
-SatSolverResult launch_glucose(const Cnf& cnf);
+SatSolverResult launch_glucose(const cnf::Cnf& cnf);
 
-std::expected<SatSolverResult, std::string> launch_kissat(const Cnf& cnf);
+std::expected<SatSolverResult, std::string> launch_kissat(const cnf::Cnf& cnf);
+
+} // namespace domus::sat
