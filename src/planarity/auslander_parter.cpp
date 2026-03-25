@@ -85,11 +85,11 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
             "base_case_component: node has degree different from 3"
         );
         DOMUS_ASSERT(
-            cycle.has_node(node_id),
+            cycle.has_node_id(node_id),
             "base_case_component: cycle does not contain the node with degree 3"
         );
         std::optional<size_t> neighbor_in_between;
-        size_t position = cycle.node_position(node_id);
+        size_t position = cycle.node_id_position(node_id);
         component.for_each_neighbor(node_id, [&](size_t neighbor_id) {
             if (neighbor_in_between.has_value())
                 return;
@@ -115,7 +115,7 @@ Cycle change_cycle_with_path(
     Path path_copy(path); // newCycleList
     size_t first_of_path = path.get_first_node_id();
     size_t last_of_path = path.get_last_node_id();
-    size_t position = cycle.node_position(last_of_path);
+    size_t position = cycle.node_id_position(last_of_path);
     size_t curr_node_id = cycle.node_id_at(position);
     size_t curr_edge_id = cycle.edge_id_at(position);
     bool foundNodeToInclude = !node_to_include.has_value();

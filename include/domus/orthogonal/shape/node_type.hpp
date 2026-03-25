@@ -1,27 +1,23 @@
 #pragma once
 
-#include <memory>
+#include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 
-enum class NodeType { VERTEX, BEND, MINI_BEND };
+namespace domus::orthogonal::shape {
 
-class NodesTypesImpl;
+enum class NodeType { VERTEX, BEND, MINI_BEND, INVALID };
 
 // TODO usare questa invece di usare i colori del GraphAttributes per rappresentare i corner
-// TODO cambiare implementazione (non serve map e memory)
-// TODO aggiungere namespace
 class NodesTypes {
-    std::unique_ptr<NodesTypesImpl> m_nodes_types;
+    graph::utilities::NodesLabels m_nodes_types;
 
   public:
-    explicit NodesTypes();
-    NodesTypes(const NodesTypes&) = delete;
-    NodesTypes& operator=(const NodesTypes&) = delete;
-    NodesTypes(NodesTypes&&) noexcept;
-    NodesTypes& operator=(NodesTypes&&) noexcept;
+    NodesTypes(const graph::Graph& graph);
     void set_node_type(size_t node_id, NodeType type);
     NodeType get_node_type(size_t node_id) const;
     void change_node_type(size_t node_id, NodeType type);
     void remove_node_type(size_t node_id);
     bool has_node_type(size_t node_id) const;
-    ~NodesTypes();
 };
+
+} // namespace domus::orthogonal::shape

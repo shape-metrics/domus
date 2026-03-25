@@ -83,14 +83,11 @@ size_t find_edge_id_to_split(
 }
 
 std::optional<Shape> build_shape_or_add_corner(
-    Graph& graph,
-    GraphAttributes& attributes,
-    std::vector<Cycle>& cycles,
-    std::mt19937& random_engine
+    Graph& graph, Attributes& attributes, std::vector<Cycle>& cycles, std::mt19937& random_engine
 );
 
 Shape build_shape(
-    Graph& graph, GraphAttributes& attributes, std::vector<Cycle>& cycles, const bool randomize
+    Graph& graph, Attributes& attributes, std::vector<Cycle>& cycles, const bool randomize
 ) {
     const size_t seed = randomize ? std::random_device{}() : 42;
     std::mt19937 random_engine(seed);
@@ -111,7 +108,7 @@ Shape build_shape(
 }
 
 void add_corner_inside_edge(
-    size_t edge_id, Graph& graph, GraphAttributes& attributes, std::vector<Cycle>& cycles
+    size_t edge_id, Graph& graph, Attributes& attributes, std::vector<Cycle>& cycles
 ) {
     graph::Subdivision subdivision = graph.subdivide_edge(edge_id);
     attributes.set_node_color(subdivision.in_between_id, Color::RED);
@@ -126,10 +123,7 @@ void add_corner_inside_edge(
 }
 
 std::optional<Shape> build_shape_or_add_corner(
-    Graph& graph,
-    GraphAttributes& attributes,
-    std::vector<Cycle>& cycles,
-    std::mt19937& random_engine
+    Graph& graph, Attributes& attributes, std::vector<Cycle>& cycles, std::mt19937& random_engine
 ) {
     VariablesHandler handler(graph);
     cnf::Cnf cnf{};

@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+namespace domus::drawing {
+
 class Point2D {
   public:
     double x_m, y_m;
@@ -80,3 +82,5 @@ class Square2D {
     bool hasColor() const;
     std::optional<std::string> getColor() const;
 };
+
+} // namespace domus::drawing

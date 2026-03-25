@@ -73,6 +73,7 @@ set(COMMON_SRCS
     src/orthogonal/shape/clauses_functions.cpp
     src/orthogonal/shape/node_type.cpp
     src/orthogonal/area_compacter.cpp
+    src/orthogonal/loader.cpp
     src/orthogonal/equivalence_classes.cpp
     src/orthogonal/drawing.cpp
     src/drawing/polygon.cpp

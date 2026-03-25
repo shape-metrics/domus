@@ -6,7 +6,7 @@
 
 namespace domus::graph {
 class Cycle;
-class GraphAttributes;
+class Attributes;
 class Graph;
 } // namespace domus::graph
 
@@ -14,7 +14,7 @@ namespace domus::orthogonal::shape {
 
 Shape build_shape(
     graph::Graph& graph,
-    graph::GraphAttributes& attributes,
+    graph::Attributes& attributes,
     std::vector<graph::Cycle>& cycles,
     bool randomize = false
 );

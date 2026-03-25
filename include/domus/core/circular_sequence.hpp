@@ -4,6 +4,7 @@
 #include <optional>
 #include <vector>
 
+// TODO remove?
 class CircularSequence {
     std::vector<size_t> m_elements{};
 

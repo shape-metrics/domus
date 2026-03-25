@@ -7,6 +7,8 @@
 
 #include "domus/drawing/linear_scale.hpp"
 
+namespace domus::drawing {
+
 class Circle2D;
 class Line2D;
 struct Path2D;
@@ -29,3 +31,5 @@ class SvgDrawer {
     void add_and_smooth(Path2D& path, const std::string_view color = "black");
     std::expected<void, std::string> save_to_file(std::filesystem::path path);
 };
+
+} // namespace domus::drawing

@@ -19,6 +19,7 @@ namespace domus::orthogonal {
 
 using json = nlohmann::json;
 using namespace domus::graph;
+using namespace domus::drawing;
 using shape::Direction;
 
 std::expected<void, std::string>
@@ -37,7 +38,7 @@ save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, std::filesystem
         });
     });
     data["edges"] = edges;
-    const GraphAttributes& attributes = result.attributes;
+    const Attributes& attributes = result.attributes;
 
     graph.for_each_node([&data, &attributes](size_t node_id) {
         std::string s_id = std::to_string(node_id);
@@ -107,7 +108,7 @@ load_orthogonal_drawing_from_file(std::filesystem::path path) {
 }
 
 std::expected<void, std::string>
-make_svg(const Graph& graph, const GraphAttributes& attributes, std::filesystem::path path) {
+make_svg(const Graph& graph, const Attributes& attributes, std::filesystem::path path) {
     int max_x = -INT_MAX;
     int max_y = -INT_MAX;
     graph.for_each_node([&](size_t node_id) {
@@ -177,7 +178,7 @@ int min_coordinate(std::map<int, std::vector<size_t>>& coordinate_to_nodes) {
 }
 
 std::pair<std::vector<size_t>, std::vector<size_t>>
-compute_node_to_index_position(const Graph& graph, const GraphAttributes& attributes) {
+compute_node_to_index_position(const Graph& graph, const Attributes& attributes) {
     constexpr int THRESHOLD = 45;
     std::map<int, std::vector<size_t>> coordinate_y_to_nodes;
     graph.for_each_node([&](size_t node_id) {

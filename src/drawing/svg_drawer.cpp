@@ -6,6 +6,8 @@
 
 #include "domus/drawing/polygon.hpp"
 
+namespace domus::drawing {
+
 SvgDrawer::SvgDrawer(int width, int height)
     : m_width(width), m_height(height), m_scale_y(0, height, height, 0) {
     m_svg << "<svg height=\"" << m_height << "\" width=\"" << m_width << "\" ";
@@ -83,3 +85,5 @@ std::expected<void, std::string> SvgDrawer::save_to_file(std::filesystem::path p
     svgFile << "</svg>" << std::endl;
     return {};
 }
+
+} // namespace domus::drawing

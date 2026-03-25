@@ -106,7 +106,7 @@ void dfs_find_segments(
     nodes_in_segment.push_back(node_id);
     is_node_visited.add_node(node_id);
     for (const auto [edge_id, neighbor_id] : graph.get_edges(node_id)) {
-        if (cycle.has_node(neighbor_id)) {
+        if (cycle.has_node_id(neighbor_id)) {
             edges_in_segment.emplace_back(edge_id, graph::Edge{node_id, neighbor_id});
             continue;
         }
@@ -195,7 +195,7 @@ void Segment::find_segments(
     NodesContainer visited(graph);
     for (size_t node_id : graph.get_node_ids()) {
         old_id_to_new_id.add_label(node_id, graph.get_number_of_nodes());
-        if (cycle.has_node(node_id))
+        if (cycle.has_node_id(node_id))
             visited.add_node(node_id);
     }
     for (size_t node_id : graph.get_node_ids())
@@ -249,7 +249,7 @@ void Segment::find_chords(
         for (const auto [edge_id, neighbor_id] : graph.get_edges(node_id)) {
             if (node_id < neighbor_id)
                 continue;
-            if (cycle.has_node(neighbor_id))
+            if (cycle.has_node_id(neighbor_id))
                 if (neighbor_id != prev_node_id && neighbor_id != next_node_id) {
                     segments.push_back(
                         Segment::build_chord(node_id, neighbor_id, edge_id, cycle, old_id_to_new_id)

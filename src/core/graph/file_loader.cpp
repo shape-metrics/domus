@@ -69,7 +69,7 @@ void write_data_tag(std::ostream& os, std::string key_id, std::string value) {
     os << "    <data key=\"" << key_id << "\">" << value << "</data>\n";
 }
 
-void save_to_graphml(std::ostream& os, const Graph& graph, const GraphAttributes& attributes) {
+void save_to_graphml(std::ostream& os, const Graph& graph, const Attributes& attributes) {
     os << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
     os << "<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\"\n";
     os << "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n";
@@ -115,7 +115,7 @@ void save_to_graphml(std::ostream& os, const Graph& graph, const GraphAttributes
 }
 
 std::expected<void, std::string> save_graph_to_graphml_file(
-    const Graph& graph, const GraphAttributes& attributes, std::filesystem::path path
+    const Graph& graph, const Attributes& attributes, std::filesystem::path path
 ) {
     std::ofstream outfile(path);
     if (!outfile) {

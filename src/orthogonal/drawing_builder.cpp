@@ -1,11 +1,9 @@
 #include "domus/orthogonal/drawing_builder.hpp"
 
 #include <algorithm>
-#include <fstream>
 #include <functional>
 #include <limits.h>
 #include <optional>
-#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -23,7 +21,6 @@
 #include "domus/orthogonal/shape/shape_builder.hpp"
 
 #include "../core/domus_debug.hpp"
-#include "../nlohmann/json.hpp"
 #include "equivalence_classes.hpp"
 
 namespace domus::orthogonal {
@@ -164,8 +161,8 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
 }
 
 // useless bends are red nodes with two horizontal or vertical edges
-std::tuple<Graph, GraphAttributes, Shape>
-remove_useless_bends(const Graph& graph, const GraphAttributes& attributes, const Shape& shape) {
+std::tuple<Graph, Attributes, Shape>
+remove_useless_bends(const Graph& graph, const Attributes& attributes, const Shape& shape) {
     std::vector<bool> kept_nodes(graph.get_number_of_nodes(), true);
     for (size_t node_id : graph.get_node_ids()) {
         if (attributes.get_node_color(node_id) == Color::BLACK)
@@ -199,7 +196,7 @@ remove_useless_bends(const Graph& graph, const GraphAttributes& attributes, cons
         }
     }
     Shape new_shape;
-    GraphAttributes new_attributes;
+    Attributes new_attributes;
     new_attributes.add_attribute(Attribute::NODES_COLOR);
     new_graph.for_each_node([&](size_t new_node_id) {
         size_t old_node_id = new_id_to_old_id.get_label(new_node_id);
@@ -233,7 +230,7 @@ remove_useless_bends(const Graph& graph, const GraphAttributes& attributes, cons
 
 ShapeMetricsDrawing make_orthogonal_drawing_incremental(Graph& graph, std::vector<Cycle>& cycles);
 
-std::expected<ShapeMetricsDrawing, std::string> make_orthogonal_drawing(const Graph& graph) {
+ShapeMetricsDrawing make_orthogonal_drawing(const Graph& graph) {
     Graph augmented_graph;
     for (size_t i = 0; i < graph.get_number_of_nodes(); ++i)
         augmented_graph.add_node();
@@ -283,7 +280,7 @@ std::optional<Cycle> check_if_metrics_exist(Shape& shape, Graph& graph) {
     return std::nullopt;
 }
 
-void build_nodes_positions(Graph& graph, GraphAttributes& attributes, Shape& shape);
+void build_nodes_positions(Graph& graph, Attributes& attributes, Shape& shape);
 
 bool has_graph_degree_more_than_4(const Graph& graph) {
     bool has_degree_more_than_4 = false;
@@ -294,14 +291,14 @@ bool has_graph_degree_more_than_4(const Graph& graph) {
     return has_degree_more_than_4;
 }
 
-void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shape);
+void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape);
 
-void make_shifts_overlapped_edges(Graph& graph, GraphAttributes& attributes, Shape& shape);
+void make_shifts_overlapped_edges(Graph& graph, Attributes& attributes, Shape& shape);
 
-void fix_negative_positions(const Graph& graph, GraphAttributes& attributes);
+void fix_negative_positions(const Graph& graph, Attributes& attributes);
 
 void build_nodes_position_degree_more_than_4(
-    Graph& augmented_graph, GraphAttributes& attributes, Shape& shape
+    Graph& augmented_graph, Attributes& attributes, Shape& shape
 ) {
     add_green_blue_nodes(augmented_graph, attributes, shape);
     build_nodes_positions(augmented_graph, attributes, shape);
@@ -310,7 +307,7 @@ void build_nodes_position_degree_more_than_4(
 }
 
 ShapeMetricsDrawing make_orthogonal_drawing_incremental(Graph& graph, std::vector<Cycle>& cycles) {
-    GraphAttributes attributes;
+    Attributes attributes;
     attributes.add_attribute(Attribute::NODES_COLOR);
     graph.for_each_node([&](size_t node_id) { attributes.set_node_color(node_id, Color::BLACK); });
     Shape shape = build_shape(graph, attributes, cycles);
@@ -349,9 +346,9 @@ ShapeMetricsDrawing make_orthogonal_drawing_incremental(Graph& graph, std::vecto
     };
 }
 
-void find_inconsistencies(Graph& graph, Shape& shape, GraphAttributes& attributes);
+void find_inconsistencies(Graph& graph, Shape& shape, Attributes& attributes);
 
-void build_nodes_positions(Graph& graph, GraphAttributes& attributes, Shape& shape) {
+void build_nodes_positions(Graph& graph, Attributes& attributes, Shape& shape) {
     find_inconsistencies(graph, shape, attributes);
     auto [classes_x, classes_y] = EquivalenceClasses::build(shape, graph);
     Ordering ordering = Ordering::build(classes_x, classes_y, graph, shape);
@@ -360,43 +357,40 @@ void build_nodes_positions(Graph& graph, GraphAttributes& attributes, Shape& sha
         algorithms::make_topological_ordering(ordering.get_ordering_x()).value();
     auto new_classes_y_ordering =
         algorithms::make_topological_ordering(ordering.get_ordering_y()).value();
-    int current_position_x = -100;
-    std::unordered_map<size_t, int> node_id_to_position_x;
+    size_t current_position_x = 0;
+    utilities::NodesLabels node_id_to_position_x(graph);
     for (size_t class_id : new_classes_x_ordering) {
-        int next_position_x = current_position_x + 100;
-
         classes_x.for_each_elem_of_class(class_id, [&](size_t node_id) {
             if (attributes.get_node_color(node_id) == Color::BLUE)
-                next_position_x = current_position_x + 100;
+                current_position_x += 100;
         });
         classes_x.for_each_elem_of_class(class_id, [&](size_t node_id) {
-            node_id_to_position_x[node_id] = next_position_x;
+            node_id_to_position_x.add_label(node_id, current_position_x);
         });
-        current_position_x = next_position_x;
+        current_position_x += 100;
     }
-    int current_position_y = -100;
-    std::unordered_map<size_t, int> node_id_to_position_y;
+    size_t current_position_y = 0;
+    utilities::NodesLabels node_id_to_position_y(graph);
     for (size_t class_id : new_classes_y_ordering) {
-        int next_position_y = current_position_y + 100;
         classes_y.for_each_elem_of_class(class_id, [&](size_t node_id) {
             if (attributes.get_node_color(node_id) == Color::GREEN)
-                next_position_y = current_position_y + 100;
+                current_position_y += 100;
         });
         classes_y.for_each_elem_of_class(class_id, [&](size_t node_id) {
-            node_id_to_position_y[node_id] = next_position_y;
+            node_id_to_position_y.add_label(node_id, current_position_y);
         });
-        current_position_y = next_position_y;
+        current_position_y += 100;
     }
     attributes.add_attribute(Attribute::NODES_POSITION);
     graph.for_each_node([&](size_t node_id) {
-        const int x = node_id_to_position_x[node_id];
-        const int y = node_id_to_position_y[node_id];
-        attributes.set_position(node_id, x, y);
+        const size_t x = node_id_to_position_x.get_label(node_id);
+        const size_t y = node_id_to_position_y.get_label(node_id);
+        attributes.set_position(node_id, static_cast<int>(x), static_cast<int>(y));
     });
 }
 
 const std::vector<std::optional<std::pair<Edge, Direction>>>
-find_edges_to_fix(const Graph& graph, const Shape& shape, const GraphAttributes& attributes) {
+find_edges_to_fix(const Graph& graph, const Shape& shape, const Attributes& attributes) {
     std::vector<std::optional<std::pair<Edge, Direction>>> edge_direction(
         graph.get_number_of_edges(),
         std::nullopt
@@ -493,9 +487,8 @@ find_edges_to_fix(const Graph& graph, const Shape& shape, const GraphAttributes&
 
 // at the moment, a node with degree > 4 doesn't have all its "ports" used,
 // this method takes some of its neighbors and places them in the unused "ports"
-std::tuple<Graph, GraphAttributes, Shape> fix_useless_green_blue_nodes(
-    const Graph& graph, const GraphAttributes& attributes, const Shape& shape
-) {
+std::tuple<Graph, Attributes, Shape>
+fix_useless_green_blue_nodes(const Graph& graph, const Attributes& attributes, const Shape& shape) {
     const auto edge_to_direction = find_edges_to_fix(graph, shape, attributes);
 
     std::vector<bool> keep_node(graph.get_number_of_nodes(), true);
@@ -508,7 +501,7 @@ std::tuple<Graph, GraphAttributes, Shape> fix_useless_green_blue_nodes(
     Graph new_graph;
     utilities::NodesLabels old_id_to_new_id(graph);
     Shape new_shape;
-    GraphAttributes new_attributes;
+    Attributes new_attributes;
     new_attributes.add_attribute(Attribute::NODES_COLOR);
 
     graph.for_each_node([&](size_t node_id) {
@@ -568,7 +561,7 @@ std::tuple<Graph, GraphAttributes, Shape> fix_useless_green_blue_nodes(
     return std::make_tuple(std::move(new_graph), std::move(new_attributes), std::move(new_shape));
 }
 
-void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shape) {
+void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape) {
     std::vector<size_t> nodes;
     graph.for_each_node([&](size_t node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
@@ -607,27 +600,27 @@ void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shap
         algorithms::make_topological_ordering(ordering_x).value();
     std::vector<size_t> classes_y_ordering =
         algorithms::make_topological_ordering(ordering_y).value();
-    int current_position_x = 0;
-    std::unordered_map<size_t, int> node_id_to_position_x;
+    size_t current_position_x = 0;
+    utilities::NodesLabels node_id_to_position_x(graph);
     for (size_t class_id : classes_x_ordering) {
         classes_x.for_each_elem_of_class(class_id, [&](size_t node_id) {
-            node_id_to_position_x[node_id] = 100 * current_position_x;
+            node_id_to_position_x.add_label(node_id, 100 * current_position_x);
         });
         ++current_position_x;
     }
-    int current_position_y = 0;
-    std::unordered_map<size_t, int> node_id_to_position_y;
+    size_t current_position_y = 0;
+    utilities::NodesLabels node_id_to_position_y(graph);
     for (size_t class_id : classes_y_ordering) {
         classes_y.for_each_elem_of_class(class_id, [&](size_t node_id) {
-            node_id_to_position_y[node_id] = 100 * current_position_y;
+            node_id_to_position_y.add_label(node_id, 100 * current_position_y);
         });
         ++current_position_y;
     }
     attributes.add_attribute(Attribute::NODES_POSITION);
     graph.for_each_node([&](size_t node_id) {
-        const int x = node_id_to_position_x[node_id];
-        const int y = node_id_to_position_y[node_id];
-        attributes.set_position(node_id, x, y);
+        const size_t x = node_id_to_position_x.get_label(node_id);
+        const size_t y = node_id_to_position_y.get_label(node_id);
+        attributes.set_position(node_id, static_cast<int>(x), static_cast<int>(y));
     });
     auto [new_graph, new_attributes, new_shape] =
         fix_useless_green_blue_nodes(graph, attributes, shape);
@@ -638,7 +631,7 @@ void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes, Shape& shap
 
 void fix_inconsistency(
     const Cycle& cycle,
-    GraphAttributes& attributes,
+    Attributes& attributes,
     const Graph& graph,
     Shape& shape,
     Color color_to_find
@@ -671,7 +664,7 @@ void fix_inconsistency(
     attributes.change_node_color(colored_node_id, dark_color);
 }
 
-void find_inconsistencies(Graph& graph, Shape& shape, GraphAttributes& attributes) {
+void find_inconsistencies(Graph& graph, Shape& shape, Attributes& attributes) {
     auto [classes_x, classes_y] = EquivalenceClasses::build(shape, graph);
     Ordering ordering = Ordering::build(classes_x, classes_y, graph, shape);
     std::optional<Cycle> cycle_x =
@@ -710,7 +703,7 @@ void shifting_order(
     Graph& graph,
     Shape& shape,
     std::vector<size_t>& nodes_at_direction,
-    GraphAttributes& attributes,
+    Attributes& attributes,
     const Direction increasing_direction,
     Func get_position
 ) {
@@ -744,9 +737,8 @@ void shifting_order(
     });
 }
 
-size_t find_fixed_index_node(
-    const GraphAttributes& attributes, const std::vector<size_t>& nodes_at_direction
-) {
+size_t
+find_fixed_index_node(const Attributes& attributes, const std::vector<size_t>& nodes_at_direction) {
     for (size_t i = 0; i < nodes_at_direction.size(); ++i) {
         size_t node_id = nodes_at_direction[i];
         if (attributes.get_node_color(node_id) == Color::BLACK)
@@ -761,15 +753,15 @@ void make_shifts(
     size_t node_id,
     Graph& graph,
     Shape& shape,
-    GraphAttributes& attributes,
+    Attributes& attributes,
     std::vector<size_t>& nodes_at_direction,
     const Axis axis,
     const Direction increasing_direction,
     const Color color
 ) {
     auto position_function =
-        axis == Axis::X ? [](const GraphAttributes& a, size_t id) { return a.get_position_x(id); }
-                        : [](const GraphAttributes& a, size_t id) { return a.get_position_y(id); };
+        axis == Axis::X ? [](const Attributes& a, size_t id) { return a.get_position_x(id); }
+                        : [](const Attributes& a, size_t id) { return a.get_position_y(id); };
     shifting_order(
         node_id,
         graph,
@@ -780,12 +772,12 @@ void make_shifts(
         position_function
     );
     const auto position_function_other =
-        axis == Axis::X ? [](const GraphAttributes& a, size_t id) { return a.get_position_y(id); }
-                        : [](const GraphAttributes& a, size_t id) { return a.get_position_x(id); };
+        axis == Axis::X ? [](const Attributes& a, size_t id) { return a.get_position_y(id); }
+                        : [](const Attributes& a, size_t id) { return a.get_position_x(id); };
     const auto change_position_other =
         axis == Axis::X
-            ? [](GraphAttributes& a, size_t id, int value) { a.change_position_y(id, value); }
-            : [](GraphAttributes& a, size_t id, int value) { a.change_position_x(id, value); };
+            ? [](Attributes& a, size_t id, int value) { a.change_position_y(id, value); }
+            : [](Attributes& a, size_t id, int value) { a.change_position_x(id, value); };
     size_t index_of_fixed_node = find_fixed_index_node(attributes, nodes_at_direction);
     int initial_position = position_function_other(attributes, node_id);
     graph.for_each_node([&](size_t id) {
@@ -875,7 +867,7 @@ auto neighbors_at_each_direction(const Graph& graph, size_t node_id, const Shape
     return nodes_at_direction;
 }
 
-void make_shifts_overlapped_edges(Graph& graph, GraphAttributes& attributes, Shape& shape) {
+void make_shifts_overlapped_edges(Graph& graph, Attributes& attributes, Shape& shape) {
     std::vector<size_t> nodes;
     graph.for_each_node([&](size_t node_id) {
         if (graph.get_degree_of_node(node_id) > 4)
@@ -926,7 +918,7 @@ void make_shifts_overlapped_edges(Graph& graph, GraphAttributes& attributes, Sha
     }
 }
 
-void fix_negative_positions(const Graph& graph, GraphAttributes& attributes) {
+void fix_negative_positions(const Graph& graph, Attributes& attributes) {
     if (graph.get_number_of_nodes() == 0)
         return;
     int min_x = std::numeric_limits<int>::max();
@@ -943,50 +935,6 @@ void fix_negative_positions(const Graph& graph, GraphAttributes& attributes) {
         graph.for_each_node([&](size_t node_id) {
             attributes.change_position_y(node_id, attributes.get_position_y(node_id) - min_y);
         });
-}
-
-using json = nlohmann::json;
-
-std::expected<void, std::string>
-save_shape_metrics_drawing_to_file(const ShapeMetricsDrawing& result, std::filesystem::path path) {
-    auto saved = save_orthogonal_drawing_to_file(result.drawing, path);
-    if (!saved) {
-        return std::unexpected(
-            std::format("save_shape_metrics_drawing_to_file: {}", saved.error())
-        );
-    }
-    json data;
-    data["initial_number_of_cycles"] = result.initial_number_of_cycles;
-    data["number_of_added_cycles"] = result.number_of_added_cycles;
-    data["number_of_useless_bends"] = result.number_of_useless_bends;
-    std::ofstream file(path);
-    if (!file.is_open()) {
-        return std::unexpected(
-            std::format("save_shape_metrics_drawing_to_file: could not open {}", path.string())
-        );
-    }
-    file << data;
-    return {};
-}
-
-std::expected<ShapeMetricsDrawing, std::string>
-load_shape_metrics_drawing_from_file(std::filesystem::path path) {
-    auto drawing = load_orthogonal_drawing_from_file(path);
-    if (!drawing) {
-        return std::unexpected(
-            std::format("load_shape_metrics_drawing_from_file: {}", drawing.error())
-        );
-    }
-    std::ifstream file(path);
-    json data;
-    file >> data;
-    ShapeMetricsDrawing result;
-    result.drawing = std::move(*drawing);
-    result.initial_number_of_cycles =
-        static_cast<size_t>(data.value("initial_number_of_cycles", 0));
-    result.number_of_added_cycles = static_cast<size_t>(data.value("number_of_added_cycles", 0));
-    result.number_of_useless_bends = static_cast<size_t>(data.value("number_of_useless_bends", 0));
-    return result;
 }
 
 } // namespace domus::orthogonal

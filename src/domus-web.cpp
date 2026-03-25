@@ -2,15 +2,21 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/orthogonal/drawing_builder.hpp"
 
+using namespace domus;
+using namespace domus::graph;
+using namespace domus::orthogonal;
+
+// TODO update con gli aggiornamenti fatti
+
 extern "C" {
 int compute_orthogonal_drawing() {
-    const UndirectedGraph graph = load_graph_from_txt_file("input.txt");
-    if (graph.size() > 30) // graph too large
+    const Graph graph = *loader::load_graph_from_txt_file("input.txt");
+    if (graph.get_number_of_nodes() > 30) // graph too large
         return -1;
     try {
         const ShapeMetricsDrawing result = make_orthogonal_drawing(graph);
         make_svg(result.drawing.augmented_graph, result.drawing.attributes, "output.svg");
-        save_graph_to_graphml_file(
+        loader::save_graph_to_graphml_file(
             result.drawing.augmented_graph,
             result.drawing.attributes,
             "output.graphml"

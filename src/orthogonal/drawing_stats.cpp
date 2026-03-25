@@ -13,39 +13,38 @@
 #include "domus/core/utils.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
+#include "../core/domus_debug.hpp"
+
 namespace domus::orthogonal::stats {
 using namespace domus::graph;
-using OrthogonalDrawing = domus::orthogonal::OrthogonalDrawing;
+using graph::utilities::NodesContainer;
+using orthogonal::OrthogonalDrawing;
 
-std::vector<size_t> compute_edge_lengths(const Graph& graph, const GraphAttributes& attributes) {
+std::vector<size_t> compute_edge_lengths(const Graph& graph, const Attributes& attributes) {
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     std::vector<size_t> edge_lengths;
-    graph::utilities::NodesContainer visited(graph);
-    graph.for_each_node([&](size_t node_id) {
+    NodesContainer visited(graph);
+    for (size_t node_id : graph.get_node_ids()) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
-            return;
+            continue;
         std::function<void(size_t, size_t, size_t)> dfs =
             [&](size_t current_id, size_t black_id, size_t current_length) {
                 visited.add_node(current_id);
-                graph.for_each_neighbor(current_id, [&](size_t neighbor_id) {
+                for (size_t neighbor_id : graph.get_neighbors(current_id)) {
                     if (visited.has_node(neighbor_id))
-                        return;
+                        continue;
                     size_t x1 = node_to_coordinate_x[current_id];
                     size_t y1 = node_to_coordinate_y[current_id];
-                    size_t x2 = node_to_coordinate_x[current_id];
-                    size_t y2 = node_to_coordinate_y[current_id];
-                    if (x1 < x2) {
-                        size_t temp = x1;
-                        x1 = x2;
-                        x2 = temp;
-                    }
-                    if (y1 < y2) {
-                        size_t temp = y1;
-                        y1 = y2;
-                        y2 = temp;
-                    }
-                    size_t length = (x1 - x2) + (y1 - y2);
+                    size_t x2 = node_to_coordinate_x[neighbor_id];
+                    size_t y2 = node_to_coordinate_y[neighbor_id];
+                    size_t dx = (x1 > x2) ? (x1 - x2) : (x2 - x1);
+                    size_t dy = (y1 > y2) ? (y1 - y2) : (y2 - y1);
+                    size_t length = dx + dy;
+                    DOMUS_ASSERT(
+                        dx == 0 || dy == 0,
+                        "compute_edge_lengths: neighbors are not x or y alligned"
+                    );
                     Color neighbor_color = attributes.get_node_color(neighbor_id);
                     if (neighbor_color != Color::BLACK)
                         dfs(neighbor_id, black_id, current_length + length);
@@ -55,11 +54,11 @@ std::vector<size_t> compute_edge_lengths(const Graph& graph, const GraphAttribut
                             edge_lengths.push_back(total_length);
                         }
                     }
-                });
+                }
                 visited.erase(current_id);
             };
         dfs(node_id, node_id, 0u);
-    });
+    }
     return edge_lengths;
 }
 
@@ -74,7 +73,7 @@ size_t compute_total_edge_length(const OrthogonalDrawing& result) {
 
 size_t compute_max_edge_length(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
-    const GraphAttributes& attributes = result.attributes;
+    const Attributes& attributes = result.attributes;
     const std::vector<size_t> edge_lengths = compute_edge_lengths(graph, attributes);
     size_t max_edge_length = 0;
     for (size_t length : edge_lengths)
@@ -85,12 +84,12 @@ size_t compute_max_edge_length(const OrthogonalDrawing& result) {
 
 double compute_edge_length_std_dev(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
-    const GraphAttributes& attributes = result.attributes;
+    const Attributes& attributes = result.attributes;
     const std::vector<size_t> edge_lengths = compute_edge_lengths(graph, attributes);
     return domus::utilities::compute_stddev(edge_lengths);
 }
 
-std::vector<size_t> compute_bends_counts(const Graph& graph, const GraphAttributes& attributes) {
+std::vector<size_t> compute_bends_counts(const Graph& graph, const Attributes& attributes) {
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     std::vector<size_t> bends_counts;
@@ -128,7 +127,7 @@ std::vector<size_t> compute_bends_counts(const Graph& graph, const GraphAttribut
 
 size_t compute_total_bends(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
-    const GraphAttributes& attributes = result.attributes;
+    const Attributes& attributes = result.attributes;
     const std::vector<size_t> bends_counts = compute_bends_counts(graph, attributes);
     size_t total_bends = 0;
     for (size_t count : bends_counts)
@@ -138,7 +137,7 @@ size_t compute_total_bends(const OrthogonalDrawing& result) {
 
 size_t compute_max_bends_per_edge(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
-    const GraphAttributes& attributes = result.attributes;
+    const Attributes& attributes = result.attributes;
     const std::vector<size_t> bends_counts = compute_bends_counts(graph, attributes);
     size_t max_bends = 0;
     for (size_t count : bends_counts)
@@ -208,7 +207,7 @@ bool do_edges_cross(
     return true;
 }
 
-bool do_edges_cross(const GraphAttributes& attributes, size_t i, size_t j, size_t k, size_t l) {
+bool do_edges_cross(const Attributes& attributes, size_t i, size_t j, size_t k, size_t l) {
     int i_pos_x = attributes.get_position_x(i);
     int i_pos_y = attributes.get_position_y(i);
     int j_pos_x = attributes.get_position_x(j);
@@ -250,7 +249,7 @@ bool do_edges_cross(const GraphAttributes& attributes, size_t i, size_t j, size_
 
 size_t compute_total_crossings(const OrthogonalDrawing& result) {
     const Graph& graph = result.augmented_graph;
-    const GraphAttributes& attributes = result.attributes;
+    const Attributes& attributes = result.attributes;
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     size_t total_crossings = 0;

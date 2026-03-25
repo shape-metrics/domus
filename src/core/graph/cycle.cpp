@@ -43,11 +43,11 @@ std::string Cycle::to_string() const {
 
 void Cycle::print() const { std::print("{}", to_string()); }
 
-bool Cycle::has_node(size_t node_id) const {
+bool Cycle::has_node_id(size_t node_id) const {
     return std::ranges::find(m_nodes_ids, node_id) != m_nodes_ids.end();
 }
 
-size_t Cycle::node_position(size_t node_id) const {
+size_t Cycle::node_id_position(size_t node_id) const {
     auto it = std::ranges::find(m_nodes_ids, node_id);
     DOMUS_ASSERT(it != m_nodes_ids.end(), "Cycle::node_position: node {} is not in cycle", node_id);
     return static_cast<size_t>(std::distance(m_nodes_ids.begin(), it));

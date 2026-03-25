@@ -13,7 +13,7 @@
 namespace domus::orthogonal {
 using namespace graph;
 
-auto build_index_to_nodes(const Graph& graph, const GraphAttributes& attributes) {
+auto build_index_to_nodes(const Graph& graph, const Attributes& attributes) {
     const auto [node_to_index_x, node_to_index_y] =
         compute_node_to_index_position(graph, attributes);
     std::vector<std::vector<size_t>> index_x_to_nodes;
@@ -98,7 +98,7 @@ auto build_index_to_min_max_index(
     return index_to_min_max_x;
 }
 
-void compact_area(const Graph& graph, GraphAttributes& attributes) {
+void compact_area(const Graph& graph, Attributes& attributes) {
     auto [index_x_to_nodes, nodes_to_index_x, index_y_to_nodes, nodes_to_index_y] =
         build_index_to_nodes(graph, attributes);
     // compacting x

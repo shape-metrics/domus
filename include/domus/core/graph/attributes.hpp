@@ -20,14 +20,10 @@ enum class Attribute {
 
 std::string attribute_to_string(Attribute attribute);
 
-class GraphAttributes {
+class Attributes {
     struct NodePosition {
-        int x_m;
-        int y_m;
-        NodePosition(int x, int y) : x_m(x), y_m(y) {}
-        bool operator==(const NodePosition& other) const {
-            return x_m == other.x_m && y_m == other.y_m;
-        }
+        int x;
+        int y;
     };
     std::optional<std::vector<std::optional<Color>>> m_nodes_color = std::nullopt;
     std::optional<std::vector<std::optional<NodePosition>>> m_nodes_position = std::nullopt;

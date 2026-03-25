@@ -1,12 +1,12 @@
 #pragma once
 
 namespace domus::graph {
-class GraphAttributes;
+class Attributes;
 class Graph;
 } // namespace domus::graph
 
 namespace domus::orthogonal {
 
-void compact_area(const graph::Graph& graph, graph::GraphAttributes& attributes);
+void compact_area(const graph::Graph& graph, graph::Attributes& attributes);
 
 } // namespace domus::orthogonal

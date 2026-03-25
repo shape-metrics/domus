@@ -1,5 +1,8 @@
 #pragma once
 
+namespace domus::drawing {
+
+// TODO move implementation to .cpp file
 class ScaleLinear {
   private:
     double m_domainMin;
@@ -25,3 +28,5 @@ class ScaleLinear {
     }
     double invert(double y) const { return m_domainMin + (y - m_rangeMin) / m_scaleFactor; }
 };
+
+} // namespace domus::drawing

@@ -12,12 +12,12 @@ namespace domus::orthogonal {
 
 struct OrthogonalDrawing {
     graph::Graph augmented_graph;
-    graph::GraphAttributes attributes;
+    graph::Attributes attributes;
     shape::Shape shape;
 };
 
 std::expected<void, std::string> make_svg(
-    const graph::Graph& graph, const graph::GraphAttributes& attributes, std::filesystem::path path
+    const graph::Graph& graph, const graph::Attributes& attributes, std::filesystem::path path
 );
 
 std::expected<void, std::string>
@@ -27,6 +27,6 @@ std::expected<OrthogonalDrawing, std::string>
 load_orthogonal_drawing_from_file(std::filesystem::path path);
 
 std::pair<std::vector<size_t>, std::vector<size_t>>
-compute_node_to_index_position(const graph::Graph& graph, const graph::GraphAttributes& attributes);
+compute_node_to_index_position(const graph::Graph& graph, const graph::Attributes& attributes);
 
 } // namespace domus::orthogonal

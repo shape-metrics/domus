@@ -6,6 +6,8 @@
 
 #include "../core/domus_debug.hpp"
 
+namespace domus::drawing {
+
 Point2D Point2D::operator+(const Point2D& other) const {
     return {x_m + other.x_m, y_m + other.y_m};
 }
@@ -218,3 +220,5 @@ std::vector<Point2D> Polygon2D::computeConvexHull() const {
     hull.pop_back();
     return hull;
 }
+
+} // namespace domus::drawing
