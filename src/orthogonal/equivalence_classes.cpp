@@ -1,4 +1,4 @@
-#include "equivalence_classes.hpp"
+#include "domus/orthogonal/equivalence_classes.hpp"
 
 #include <cstddef>
 #include <functional>
@@ -47,6 +47,10 @@ void EquivalenceClasses::for_each_elem_of_class(
     DOMUS_ASSERT(has_class(class_id), "EquivalenceClasses::get_elems class does not exist");
     for (size_t elem : m_class_to_elems.at(class_id))
         f(elem);
+}
+
+size_t EquivalenceClasses::number_of_elems_in_class(size_t class_id) const {
+    return m_class_to_elems.at(class_id).size();
 }
 
 void EquivalenceClasses::for_each_class(std::function<void(size_t)> f) const {

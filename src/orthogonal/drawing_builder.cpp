@@ -16,12 +16,12 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
 #include "domus/orthogonal/area_compacter.hpp"
+#include "domus/orthogonal/equivalence_classes.hpp"
 #include "domus/orthogonal/shape/direction.hpp"
 #include "domus/orthogonal/shape/shape.hpp"
 #include "domus/orthogonal/shape/shape_builder.hpp"
 
 #include "../core/domus_debug.hpp"
-#include "equivalence_classes.hpp"
 
 namespace domus::orthogonal {
 using namespace domus::graph;

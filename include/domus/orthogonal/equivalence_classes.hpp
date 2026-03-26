@@ -36,6 +36,8 @@ class EquivalenceClasses {
     bool has_elem_a_class(size_t elem) const;
     size_t get_class_of_elem(size_t elem) const;
     void for_each_elem_of_class(size_t class_id, std::function<void(size_t)> f) const;
+    size_t number_of_elems_in_class(size_t class_id) const;
+
     std::string to_string() const;
     void print() const;
     void for_each_class(std::function<void(size_t)> f) const;
