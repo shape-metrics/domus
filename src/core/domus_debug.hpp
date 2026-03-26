@@ -24,7 +24,7 @@
 
 #else
 
-#define DOMUS_ASSERT(condition, message) ((void)0)
+#define DOMUS_ASSERT(condition, message, ...) ((void)0)
 
 #define DOMUS_DEBUG(message) ((void)0)
 
