@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <ranges>
 #include <string>
 
 namespace domus::graph {
@@ -27,8 +28,12 @@ class Cycle {
 
     void for_each(std::function<void(size_t)> func) const;
 
+    auto get_nodes_ids() const;
+
     std::string to_string() const;
     void print() const;
 };
+
+inline auto Cycle::get_nodes_ids() const { return std::views::all(m_nodes_ids); }
 
 } // namespace domus::graph
