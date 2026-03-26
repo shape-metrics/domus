@@ -98,6 +98,7 @@ set(COMMON_SRCS
     src/planarity/auslander_parter.cpp
     src/planarity/embedding.cpp
     src/planarity/interlacement.cpp
+    src/torus/embedder.cpp
 )
 
 add_library(core ${COMMON_SRCS})
