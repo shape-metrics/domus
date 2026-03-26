@@ -395,9 +395,9 @@ find_edges_to_fix(const Graph& graph, const Shape& shape, const Attributes& attr
         graph.get_number_of_edges(),
         std::nullopt
     );
-    graph.for_each_node([&](size_t node_id) {
+    for (size_t node_id : graph.get_node_ids()) {
         if (graph.get_degree_of_node(node_id) <= 4)
-            return;
+            continue;
         std::optional<size_t> downest_left, downest_right, leftest_up, leftest_down;
         std::optional<size_t> downest_edge_id_left, downest_edge_id_right, leftest_edge_id_up,
             leftest_edge_id_down;
@@ -481,7 +481,7 @@ find_edges_to_fix(const Graph& graph, const Shape& shape, const Attributes& attr
             {node_id, downest_right.value()},
             Direction::RIGHT
         };
-    });
+    }
     return edge_direction;
 }
 
@@ -490,12 +490,11 @@ find_edges_to_fix(const Graph& graph, const Shape& shape, const Attributes& attr
 std::tuple<Graph, Attributes, Shape>
 fix_useless_green_blue_nodes(const Graph& graph, const Attributes& attributes, const Shape& shape) {
     const auto edge_to_direction = find_edges_to_fix(graph, shape, attributes);
-
-    std::vector<bool> keep_node(graph.get_number_of_nodes(), true);
+    utilities::NodesContainer skip_node(graph);
     for (size_t edge_id = 0; edge_id < edge_to_direction.size(); edge_id++) {
         if (!edge_to_direction[edge_id].has_value())
             continue;
-        keep_node[edge_to_direction[edge_id]->first.to_id] = false;
+        skip_node.add_node(edge_to_direction[edge_id]->first.to_id);
     }
 
     Graph new_graph;
@@ -504,58 +503,58 @@ fix_useless_green_blue_nodes(const Graph& graph, const Attributes& attributes, c
     Attributes new_attributes;
     new_attributes.add_attribute(Attribute::NODES_COLOR);
 
-    graph.for_each_node([&](size_t node_id) {
-        if (keep_node[node_id]) {
+    for (size_t node_id : graph.get_node_ids())
+        if (!skip_node.has_node(node_id)) {
             size_t new_id = new_graph.add_node();
             old_id_to_new_id.add_label(node_id, new_id);
             new_attributes.set_node_color(new_id, attributes.get_node_color(node_id));
         }
-    });
 
-    graph.for_each_node([&](size_t node_id) {
-        if (!keep_node[node_id])
-            return;
-        graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
-            if (!keep_node[neighbor_id]) {
-                DOMUS_ASSERT(
-                    attributes.get_node_color(neighbor_id) == Color::GREEN ||
-                        attributes.get_node_color(neighbor_id) == Color::BLUE,
-                    "fix_useless_green_blue_nodes: internal error - node to remove which is "
-                    "neither green nor blue (color = {})",
-                    color_to_string(attributes.get_node_color(neighbor_id))
-                );
-                if (graph.get_degree_of_node(node_id) <= 4)
-                    return;
-                Direction direction = edge_to_direction.at(edge_id)->second;
-                size_t curr = node_id;
-                size_t next = neighbor_id;
-                size_t other = get_other_neighbor_id(graph, next, curr);
-                while (!keep_node[other]) {
-                    curr = next;
-                    next = other;
-                    other = get_other_neighbor_id(graph, next, curr);
-                }
-                if (!new_graph.are_neighbors(node_id, other)) {
-                    size_t new_node_id = old_id_to_new_id.get_label(node_id);
-                    size_t new_neighbor_id = old_id_to_new_id.get_label(other);
-                    size_t new_edge_id = new_graph.add_edge(new_node_id, new_neighbor_id);
-                    new_shape.set_direction(new_edge_id, direction);
-                }
-                return;
-            }
-            if (node_id < neighbor_id) {
+    for (size_t node_id : graph.get_node_ids()) {
+        if (skip_node.has_node(node_id))
+            continue;
+        for (auto [edge_id, neighbor_id] : graph.get_edges(node_id)) {
+            if (!skip_node.has_node(neighbor_id)) {
+                if (node_id > neighbor_id)
+                    continue;
                 size_t new_node_id = old_id_to_new_id.get_label(node_id);
                 size_t new_neighbor_id = old_id_to_new_id.get_label(neighbor_id);
                 size_t new_edge_id = new_graph.add_edge(new_node_id, new_neighbor_id);
                 Direction direction = shape.get_direction(graph, edge_id, node_id, neighbor_id);
                 new_shape.set_direction(new_edge_id, direction);
+                continue;
             }
-        });
-    });
+            DOMUS_ASSERT(
+                attributes.get_node_color(neighbor_id) == Color::GREEN ||
+                    attributes.get_node_color(neighbor_id) == Color::BLUE,
+                "fix_useless_green_blue_nodes: internal error - node to remove which is "
+                "neither green nor blue (color = {})",
+                color_to_string(attributes.get_node_color(neighbor_id))
+            );
+            if (graph.get_degree_of_node(node_id) <= 4)
+                continue;
+            Direction direction = edge_to_direction.at(edge_id)->second;
+            size_t curr = node_id;
+            size_t next = neighbor_id;
+            size_t other = get_other_neighbor_id(graph, next, curr);
+            while (skip_node.has_node(other)) {
+                curr = next;
+                next = other;
+                other = get_other_neighbor_id(graph, next, curr);
+            }
+            size_t new_node_id = old_id_to_new_id.get_label(node_id);
+            size_t new_neighbor_id = old_id_to_new_id.get_label(other);
+            if (!new_graph.are_neighbors(new_node_id, new_neighbor_id)) {
+                size_t new_edge_id = new_graph.add_edge(new_node_id, new_neighbor_id);
+                new_shape.set_direction(new_edge_id, direction);
+            }
+        }
+    }
     DOMUS_ASSERT(
         graph.get_number_of_edges() - graph.get_number_of_nodes() ==
             new_graph.get_number_of_edges() - new_graph.get_number_of_nodes(),
-        "fix_useless_green_blue_nodes: internal error - new graph does not have matching size with "
+        "fix_useless_green_blue_nodes: internal error - new graph does not have matching size "
+        "with "
         "old graph"
     );
     return std::make_tuple(std::move(new_graph), std::move(new_attributes), std::move(new_shape));
@@ -563,10 +562,10 @@ fix_useless_green_blue_nodes(const Graph& graph, const Attributes& attributes, c
 
 void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape) {
     std::vector<size_t> nodes;
-    graph.for_each_node([&](size_t node_id) {
+    for (size_t node_id : graph.get_node_ids())
         if (graph.get_degree_of_node(node_id) > 4)
             nodes.push_back(node_id);
-    });
+
     for (size_t node_id : nodes) {
         std::vector<size_t> edge_ids_to_remove;
         std::vector<std::pair<Edge, Direction>> edges_to_add;
