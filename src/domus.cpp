@@ -20,7 +20,7 @@ int planarity_test() {
         println("{}", graph.error());
         return 1;
     }
-    const std::optional<Embedding> embedding = embed_graph(*graph);
+    const std::optional<Embedding> embedding = compute_planar_embedding(*graph);
     if (embedding.has_value()) {
         std::println("Embedding found");
         embedding->print();

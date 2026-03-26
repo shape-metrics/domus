@@ -535,7 +535,7 @@ std::optional<Embedding> embed_biconnected_component(const Graph& component) {
     return base_case_graph(component);
 }
 
-std::optional<Embedding> embed_graph(const Graph& graph) {
+std::optional<Embedding> compute_planar_embedding(const Graph& graph) {
     if (graph.get_number_of_nodes() < 4)
         return base_case_graph(graph);
     if (graph.get_number_of_edges() / 2 > 3 * graph.get_number_of_nodes() - 6)

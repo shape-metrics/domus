@@ -9,5 +9,5 @@ class Graph;
 }
 
 namespace domus::planarity {
-std::optional<Embedding> embed_graph(const graph::Graph& graph);
+std::optional<Embedding> compute_planar_embedding(const graph::Graph& graph);
 }
