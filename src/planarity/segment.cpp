@@ -1,6 +1,7 @@
 #include "segment.hpp"
 
 #include <cstddef>
+#include <print>
 
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"

@@ -1,6 +1,7 @@
 #include "domus/core/graph/path.hpp"
 
 #include <algorithm>
+#include <print>
 
 #include "domus/core/graph/graph.hpp"
 

@@ -180,7 +180,6 @@ compute_side_length(const Graph& graph, const shape::Shape& shape, const Attribu
         size_t max = *std::max_element(n_per_direction.begin(), n_per_direction.end());
         max_per_side = std::max(max_per_side, max);
     }
-    std::println("{}", max_per_side);
     return 20.0 + 6.0 * static_cast<double>(max_per_side);
 }
 
