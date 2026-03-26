@@ -5,6 +5,7 @@
 
 #include "domus/core/graph/graph.hpp"
 
+// TODO maybe move this stuff elsewhere??
 namespace domus::planarity {
 
 class Embedding {
