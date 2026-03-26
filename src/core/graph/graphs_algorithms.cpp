@@ -619,4 +619,29 @@ bool is_cycle_in_graph(const Graph& graph, const Cycle& cycle) {
     return true;
 }
 
+bool do_cycles_intersect(const Cycle& cycle_1, const Cycle& cycle_2) {
+    std::vector<size_t> nodes_in_cycle_1;
+    std::vector<size_t> nodes_in_cycle_2;
+    nodes_in_cycle_1.reserve(cycle_1.size());
+    nodes_in_cycle_2.reserve(cycle_2.size());
+    for (size_t node_id : cycle_1.get_nodes_ids())
+        nodes_in_cycle_1.push_back(node_id);
+    for (size_t node_id : cycle_2.get_nodes_ids())
+        nodes_in_cycle_2.push_back(node_id);
+    std::sort(nodes_in_cycle_1.begin(), nodes_in_cycle_1.end());
+    std::sort(nodes_in_cycle_2.begin(), nodes_in_cycle_2.end());
+
+    size_t i = 0, j = 0;
+    while (i < nodes_in_cycle_1.size() && j < nodes_in_cycle_2.size()) {
+        if (nodes_in_cycle_1[i] == nodes_in_cycle_2[j]) {
+            return true;
+        } else if (nodes_in_cycle_1[i] < nodes_in_cycle_2[j]) {
+            i++;
+        } else {
+            j++;
+        }
+    }
+    return false;
+}
+
 } // namespace domus::graph::algorithms
