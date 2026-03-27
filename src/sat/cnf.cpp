@@ -54,12 +54,12 @@ std::string Cnf::to_string() const {
     auto out = std::back_inserter(result);
     std::format_to(out, " p cnf {} {}\n", get_number_of_variables(), get_number_of_clauses());
     for (const auto& row : m_rows) {
-        switch (row.m_type) {
+        switch (row.type) {
         case CnfRowType::COMMENT:
-            std::format_to(out, "c {}\n", row.m_comment);
+            std::format_to(out, "c {}\n", row.comment);
             break;
         case CnfRowType::CLAUSE:
-            for (int lit : row.m_clause)
+            for (int lit : row.clause)
                 std::format_to(out, "{} ", lit);
             std::format_to(out, "0\n");
             break;

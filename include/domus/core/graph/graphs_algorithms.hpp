@@ -12,8 +12,10 @@
 namespace domus::graph::algorithms {
 
 bool is_graph_connected(const Graph& graph);
+
 std::pair<std::vector<Graph>, utilities::NodesLabels>
 compute_connected_components(const Graph& graph);
+
 size_t compute_number_of_connected_components(const Graph& graph);
 
 class SpanningTree {
@@ -75,5 +77,16 @@ class Bipartition {
 bool is_cycle_in_graph(const Graph& graph, const Cycle& cycle);
 
 bool do_cycles_intersect(const Cycle& cycle_1, const Cycle& cycle_2);
+
+struct StrongConnectedComponents {
+    const std::vector<std::vector<size_t>> sccs;
+    const utilities::NodesLabels node_to_scc_id;
+    static StrongConnectedComponents compute(const Graph& graph);
+
+  private:
+    StrongConnectedComponents(
+        const std::vector<std::vector<size_t>>&& sccs, const utilities::NodesLabels&& node_to_scc_id
+    );
+};
 
 } // namespace domus::graph::algorithms

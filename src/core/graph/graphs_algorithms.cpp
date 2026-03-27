@@ -644,4 +644,78 @@ bool do_cycles_intersect(const Cycle& cycle_1, const Cycle& cycle_2) {
     return false;
 }
 
+void dfs_tarjan(
+    size_t u,
+    const Graph& graph,
+    size_t& timer,
+    NodesLabels& discovery,
+    NodesLabels& low_link,
+    std::stack<size_t>& stack,
+    NodesContainer& on_stack,
+    std::vector<std::vector<size_t>>& sccs,
+    NodesLabels& node_to_scc_id
+) {
+    discovery.add_label(u, timer);
+    low_link.add_label(u, timer);
+    timer++;
+    stack.push(u);
+    on_stack.add_node(u);
+
+    graph.for_each_out_neighbor(u, [&](size_t v) {
+        if (!discovery.has_label(v)) { // v still not visited
+            dfs_tarjan(v, graph, timer, discovery, low_link, stack, on_stack, sccs, node_to_scc_id);
+            low_link.update_label(u, std::min(low_link.get_label(u), low_link.get_label(v)));
+        } else if (on_stack.has_node(v)) { // v is in the stack
+            low_link.update_label(u, std::min(low_link.get_label(u), discovery.get_label(v)));
+        }
+    });
+
+    // if u is root in a SCC
+    if (low_link.get_label(u) == discovery.get_label(u)) {
+        std::vector<size_t> current_scc;
+        while (true) {
+            size_t v = stack.top();
+            stack.pop();
+            on_stack.erase(v);
+            current_scc.push_back(v);
+            node_to_scc_id.add_label(v, sccs.size()); // assign ID of SCC
+            if (u == v)
+                break;
+        }
+        sccs.push_back(std::move(current_scc));
+    }
+}
+
+StrongConnectedComponents StrongConnectedComponents::compute(const Graph& graph) {
+    size_t timer = 0;
+    NodesLabels discovery(graph);
+    NodesLabels low_link(graph);
+    NodesLabels node_to_scc_id(graph);
+    NodesContainer on_stack(graph);
+    std::stack<size_t> stack;
+    std::vector<std::vector<size_t>> sccs;
+
+    for (size_t node_id : graph.get_node_ids()) {
+        if (!discovery.has_label(node_id)) {
+            dfs_tarjan(
+                node_id,
+                graph,
+                timer,
+                discovery,
+                low_link,
+                stack,
+                on_stack,
+                sccs,
+                node_to_scc_id
+            );
+        }
+    }
+    return {std::move(sccs), std::move(node_to_scc_id)};
+}
+
+StrongConnectedComponents::StrongConnectedComponents(
+    const std::vector<std::vector<size_t>>&& sccs, const NodesLabels&& node_to_scc_id
+)
+    : sccs(sccs), node_to_scc_id(node_to_scc_id) {}
+
 } // namespace domus::graph::algorithms

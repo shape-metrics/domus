@@ -1,7 +1,6 @@
 #include "domus/planarity/embedding.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include <cstddef>
 #include <print>
 #include <unordered_set>
 

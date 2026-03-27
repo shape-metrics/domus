@@ -12,9 +12,9 @@ enum class CnfRowType {
 };
 
 struct CnfRow {
-    CnfRowType m_type;
-    std::vector<int> m_clause;
-    std::string m_comment;
+    CnfRowType type;
+    std::vector<int> clause;
+    std::string comment;
 };
 
 class Cnf {

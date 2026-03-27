@@ -92,8 +92,8 @@ std::expected<SatSolverResult, std::string> launch_kissat(const Cnf& cnf) {
     return KissatSolver::create().and_then(
         [&cnf](KissatSolver solver) -> std::expected<SatSolverResult, std::string> {
             for (const CnfRow& row : cnf.get_rows())
-                if (row.m_type == CnfRowType::CLAUSE)
-                    solver.add_clause(row.m_clause);
+                if (row.type == CnfRowType::CLAUSE)
+                    solver.add_clause(row.clause);
             return solver.solve().transform([&solver, &cnf](bool is_sat) -> SatSolverResult {
                 return create_result(is_sat, solver, cnf);
             });

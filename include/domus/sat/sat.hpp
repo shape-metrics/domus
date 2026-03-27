@@ -19,6 +19,8 @@ struct SatSolverResult {
     void print() const;
 };
 
+SatSolverResult solve_2_sat(const cnf::Cnf& cnf);
+
 SatSolverResult launch_glucose(const cnf::Cnf& cnf);
 
 std::expected<SatSolverResult, std::string> launch_kissat(const cnf::Cnf& cnf);

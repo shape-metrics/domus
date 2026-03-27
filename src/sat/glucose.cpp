@@ -24,7 +24,7 @@ using namespace cnf;
 void read_clause(const CnfRow& row, SimpSolver& S, vec<Lit>& lits) {
     int var;
     lits.clear();
-    for (int lit : row.m_clause) {
+    for (int lit : row.clause) {
         DOMUS_ASSERT(lit != 0, "read_clause: internal errors, found a 0 literal in clause");
         var = abs(lit) - 1;
         while (var >= S.nVars())
