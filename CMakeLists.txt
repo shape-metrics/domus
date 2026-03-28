@@ -96,7 +96,7 @@ set(COMMON_SRCS
     src/core/utils.cpp
     src/core/csv.cpp
     src/planarity/auslander_parter.cpp
-    src/planarity/embedding.cpp
+    src/core/graph/embedding.cpp
     src/planarity/interlacement.cpp
     src/torus/embedder.cpp
 )

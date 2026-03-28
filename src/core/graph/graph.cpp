@@ -38,19 +38,19 @@ void Graph::for_each_neighbor(size_t node_id, std::function<void(size_t)> f) con
     for_each_out_neighbor(node_id, f);
 }
 
-void Graph::for_each_out_edge(size_t node_id, std::function<void(size_t, size_t)> f) const {
+void Graph::for_each_out_edge(size_t node_id, std::function<void(EdgeIter)> f) const {
     DOMUS_ASSERT(has_node(node_id), "Graph::for_each_out_edge: node does not exist");
     for (const size_t edge_id : m_out_adjacency_list[node_id])
-        f(edge_id, m_edges[edge_id]->edge.to_id);
+        f(EdgeIter{edge_id, m_edges[edge_id]->edge.to_id});
 }
 
-void Graph::for_each_in_edge(size_t node_id, std::function<void(size_t, size_t)> f) const {
+void Graph::for_each_in_edge(size_t node_id, std::function<void(EdgeIter)> f) const {
     DOMUS_ASSERT(has_node(node_id), "Graph::for_each_in_edge: node does not exist");
     for (const size_t edge_id : m_in_adjacency_list[node_id])
-        f(edge_id, m_edges[edge_id]->edge.from_id);
+        f(EdgeIter{edge_id, m_edges[edge_id]->edge.from_id});
 }
 
-void Graph::for_each_edge(size_t node_id, std::function<void(size_t, size_t)> f) const {
+void Graph::for_each_edge(size_t node_id, std::function<void(EdgeIter)> f) const {
     DOMUS_ASSERT(has_node(node_id), "Graph::for_each_edge: node does not exist");
     for_each_in_edge(node_id, f);
     for_each_out_edge(node_id, f);

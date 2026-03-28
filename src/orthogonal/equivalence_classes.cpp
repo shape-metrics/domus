@@ -4,6 +4,7 @@
 #include <functional>
 #include <utility>
 
+#include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
 #include "../core/domus_debug.hpp"
@@ -66,12 +67,12 @@ void EquivalenceClasses::directional_node_expander(
     const std::function<bool(const Shape&, size_t)>& is_direction_wrong
 ) {
     set_class(node_id, class_id);
-    graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
-        if (has_elem_a_class(neighbor_id))
+    graph.for_each_edge(node_id, [&](graph::EdgeIter edge) {
+        if (has_elem_a_class(edge.neighbor_id))
             return;
-        if (is_direction_wrong(shape, edge_id))
+        if (is_direction_wrong(shape, edge.id))
             return;
-        directional_node_expander(shape, graph, neighbor_id, class_id, is_direction_wrong);
+        directional_node_expander(shape, graph, edge.neighbor_id, class_id, is_direction_wrong);
     });
 }
 
@@ -127,27 +128,27 @@ Ordering Ordering::build(
     EdgesLabels ordering_y_edge_to_graph_edge(ordering_y);
 
     graph.for_each_node([&](size_t node_id) {
-        graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
-            if (shape.is_right(graph, edge_id, node_id, neighbor_id)) {
+        graph.for_each_edge(node_id, [&](graph::EdgeIter edge) {
+            if (shape.is_right(graph, edge.id, node_id, edge.neighbor_id)) {
                 size_t node_class_x = equivalence_classes_x.get_class_of_elem(node_id);
-                size_t neighbor_class_x = equivalence_classes_x.get_class_of_elem(neighbor_id);
+                size_t neighbor_class_x = equivalence_classes_x.get_class_of_elem(edge.neighbor_id);
                 if (node_class_x == neighbor_class_x)
                     return;
                 if (ordering_x.has_edge(node_class_x, neighbor_class_x))
                     return;
                 size_t ordering_edge_id = ordering_x.add_edge(node_class_x, neighbor_class_x);
                 ordering_x_edge_to_graph_edge.update_size(ordering_edge_id);
-                ordering_x_edge_to_graph_edge.add_label(ordering_edge_id, edge_id);
-            } else if (shape.is_up(graph, edge_id, node_id, neighbor_id)) {
+                ordering_x_edge_to_graph_edge.add_label(ordering_edge_id, edge.id);
+            } else if (shape.is_up(graph, edge.id, node_id, edge.neighbor_id)) {
                 size_t node_class_y = equivalence_classes_y.get_class_of_elem(node_id);
-                size_t neighbor_class_y = equivalence_classes_y.get_class_of_elem(neighbor_id);
+                size_t neighbor_class_y = equivalence_classes_y.get_class_of_elem(edge.neighbor_id);
                 if (node_class_y == neighbor_class_y)
                     return;
                 if (ordering_y.has_edge(node_class_y, neighbor_class_y))
                     return;
                 size_t ordering_edge_id = ordering_y.add_edge(node_class_y, neighbor_class_y);
                 ordering_y_edge_to_graph_edge.update_size(ordering_edge_id);
-                ordering_y_edge_to_graph_edge.add_label(ordering_edge_id, edge_id);
+                ordering_y_edge_to_graph_edge.add_label(ordering_edge_id, edge.id);
             }
         });
     });

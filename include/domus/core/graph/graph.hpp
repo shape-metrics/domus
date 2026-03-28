@@ -32,6 +32,11 @@ struct Subdivision {
     const size_t edge_between_to_id;
 };
 
+struct EdgeIter {
+    size_t id;
+    size_t neighbor_id;
+};
+
 class Graph {
     std::vector<std::vector<size_t>> m_out_adjacency_list{};
     std::vector<std::vector<size_t>> m_in_adjacency_list{};
@@ -59,11 +64,9 @@ class Graph {
     auto get_in_neighbors(size_t node_id) const;
     auto get_neighbors(size_t node_id) const;
 
-    void for_each_out_edge(size_t node_id, std::function<void(size_t, size_t)> f) const;
-    void for_each_in_edge(size_t node_id, std::function<void(size_t, size_t)> f) const;
-    void for_each_edge(
-        size_t node_id, std::function<void(size_t, size_t)> f
-    ) const; // TODO aggiungere struct invece di pair non chiare??
+    void for_each_out_edge(size_t node_id, std::function<void(EdgeIter)> f) const;
+    void for_each_in_edge(size_t node_id, std::function<void(EdgeIter)> f) const;
+    void for_each_edge(size_t node_id, std::function<void(EdgeIter)> f) const;
 
     auto get_out_edges(size_t node_id) const;
     auto get_in_edges(size_t node_id) const;
@@ -112,13 +115,13 @@ inline auto Graph::get_neighbors(size_t node_id) const {
 
 inline auto Graph::get_out_edges(size_t node_id) const {
     return std::views::transform(m_out_adjacency_list[node_id], [&](size_t edge_id) {
-        return std::make_pair(edge_id, get_edge(edge_id).to_id);
+        return EdgeIter{edge_id, get_edge(edge_id).to_id};
     });
 }
 
 inline auto Graph::get_in_edges(size_t node_id) const {
     return std::views::transform(m_in_adjacency_list[node_id], [&](size_t edge_id) {
-        return std::make_pair(edge_id, get_edge(edge_id).from_id);
+        return EdgeIter{edge_id, get_edge(edge_id).from_id};
     });
 }
 

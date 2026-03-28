@@ -49,8 +49,8 @@ VariablesHandler::VariablesHandler(const graph::Graph& graph) {
     m_edge_left_variable.resize(graph.get_number_of_edges());
     m_edge_right_variable.resize(graph.get_number_of_edges());
     graph.for_each_node([&](size_t node_id) {
-        graph.for_each_out_edge(node_id, [&](size_t edge_id, size_t) {
-            add_edge_variables(edge_id);
+        graph.for_each_out_edge(node_id, [&](graph::EdgeIter edge) {
+            add_edge_variables(edge.id);
         });
     });
 }

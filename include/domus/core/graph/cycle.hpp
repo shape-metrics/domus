@@ -30,6 +30,8 @@ class Cycle {
 
     auto get_nodes_ids() const;
 
+    void reverse();
+
     std::string to_string() const;
     void print() const;
 };

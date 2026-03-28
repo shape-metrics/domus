@@ -8,6 +8,7 @@
 
 #include "domus/core/color.hpp"
 #include "domus/core/graph/attributes.hpp"
+#include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/drawing/linear_scale.hpp"
 #include "domus/drawing/polygon.hpp"
@@ -52,15 +53,10 @@ save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, std::filesystem
         };
     });
     json shape_array = json::array();
-    std::optional<std::string> error_msg;
     graph.for_each_node([&](size_t node_id) {
-        if (error_msg.has_value())
-            return;
-        graph.for_each_out_edge(node_id, [&](size_t edge_id, size_t) {
-            if (error_msg.has_value())
-                return;
-            Direction direction = result.shape.get_direction(edge_id);
-            shape_array.push_back({{"edge_id", edge_id}, {"dir", direction_to_string(direction)}});
+        graph.for_each_out_edge(node_id, [&](EdgeIter edge) {
+            Direction direction = result.shape.get_direction(edge.id);
+            shape_array.push_back({{"edge_id", edge.id}, {"dir", direction_to_string(direction)}});
         });
     });
     data["shape"] = shape_array;
@@ -133,12 +129,12 @@ get_other_edge_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
     );
     std::optional<size_t> other;
     std::optional<size_t> other_edge_id;
-    graph.for_each_edge(node_id, [&](size_t edge_id, size_t other_id) {
+    graph.for_each_edge(node_id, [&](EdgeIter edge) {
         if (other.has_value())
             return;
-        if (other_id != neighbor_id) {
-            other = other_id;
-            other_edge_id = edge_id;
+        if (edge.neighbor_id != neighbor_id) {
+            other = edge.neighbor_id;
+            other_edge_id = edge.id;
         }
     });
     DOMUS_ASSERT(

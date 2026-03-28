@@ -58,11 +58,11 @@ void add_constraints_one_direction_per_edge(
 ) {
 
     graph.for_each_node([&](size_t node_id_1) {
-        graph.for_each_out_edge(node_id_1, [&](size_t edge_id, size_t) {
-            int up = static_cast<int>(handler.get_up_variable(edge_id));
-            int down = static_cast<int>(handler.get_down_variable(edge_id));
-            int right = static_cast<int>(handler.get_right_variable(edge_id));
-            int left = static_cast<int>(handler.get_left_variable(edge_id));
+        graph.for_each_out_edge(node_id_1, [&](EdgeIter edge) {
+            int up = static_cast<int>(handler.get_up_variable(edge.id));
+            int down = static_cast<int>(handler.get_down_variable(edge.id));
+            int right = static_cast<int>(handler.get_right_variable(edge.id));
+            int left = static_cast<int>(handler.get_left_variable(edge.id));
             add_constraints_one_direction_per_edge(cnf_builder, up, down, right, left);
         });
     });
@@ -76,8 +76,8 @@ void add_clause_at_least_one_in_direction(
     Direction direction
 ) {
     std::vector<int> clause;
-    graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
-        int variable = get_variable(graph, handler, node_id, neighbor_id, edge_id, direction);
+    graph.for_each_edge(node_id, [&](EdgeIter edge) {
+        int variable = get_variable(graph, handler, node_id, edge.neighbor_id, edge.id, direction);
         clause.push_back(variable);
     });
     cnf_builder.add_clause(clause);
@@ -95,8 +95,9 @@ void add_one_edge_per_direction_clauses(
         add_clause_at_least_one_in_direction(graph, cnf_builder, handler, node_id, direction);
     } else if (degree == 3) {
         std::vector<int> variables;
-        graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
-            int variable = get_variable(graph, handler, node_id, neighbor_id, edge_id, direction);
+        graph.for_each_edge(node_id, [&](EdgeIter edge) {
+            int variable =
+                get_variable(graph, handler, node_id, edge.neighbor_id, edge.id, direction);
 
             variables.push_back(variable);
         });
@@ -106,8 +107,9 @@ void add_one_edge_per_direction_clauses(
         cnf_builder.add_clause({-variables[1], -variables[2]});
     } else if (degree == 2) {
         std::vector<int> clause;
-        graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
-            int variable = get_variable(graph, handler, node_id, neighbor_id, edge_id, direction);
+        graph.for_each_edge(node_id, [&](EdgeIter edge) {
+            int variable =
+                get_variable(graph, handler, node_id, edge.neighbor_id, edge.id, direction);
             clause.push_back(-variable);
         });
         // at most one is true (at least 1 is false)

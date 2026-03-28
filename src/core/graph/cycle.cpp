@@ -41,6 +41,13 @@ std::string Cycle::to_string() const {
     return result;
 }
 
+void Cycle::reverse() {
+    std::ranges::reverse(m_edges_ids);
+    m_nodes_ids.push_back(m_nodes_ids.front());
+    std::ranges::reverse(m_nodes_ids);
+    m_nodes_ids.pop_back();
+}
+
 void Cycle::print() const { std::print("{}", to_string()); }
 
 bool Cycle::has_node_id(size_t node_id) const {

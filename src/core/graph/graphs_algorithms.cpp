@@ -52,13 +52,13 @@ bool dfs_find_cycle(
     DOMUS_ASSERT(state.get_label(node_id) == 0, "dfs_find_cycle: visiting already visited node");
     state.update_label(node_id, 1); // mark as visiting
     bool found_cycle = false;
-    graph.for_each_out_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
+    graph.for_each_out_edge(node_id, [&](EdgeIter edge) {
         if (found_cycle)
             return;
-        if (state.get_label(neighbor_id) == 0) { // unvisited
-            child_to_parent_edge.add_label(neighbor_id, edge_id);
+        if (state.get_label(edge.neighbor_id) == 0) { // unvisited
+            child_to_parent_edge.add_label(edge.neighbor_id, edge.id);
             found_cycle = dfs_find_cycle(
-                neighbor_id,
+                edge.neighbor_id,
                 graph,
                 state,
                 child_to_parent_edge,
@@ -66,10 +66,10 @@ bool dfs_find_cycle(
                 cycle_end,
                 last_edge_id
             );
-        } else if (state.get_label(neighbor_id) == 1) { // found cycle
-            cycle_start = neighbor_id;
+        } else if (state.get_label(edge.neighbor_id) == 1) { // found cycle
+            cycle_start = edge.neighbor_id;
             cycle_end = node_id;
-            last_edge_id = edge_id;
+            last_edge_id = edge.id;
             found_cycle = true;
         }
     });
@@ -482,26 +482,26 @@ std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
         if (found_cycle)
             return;
         visited.add_node(node_id);
-        graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
+        graph.for_each_edge(node_id, [&](EdgeIter edge) {
             if (found_cycle)
                 return;
-            if (parent_id != -1 && neighbor_id == static_cast<size_t>(parent_id))
+            if (parent_id != -1 && edge.neighbor_id == static_cast<size_t>(parent_id))
                 return;
-            if (visited.has_node(neighbor_id)) {
+            if (visited.has_node(edge.neighbor_id)) {
                 size_t curr = node_id;
                 Path path;
-                while (curr != neighbor_id) {
+                while (curr != edge.neighbor_id) {
                     size_t e_id = edge_to_parent.get_label(curr);
                     path.push_back(graph, curr, e_id);
                     auto [u, v] = graph.get_edge(e_id);
                     curr = (u == curr) ? v : u;
                 }
-                path.push_back(graph, neighbor_id, edge_id);
+                path.push_back(graph, edge.neighbor_id, edge.id);
                 found_cycle.emplace(path);
                 return;
             } else {
-                edge_to_parent.add_label(neighbor_id, edge_id);
-                dfs(neighbor_id, static_cast<int>(node_id));
+                edge_to_parent.add_label(edge.neighbor_id, edge.id);
+                dfs(edge.neighbor_id, static_cast<int>(node_id));
             }
         });
     };
@@ -571,11 +571,11 @@ std::optional<SpanningTree> SpanningTree::compute(const Graph& graph) {
     while (!stack.empty()) {
         size_t node_id = stack.top();
         stack.pop();
-        graph.for_each_edge(node_id, [&](size_t edge_id, size_t neighbor_id) {
-            if (!edge_id_to_parent.has_label(neighbor_id)) {
-                edge_id_to_parent.add_label(neighbor_id, edge_id);
+        graph.for_each_edge(node_id, [&](EdgeIter edge) {
+            if (!edge_id_to_parent.has_label(edge.neighbor_id)) {
+                edge_id_to_parent.add_label(edge.neighbor_id, edge.id);
                 ++number_visited_nodes;
-                stack.push(neighbor_id);
+                stack.push(edge.neighbor_id);
             }
         });
     }
@@ -619,7 +619,7 @@ bool is_cycle_in_graph(const Graph& graph, const Cycle& cycle) {
     return true;
 }
 
-bool do_cycles_intersect(const Cycle& cycle_1, const Cycle& cycle_2) {
+std::optional<size_t> do_cycles_intersect(const Cycle& cycle_1, const Cycle& cycle_2) {
     std::vector<size_t> nodes_in_cycle_1;
     std::vector<size_t> nodes_in_cycle_2;
     nodes_in_cycle_1.reserve(cycle_1.size());
@@ -634,14 +634,14 @@ bool do_cycles_intersect(const Cycle& cycle_1, const Cycle& cycle_2) {
     size_t i = 0, j = 0;
     while (i < nodes_in_cycle_1.size() && j < nodes_in_cycle_2.size()) {
         if (nodes_in_cycle_1[i] == nodes_in_cycle_2[j]) {
-            return true;
+            return nodes_in_cycle_1[i];
         } else if (nodes_in_cycle_1[i] < nodes_in_cycle_2[j]) {
             i++;
         } else {
             j++;
         }
     }
-    return false;
+    return std::nullopt;
 }
 
 void dfs_tarjan(

@@ -76,7 +76,7 @@ class Bipartition {
 
 bool is_cycle_in_graph(const Graph& graph, const Cycle& cycle);
 
-bool do_cycles_intersect(const Cycle& cycle_1, const Cycle& cycle_2);
+std::optional<size_t> do_cycles_intersect(const Cycle& cycle_1, const Cycle& cycle_2);
 
 struct StrongConnectedComponents {
     const std::vector<std::vector<size_t>> sccs;

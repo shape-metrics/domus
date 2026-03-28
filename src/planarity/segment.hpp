@@ -16,10 +16,10 @@ using namespace domus::graph;
 class Segment {
   private:
     const Graph m_segment;
-    std::vector<size_t> m_attachments{};
     utilities::NodesLabels m_new_id_to_old_id;
     utilities::NodesContainer m_is_attachment;
-    utilities::EdgesLabels m_edges_labels;
+    utilities::EdgesLabels m_new_edge_id_to_old_id;
+    size_t m_number_of_attachments = 0;
 
     Segment(
         const Graph&& segment,
@@ -56,8 +56,7 @@ class Segment {
   public:
     const Graph& get_segment() const;
     const utilities::NodesLabels& get_new_id_to_old_id() const;
-    const utilities::EdgesLabels& get_edge_labels() const;
-    void for_each_attachment(std::function<void(size_t)> f) const; // refers to old node_ids
+    const utilities::EdgesLabels& get_new_edge_id_to_old_id() const;
     size_t number_of_attachments() const;
     bool is_attachment(size_t node_id) const;
     std::string to_string() const;

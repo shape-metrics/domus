@@ -2,12 +2,12 @@
 
 #include <optional>
 
-#include "domus/planarity/embedding.hpp"
+#include "domus/core/graph/embedding.hpp"
 
 namespace domus::graph {
 class Graph;
 }
 
 namespace domus::planarity {
-std::optional<Embedding> compute_planar_embedding(const graph::Graph& graph);
+std::optional<graph::Embedding> compute_planar_embedding(const graph::Graph& graph);
 }
