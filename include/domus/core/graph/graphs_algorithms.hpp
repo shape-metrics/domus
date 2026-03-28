@@ -72,6 +72,7 @@ class Bipartition {
     void print() const;
 
     static std::optional<Bipartition> compute(const Graph& graph);
+    static bool is_bipartite(const Graph& graph);
 };
 
 bool is_cycle_in_graph(const Graph& graph, const Cycle& cycle);

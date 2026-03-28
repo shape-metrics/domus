@@ -1,6 +1,5 @@
 #include "segment.hpp"
 
-#include <cstddef>
 #include <print>
 
 #include "domus/core/graph/cycle.hpp"
@@ -14,25 +13,23 @@ using namespace domus::graph;
 using namespace domus::graph::utilities;
 
 Segment::Segment(
-    const Graph&& segment, const NodesLabels&& labels, const EdgesLabels&& edges_labels
+    const Graph&& segment,
+    const NodesLabels&& labels,
+    const EdgesLabels&& edges_labels,
+    const size_t cycle_size
 )
     : m_segment(segment), m_new_id_to_old_id(labels), m_is_attachment(m_segment),
-      m_edges_labels(edges_labels) {}
+      m_new_edge_id_to_old_id(edges_labels), m_cycle_size(cycle_size) {}
 
 const Graph& Segment::get_segment() const { return m_segment; }
 
-void Segment::for_each_attachment(std::function<void(size_t)> f) const {
-    for (size_t attachment_id : m_attachments)
-        f(attachment_id);
-}
-
-size_t Segment::number_of_attachments() const { return m_attachments.size(); }
+size_t Segment::number_of_attachments() const { return m_number_of_attachments; }
 
 void Segment::add_attachment(const size_t attachment_id) {
     if (is_attachment(attachment_id))
         return;
-    m_attachments.push_back(attachment_id);
     m_is_attachment.add_node(attachment_id);
+    ++m_number_of_attachments;
 }
 
 const NodesLabels& Segment::get_new_id_to_old_id() const { return m_new_id_to_old_id; }
@@ -41,15 +38,29 @@ bool Segment::is_attachment(const size_t node_id) const {
     return m_is_attachment.has_node(node_id);
 }
 
+size_t Segment::get_cycle_size() const { return m_cycle_size; }
+
 std::string Segment::to_string() const {
-    return m_segment.to_string(true, m_new_id_to_old_id, "Segment");
+
+    std::string result;
+    auto out = std::back_inserter(result);
+
+    std::format_to(out, "{}", m_segment.to_string(true, m_new_id_to_old_id, "Segment"));
+
+    std::format_to(out, "Attachments:");
+    for (size_t node_id : m_segment.get_nodes_ids())
+        if (is_attachment(node_id))
+            std::format_to(out, " {}", m_new_id_to_old_id.get_label(node_id));
+    std::format_to(out, "\n");
+
+    return result;
 }
 
 void Segment::print() const { std::println("{}", to_string()); }
 
 bool is_segment_a_path(const Segment& segment) {
     size_t number_degree_3_nodes = 0;
-    for (size_t node_id : segment.get_segment().get_node_ids())
+    for (size_t node_id : segment.get_segment().get_nodes_ids())
         if (segment.get_segment().get_degree_of_node(node_id) > 2)
             number_degree_3_nodes++;
     DOMUS_ASSERT(
@@ -68,18 +79,18 @@ Path compute_path_between_attachments(
     while (!queue.empty()) {
         const size_t node_id = queue.front();
         queue.pop_front();
-        for (const auto [edge_id, neighbor_id] : segment.get_segment().get_edges(node_id)) {
-            if (neighbor_id == attachment_2) {
+        for (const EdgeIter edge : segment.get_segment().get_edges(node_id)) {
+            if (edge.neighbor_id == attachment_2) {
                 if (node_id == attachment_1)
                     continue;
-                edge_id_to_prev.add_label(neighbor_id, edge_id);
+                edge_id_to_prev.add_label(attachment_2, edge.id);
                 break;
             }
-            if (segment.is_attachment(neighbor_id))
+            if (edge.neighbor_id < segment.get_cycle_size()) // means cycle node
                 continue;
-            if (!edge_id_to_prev.has_label(neighbor_id)) {
-                edge_id_to_prev.add_label(neighbor_id, edge_id);
-                queue.push_back(neighbor_id);
+            if (!edge_id_to_prev.has_label(edge.neighbor_id)) {
+                edge_id_to_prev.add_label(edge.neighbor_id, edge.id);
+                queue.push_back(edge.neighbor_id);
             }
         }
         if (edge_id_to_prev.has_label(attachment_2))
@@ -93,6 +104,10 @@ Path compute_path_between_attachments(
         auto [from_id, to_id] = segment.get_segment().get_edge(edge_id);
         crawl = (from_id == crawl) ? to_id : from_id;
     }
+    DOMUS_ASSERT(
+        path.get_first_node_id() == attachment_2 && path.get_last_node_id() == attachment_1,
+        "compute_path_between_attachments: built path does not have prescribed endpoints"
+    );
     return path;
 }
 
@@ -125,19 +140,13 @@ void dfs_find_segments(
     }
 }
 
-void add_cycle_edges(
-    const Cycle& cycle,
-    Graph& segment,
-    const NodesLabels& old_id_to_new_id,
-    EdgesLabels& edges_labels
-) {
+void add_cycle_edges(const Cycle& cycle, Graph& segment, EdgesLabels& edges_labels) {
     for (size_t i = 0; i < cycle.size(); ++i) {
-        const size_t old_node_id = cycle.node_id_at(i);
-        const size_t old_next_node_id = cycle.node_id_at(i + 1);
-        const size_t node_id = old_id_to_new_id.get_label(old_node_id);
-        const size_t next_node_id = old_id_to_new_id.get_label(old_next_node_id);
+        const size_t node_id = i;
+        const size_t next_node_id = (i + 1) % cycle.size();
         const size_t old_edge_id = cycle.edge_id_at(i);
         const size_t edge_id = segment.add_edge(node_id, next_node_id);
+        DOMUS_ASSERT(edge_id == i, "add_cycle_edges: edge_id != i");
         edges_labels.add_label(edge_id, old_edge_id);
     }
 }
@@ -161,12 +170,16 @@ Segment Segment::build_segment(
     }
     for (size_t i = 0; i < nodes.size(); ++i) {
         const size_t node_id = nodes[i];
-        size_t new_node_id = cycle.size() + i;
+        const size_t new_node_id = cycle.size() + i;
         new_id_to_old_id.add_label(new_node_id, node_id);
         old_id_to_new_id.update_label(node_id, new_node_id);
     }
+
     // adding edges
     EdgesLabels edges_labels(edges.size() + cycle.size());
+    // adding cycle edges
+    add_cycle_edges(cycle, segment, edges_labels);
+    // adding inner edges
     for (const auto& [old_edge_id, edge] : edges) {
         const auto [old_from_id, old_to_id] = edge;
         const size_t from_id = old_id_to_new_id.get_label(old_from_id);
@@ -179,9 +192,13 @@ Segment Segment::build_segment(
         if (to_id < cycle.size())
             attachments.push_back(to_id);
     }
-    // adding cycle edges
-    add_cycle_edges(cycle, segment, old_id_to_new_id, edges_labels);
-    Segment result(std::move(segment), std::move(new_id_to_old_id), std::move(edges_labels));
+
+    Segment result(
+        std::move(segment),
+        std::move(new_id_to_old_id),
+        std::move(edges_labels),
+        cycle.size()
+    );
     for (const size_t attachment_id : attachments)
         result.add_attachment(attachment_id);
     return result;
@@ -194,12 +211,12 @@ void Segment::find_segments(
     NodesLabels& old_id_to_new_id
 ) {
     NodesContainer visited(graph);
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         old_id_to_new_id.add_label(node_id, graph.get_number_of_nodes());
         if (cycle.has_node_id(node_id))
             visited.add_node(node_id);
     }
-    for (size_t node_id : graph.get_node_ids())
+    for (size_t node_id : graph.get_nodes_ids())
         if (!visited.has_node(node_id)) {
             std::vector<size_t> nodes;        // does NOT contain cycle nodes
             std::vector<graph::EdgeId> edges; // does NOT contain edges of the cycle
@@ -225,13 +242,18 @@ Segment Segment::build_chord(
         old_id_to_new_id.update_label(node_id, i);
     }
     EdgesLabels edges_labels(cycle.size() + 1);
-    add_cycle_edges(cycle, chord, old_id_to_new_id, edges_labels);
+    add_cycle_edges(cycle, chord, edges_labels);
     // adding chord edge
     size_t new_attachment_1 = old_id_to_new_id.get_label(attachment_1);
     size_t new_attachment_2 = old_id_to_new_id.get_label(attachment_2);
     size_t new_edge_id = chord.add_edge(new_attachment_1, new_attachment_2);
     edges_labels.add_label(new_edge_id, edge_id);
-    Segment result(std::move(chord), std::move(new_id_to_old_id), std::move(edges_labels));
+    Segment result(
+        std::move(chord),
+        std::move(new_id_to_old_id),
+        std::move(edges_labels),
+        cycle.size()
+    );
     result.add_attachment(new_attachment_1);
     result.add_attachment(new_attachment_2);
     return result;
@@ -268,6 +290,6 @@ std::vector<Segment> Segment::compute(const Graph& graph, const Cycle& cycle) {
     return segments;
 }
 
-const EdgesLabels& Segment::get_edge_labels() const { return m_edges_labels; }
+const EdgesLabels& Segment::get_new_edge_id_to_old_id() const { return m_new_edge_id_to_old_id; }
 
 } // namespace domus::planarity

@@ -12,5 +12,5 @@ namespace domus::planarity {
 class Segment;
 
 graph::Graph
-compute_interlacement_graph(const std::vector<Segment>& segments, const domus::graph::Cycle& cycle);
+compute_interlacement_graph(const std::vector<Segment>& segments, const graph::Cycle& cycle);
 } // namespace domus::planarity

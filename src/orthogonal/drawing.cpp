@@ -171,7 +171,7 @@ std::array<size_t, 4> nodes_at_direction(
 double
 compute_side_length(const Graph& graph, const shape::Shape& shape, const Attributes& attributes) {
     size_t max_per_side = 0;
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         auto n_per_direction = nodes_at_direction(graph, node_id, shape, attributes);
         size_t max = *std::max_element(n_per_direction.begin(), n_per_direction.end());
         max_per_side = std::max(max_per_side, max);

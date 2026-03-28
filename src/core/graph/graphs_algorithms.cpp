@@ -79,14 +79,14 @@ bool dfs_find_cycle(
 
 std::optional<Cycle> find_a_directed_cycle_in_graph(const Graph& graph) {
     NodesLabels state(graph); // 0 means unvisited
-    for (size_t node_id : graph.get_node_ids())
+    for (size_t node_id : graph.get_nodes_ids())
         state.add_label(node_id, 0u);
     NodesLabels child_to_parent_edge(graph);
     std::optional<size_t> cycle_start = std::nullopt;
     std::optional<size_t> cycle_end = std::nullopt;
     std::optional<size_t> last_edge_id = std::nullopt;
     std::optional<Cycle> cycle;
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (state.get_label(node_id) == 0)
             if (dfs_find_cycle(
                     node_id,
@@ -122,7 +122,7 @@ std::vector<Cycle> compute_cycle_basis(const Graph& graph) {
     const NodesLabels& labels = spanning_tree.get_edge_ids();
 
     std::vector<Cycle> cycles;
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         for (auto [edge_id, neighbor_id] : graph.get_out_edges(node_id)) {
             if (spanning.has_edge(node_id, neighbor_id))
                 continue;
@@ -153,10 +153,10 @@ std::vector<Cycle> compute_cycle_basis(const Graph& graph) {
 
 std::optional<std::vector<size_t>> make_topological_ordering(const Graph& graph) {
     NodesLabels in_degree(graph);
-    for (size_t node_id : graph.get_node_ids())
+    for (size_t node_id : graph.get_nodes_ids())
         in_degree.add_label(node_id, graph.get_in_degree_of_node(node_id));
     std::queue<size_t> queue;
-    for (size_t node_id : graph.get_node_ids())
+    for (size_t node_id : graph.get_nodes_ids())
         if (in_degree.get_label(node_id) == 0)
             queue.push(node_id);
     std::vector<size_t> topological_order;
@@ -197,7 +197,7 @@ std::pair<std::vector<Graph>, NodesLabels> compute_connected_components(const Gr
                 component.add_edge(new_node_id, new_neighbor_id);
         });
     };
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (!visited.has_node(node_id)) {
             size_t new_node_id = components.emplace_back().add_node();
             new_node_ids.add_label(node_id, new_node_id);
@@ -225,7 +225,7 @@ size_t compute_number_of_connected_components(const Graph& graph) {
             }
         }
     };
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (!visited.has_node(node_id)) {
             components++;
             explore_component(node_id);
@@ -258,10 +258,10 @@ BiconnectedComponents BiconnectedComponents::compute(const Graph& graph) {
     size_t next_id_to_assign = 0;
     std::vector<Edge> edge_stack{};
     NodesLabels old_to_new_nodes(graph);
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         old_to_new_nodes.add_label(node_id, graph.get_number_of_nodes());
     }
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (old_node_id_to_new_id.has_label(node_id)) // node visited
             continue;
         dfs_bic_com(
@@ -283,7 +283,7 @@ BiconnectedComponents BiconnectedComponents::compute(const Graph& graph) {
         "compute_biconnected_components: some internal error took place"
     ); // assessing algorithm finished correctly
     std::vector<size_t> cut_vectices;
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (is_cut_vertex.has_node(node_id))
             cut_vectices.push_back(node_id);
     }
@@ -467,11 +467,15 @@ bool dfs_bipartition(const Graph& graph, size_t node_id, Bipartition& bipartitio
 
 std::optional<Bipartition> Bipartition::compute(const Graph& graph) {
     Bipartition bipartition{graph};
-    for (size_t node_id : graph.get_node_ids())
+    for (size_t node_id : graph.get_nodes_ids())
         if (!bipartition.has_node(node_id))
             if (!dfs_bipartition(graph, node_id, bipartition))
                 return std::nullopt;
     return bipartition;
+}
+
+bool Bipartition::is_bipartite(const Graph& graph) {
+    return Bipartition::compute(graph).has_value();
 }
 
 std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
@@ -505,7 +509,7 @@ std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
             }
         });
     };
-    for (size_t start_node_id : graph.get_node_ids())
+    for (size_t start_node_id : graph.get_nodes_ids())
         if (!visited.has_node(start_node_id) && !found_cycle)
             dfs(start_node_id, -1);
     return found_cycle;
@@ -695,7 +699,7 @@ StrongConnectedComponents StrongConnectedComponents::compute(const Graph& graph)
     std::stack<size_t> stack;
     std::vector<std::vector<size_t>> sccs;
 
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (!discovery.has_label(node_id)) {
             dfs_tarjan(
                 node_id,

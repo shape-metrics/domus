@@ -1,7 +1,10 @@
 #include "domus/core/graph/generators.hpp"
 
+#include <format>
+#include <iterator>
 #include <stdlib.h>
 
+#include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 
 #include "../domus_debug.hpp"
@@ -95,6 +98,41 @@ Graph generate_triangle_graph(size_t num_nodes) {
         }
     }
     return graph;
+}
+
+Graph generate_k_n(size_t n) {
+    Graph graph;
+    for (size_t i = 0; i < n; ++i)
+        graph.add_node();
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = i + 1; j < n; ++j)
+            graph.add_edge(i, j);
+    return graph;
+}
+
+Graph generate_k_n_m(size_t n, size_t m) {
+    Graph graph;
+    for (size_t i = 0; i < n + m; ++i)
+        graph.add_node();
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = n; j < n + m; ++j)
+            graph.add_edge(i, j);
+    return graph;
+}
+
+std::string code_to_generate_graph(const Graph& graph) {
+    std::string code;
+    auto out = std::back_inserter(code);
+    std::format_to(out, "Graph graph;\n");
+
+    for (size_t i = 0; i < graph.get_number_of_nodes(); ++i)
+        std::format_to(out, "graph.add_node();\n");
+
+    for (size_t node_id : graph.get_nodes_ids())
+        for (EdgeIter edge : graph.get_out_edges(node_id))
+            std::format_to(out, "graph.add_edge({}, {});\n", node_id, edge.neighbor_id);
+
+    return code;
 }
 
 } // namespace domus::graph::generators

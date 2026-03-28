@@ -20,11 +20,13 @@ class Segment {
     utilities::NodesContainer m_is_attachment;
     utilities::EdgesLabels m_new_edge_id_to_old_id;
     size_t m_number_of_attachments = 0;
+    size_t m_cycle_size;
 
     Segment(
         const Graph&& segment,
         const utilities::NodesLabels&& labels,
-        const utilities::EdgesLabels&& edges_labels
+        const utilities::EdgesLabels&& edges_labels,
+        const size_t cycle_size
     );
     void add_attachment(size_t attachment_id);
     static Segment build_chord(
@@ -55,6 +57,7 @@ class Segment {
 
   public:
     const Graph& get_segment() const;
+    size_t get_cycle_size() const;
     const utilities::NodesLabels& get_new_id_to_old_id() const;
     const utilities::EdgesLabels& get_new_edge_id_to_old_id() const;
     size_t number_of_attachments() const;

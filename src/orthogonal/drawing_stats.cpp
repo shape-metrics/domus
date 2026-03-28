@@ -25,7 +25,7 @@ std::vector<size_t> compute_edge_lengths(const Graph& graph, const Attributes& a
         compute_node_to_index_position(graph, attributes);
     std::vector<size_t> edge_lengths;
     NodesContainer visited(graph);
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
             continue;
         std::function<void(size_t, size_t, size_t)> dfs =

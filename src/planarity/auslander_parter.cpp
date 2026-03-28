@@ -5,12 +5,12 @@
 #include <vector>
 
 #include "domus/core/graph/cycle.hpp"
+#include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
 
 #include "../core/domus_debug.hpp"
-#include "domus/planarity/embedding.hpp"
 #include "interlacement.hpp"
 #include "segment.hpp"
 
@@ -36,13 +36,13 @@ Embedding merge_biconnected_components(
         const Embedding& embedding = embeddings[i];
         const Graph& component = biconnected_components.get_components()[i];
         const NodesLabels& labels = biconnected_components.get_labels_of_component(i);
-        component.for_each_node([&](size_t node_id) {
+        for (size_t node_id : component.get_nodes_ids()) {
             size_t old_node_id = labels.get_label(node_id);
-            embedding.for_each_neighbor(node_id, [&](size_t component_neighbor_id) {
-                size_t old_neighbor_id = labels.get_label(component_neighbor_id);
-                output.add_edge(old_node_id, old_neighbor_id);
+            embedding.for_each_edge(node_id, [&](EdgeIter component_edge) {
+                size_t old_neighbor_id = labels.get_label(component_edge.neighbor_id);
+                output.add_edge(old_node_id, old_neighbor_id, component_edge.id);
             });
-        });
+        }
     }
     return output;
 }
@@ -55,12 +55,13 @@ Embedding merge_biconnected_components(
  */
 Embedding base_case_graph(const Graph& graph) {
     Embedding embedding(graph);
-    graph.for_each_node([&](size_t node_id) {
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            embedding.add_edge(node_id, neighbor_id);
-        });
-    });
-    DOMUS_ASSERT(is_embedding_planar(embedding), "base_case_graph: output embedding is not planar");
+    for (size_t node_id : graph.get_nodes_ids())
+        for (EdgeIter edge : graph.get_edges(node_id))
+            embedding.add_edge(node_id, edge.neighbor_id, edge.id);
+    DOMUS_ASSERT(
+        is_embedding_planar(graph, embedding),
+        "base_case_graph: output embedding is not planar"
+    );
     return embedding;
 }
 
@@ -75,8 +76,8 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
     Embedding embedding(component);
     component.for_each_node([&](size_t node_id) {
         if (component.get_degree_of_node(node_id) == 2) {
-            component.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-                embedding.add_edge(node_id, neighbor_id);
+            component.for_each_edge(node_id, [&](EdgeIter edge) {
+                embedding.add_edge(node_id, edge.neighbor_id, edge.id);
             });
             return;
         }
@@ -88,22 +89,26 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
             cycle.has_node_id(node_id),
             "base_case_component: cycle does not contain the node with degree 3"
         );
-        std::optional<size_t> neighbor_in_between;
+        std::optional<EdgeIter> edge_in_between;
         size_t position = cycle.node_id_position(node_id);
-        component.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            if (neighbor_in_between.has_value())
+        component.for_each_edge(node_id, [&](EdgeIter edge) {
+            if (edge_in_between.has_value())
                 return;
-            if (cycle.node_id_at(position + 1) == neighbor_id ||
-                cycle.node_id_at(position + cycle.size() - 1) == neighbor_id)
+            if (cycle.node_id_at(position + 1) == edge.neighbor_id ||
+                cycle.node_id_at(position + cycle.size() - 1) == edge.neighbor_id)
                 return;
-            neighbor_in_between = neighbor_id;
+            edge_in_between = edge;
         });
-        embedding.add_edge(node_id, cycle.node_id_at(position + 1));
-        embedding.add_edge(node_id, neighbor_in_between.value());
-        embedding.add_edge(node_id, cycle.node_id_at(position + cycle.size() - 1));
+        embedding.add_edge(node_id, cycle.node_id_at(position + 1), cycle.edge_id_at(position));
+        embedding.add_edge(node_id, edge_in_between->neighbor_id, edge_in_between->id);
+        embedding.add_edge(
+            node_id,
+            cycle.node_id_at(position + cycle.size() - 1),
+            cycle.edge_id_at(position + cycle.size() - 1)
+        );
     });
     DOMUS_ASSERT(
-        is_embedding_planar(embedding),
+        is_embedding_planar(component, embedding),
         "base_case_component: output embedding is not planar"
     );
     return embedding;
@@ -145,7 +150,7 @@ Cycle make_cycle_good(const Graph& graph, const Cycle& cycle, const Segment& seg
     const Path path =
         compute_path_between_attachments(segment, attachments_to_use[0], attachments_to_use[1]);
     auto& nodes_labels = segment.get_new_id_to_old_id();
-    auto& edge_labels = segment.get_edge_labels();
+    auto& edge_labels = segment.get_new_edge_id_to_old_id();
     Path old_path;
     path.for_each([&](size_t edge_id, size_t prev_node_id) {
         size_t old_edge_id = edge_labels.get_label(edge_id);
@@ -210,7 +215,9 @@ std::vector<bool> are_embeddings_inside_clockwise_cycle(
             0 <= prev && prev < cycle.size(),
             "are_embeddings_inside_clockwise_cycle: prev should belong to the cycle"
         );
-        is_inside[i] = embedding.next_element_in_adjacency_list(attachment_id, next) != prev;
+        is_inside[i] =
+            embedding.next_in_adjacency_list(attachment_id, next, attachment_id).neighbor_id !=
+            prev;
     }
     return is_inside;
 }
@@ -299,28 +306,35 @@ void add_middle_edges(
     const bool compatible,
     Embedding& output,
     const Cycle& cycle,
-    const NodesLabels& labels_to_old_ids
+    const NodesLabels& labels_to_old_ids,
+    const EdgesLabels& to_old_edge_ids
 ) {
     const size_t prev_cycle_position = (cycle_node_position + cycle.size() - 1) % cycle.size();
     const size_t next_cycle_position = (cycle_node_position + 1) % cycle.size();
-    std::vector<size_t> neighbors_to_add;
+    std::vector<EdgeIter> edges_to_add;
     size_t current = prev_cycle_position;
-    for (size_t i = 1; i < embedding.get_node_degree(cycle_node_position); ++i) {
-        current = embedding.next_element_in_adjacency_list(cycle_node_position, current);
-        if (next_cycle_position == current || prev_cycle_position == current)
+    size_t current_edge_id = prev_cycle_position;
+    for (size_t i = 0; i < embedding.get_node_degree(cycle_node_position); ++i) {
+        auto edge = embedding.next_in_adjacency_list(cycle_node_position, current, current_edge_id);
+        current = edge.neighbor_id;
+        current_edge_id = edge.id;
+        if (next_cycle_position == edge.neighbor_id || prev_cycle_position == edge.neighbor_id)
             continue;
-        neighbors_to_add.push_back(current);
+        edges_to_add.push_back(edge);
     }
     const size_t cycle_id = cycle.node_id_at(cycle_node_position);
     if (compatible)
-        for (size_t neighbor_id : neighbors_to_add) {
-            const size_t old_neighbor_id = labels_to_old_ids.get_label(neighbor_id);
-            output.add_edge(cycle_id, old_neighbor_id);
+        for (EdgeIter edge : edges_to_add) {
+            const size_t old_neighbor_id = labels_to_old_ids.get_label(edge.neighbor_id);
+            const size_t old_edge_id = to_old_edge_ids.get_label(edge.id);
+            output.add_edge(cycle_id, old_neighbor_id, old_edge_id);
         }
     else
-        for (size_t j = neighbors_to_add.size(); j > 0; --j) {
-            const size_t old_neighbor_id = labels_to_old_ids.get_label(neighbors_to_add[j - 1]);
-            output.add_edge(cycle_id, old_neighbor_id);
+        for (size_t j = edges_to_add.size(); j > 0; --j) {
+            EdgeIter edge = edges_to_add[j - 1];
+            const size_t old_neighbor_id = labels_to_old_ids.get_label(edge.neighbor_id);
+            const size_t old_edge_id = to_old_edge_ids.get_label(edge.id);
+            output.add_edge(cycle_id, old_neighbor_id, old_edge_id);
         }
 }
 
@@ -366,10 +380,12 @@ void add_edges_incident_to_cycle(
         );
         const size_t prev_cycle_node = cycle.node_id_at(cycle_node_position + cycle.size() - 1);
         const size_t next_cycle_node = cycle.node_id_at(cycle_node_position + 1);
-        output.add_edge(cycle_node_id, next_cycle_node);
+        output.add_edge(cycle_node_id, next_cycle_node, cycle.edge_id_at(cycle_node_position));
         for (const size_t segment_index : inside_order) {
             const Embedding& embedding = embeddings[segment_index];
             const NodesLabels& labels_to_old_ids = segments[segment_index].get_new_id_to_old_id();
+            const EdgesLabels& labels_to_old_edge_ids =
+                segments[segment_index].get_new_edge_id_to_old_id();
             const bool is_embedding_compatible =
                 is_segment_inside.get_side(segment_index) == is_embedding_inside[segment_index];
             add_middle_edges(
@@ -378,13 +394,20 @@ void add_edges_incident_to_cycle(
                 is_embedding_compatible,
                 output,
                 cycle,
-                labels_to_old_ids
+                labels_to_old_ids,
+                labels_to_old_edge_ids
             );
         }
-        output.add_edge(cycle_node_id, prev_cycle_node);
+        output.add_edge(
+            cycle_node_id,
+            prev_cycle_node,
+            cycle.edge_id_at(cycle_node_position + cycle.size() - 1)
+        );
         for (const size_t segment_index : outside_order) {
             const Embedding& embedding = embeddings[segment_index];
             const NodesLabels& labels_to_old_ids = segments[segment_index].get_new_id_to_old_id();
+            const EdgesLabels& labels_to_old_edge_ids =
+                segments[segment_index].get_new_edge_id_to_old_id();
             const bool is_embedding_compatible =
                 is_segment_inside.get_side(segment_index) == is_embedding_inside[segment_index];
             add_middle_edges(
@@ -393,7 +416,8 @@ void add_edges_incident_to_cycle(
                 is_embedding_compatible,
                 output,
                 cycle,
-                labels_to_old_ids
+                labels_to_old_ids,
+                labels_to_old_edge_ids
             );
         }
     }
@@ -411,24 +435,28 @@ void add_edges_not_incident_to_cycle(
         const Segment& segment = segments[i];
         const Embedding& embedding = embeddings[i];
         const NodesLabels& labels_to_old_ids = segment.get_new_id_to_old_id();
+        const EdgesLabels& labels_to_old_edge_ids = segment.get_new_edge_id_to_old_id();
         segment.get_segment().for_each_node([&](size_t node_id) {
             if (node_id < cycle.size())
                 return;
             const size_t old_node_id = labels_to_old_ids.get_label(node_id);
-            std::vector<size_t> neighbors_to_add;
-            embedding.for_each_neighbor(node_id, [&neighbors_to_add](size_t neighbor_id) {
-                neighbors_to_add.push_back(neighbor_id);
+            std::vector<EdgeIter> edges_to_add;
+            embedding.for_each_edge(node_id, [&edges_to_add](EdgeIter edge) {
+                edges_to_add.push_back(edge);
             });
             if (is_segment_inside.get_side(i) == is_embedding_inside[i])
-                for (size_t neighbor_id : neighbors_to_add) {
-                    const size_t old_neighbor_id = labels_to_old_ids.get_label(neighbor_id);
-                    output.add_edge(old_node_id, old_neighbor_id);
+                for (EdgeIter edge : edges_to_add) {
+                    const size_t old_neighbor_id = labels_to_old_ids.get_label(edge.neighbor_id);
+                    const size_t old_edge_id = labels_to_old_edge_ids.get_label(edge.id);
+                    output.add_edge(old_node_id, old_neighbor_id, old_edge_id);
                 }
             else
-                for (size_t j = neighbors_to_add.size(); j > 0; --j) {
+                for (size_t j = edges_to_add.size(); j > 0; --j) {
                     const size_t old_neighbor_id =
-                        labels_to_old_ids.get_label(neighbors_to_add[j - 1]);
-                    output.add_edge(old_node_id, old_neighbor_id);
+                        labels_to_old_ids.get_label(edges_to_add[j - 1].neighbor_id);
+                    const size_t old_edge_id =
+                        labels_to_old_edge_ids.get_label(edges_to_add[j - 1].id);
+                    output.add_edge(old_node_id, old_neighbor_id, old_edge_id);
                 }
         });
     }
@@ -471,7 +499,7 @@ std::optional<Embedding> embed_biconnected_component(const Graph& component);
 
 bool is_embedding_valid(const Segment& segment, const Embedding& embedding) {
     const Graph& graph = segment.get_segment();
-    if (graph.get_number_of_nodes() != embedding.size())
+    if (graph.get_number_of_nodes() != embedding.get_number_of_nodes())
         return false;
     if (graph.get_number_of_edges() * 2 != embedding.total_number_of_edges())
         return false;
@@ -490,7 +518,7 @@ bool is_embedding_valid(const Segment& segment, const Embedding& embedding) {
     });
     if (!is_valid)
         return false;
-    return is_embedding_planar(embedding);
+    return is_embedding_planar(graph, embedding);
 }
 
 std::optional<Embedding> embed_biconnected_component(const Graph& component, const Cycle& cycle) {
@@ -502,7 +530,12 @@ std::optional<Embedding> embed_biconnected_component(const Graph& component, con
         if (is_segment_a_path(segment))
             return base_case_component(component, cycle);
         // the chosen cycle is bad
-        return embed_biconnected_component(component, make_cycle_good(component, cycle, segment));
+        const Cycle good_cycle = make_cycle_good(component, cycle, segment);
+        DOMUS_ASSERT(
+            Segment::compute(component, good_cycle).size() > 1,
+            "embed_biconnected_component: make_cycle_good failed"
+        );
+        return embed_biconnected_component(component, good_cycle);
     }
     const Graph interlacement_graph = compute_interlacement_graph(segments, cycle);
     const std::optional<Bipartition> is_segment_inside = Bipartition::compute(interlacement_graph);
@@ -548,7 +581,57 @@ std::optional<Embedding> compute_planar_embedding(const Graph& graph) {
             return std::nullopt;
         embeddings.push_back(std::move(embedding.value()));
     }
-    return merge_biconnected_components(graph, bic_comps, embeddings);
+    Embedding result = merge_biconnected_components(graph, bic_comps, embeddings);
+    DOMUS_ASSERT(
+        is_embedding_planar(graph, result),
+        "compute_planar_embedding: output embedding is not planar"
+    );
+    return result;
+}
+
+bool is_biconnected_component_planar(const Graph& component);
+
+bool is_graph_planar(const graph::Graph& graph) {
+    if (graph.get_number_of_nodes() <= 4)
+        return true;
+    if (graph.get_number_of_edges() / 2 > 3 * graph.get_number_of_nodes() - 6)
+        return false;
+    for (const Graph& component : BiconnectedComponents::compute(graph).get_components())
+        if (!is_biconnected_component_planar(component))
+            return false;
+    return true;
+}
+
+bool is_biconnected_component_planar(const Graph& component, const Cycle& cycle) {
+    const std::vector<Segment> segments = Segment::compute(component, cycle);
+    if (segments.empty()) // the entire biconnected component is a cycle
+        return true;
+    if (segments.size() == 1) {
+        const Segment& segment = segments[0];
+        if (is_segment_a_path(segment))
+            return true;
+        // the chosen cycle is bad
+        const Cycle good_cycle = make_cycle_good(component, cycle, segment);
+        DOMUS_ASSERT(
+            Segment::compute(component, good_cycle).size() > 1,
+            "embed_biconnected_component: make_cycle_good failed"
+        );
+        return is_biconnected_component_planar(component, good_cycle);
+    }
+    const Graph interlacement_graph = compute_interlacement_graph(segments, cycle);
+    if (!Bipartition::is_bipartite(interlacement_graph))
+        return false; // if no bipartition exists, the component is not planar
+    for (const Segment& segment : segments)
+        if (!is_biconnected_component_planar(segment.get_segment()))
+            return false;
+    return true;
+}
+
+bool is_biconnected_component_planar(const Graph& component) {
+    const std::optional<Cycle> cycle = find_an_undirected_cycle_in_graph(component);
+    if (cycle.has_value())
+        return is_biconnected_component_planar(component, cycle.value());
+    return true;
 }
 
 } // namespace domus::planarity

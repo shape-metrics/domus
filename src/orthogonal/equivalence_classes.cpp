@@ -79,7 +79,7 @@ void EquivalenceClasses::directional_node_expander(
 void EquivalenceClasses::horizontal_node_expander(
     const Shape& shape, const Graph& graph, size_t node_id
 ) {
-    size_t class_id = add_class();
+    const size_t class_id = add_class();
     auto is_direction_wrong = [](const Shape& s, size_t edge_id) { return s.is_vertical(edge_id); };
     directional_node_expander(shape, graph, node_id, class_id, is_direction_wrong);
 }
@@ -87,7 +87,7 @@ void EquivalenceClasses::horizontal_node_expander(
 void EquivalenceClasses::vertical_node_expander(
     const Shape& shape, const Graph& graph, size_t node_id
 ) {
-    size_t class_id = add_class();
+    const size_t class_id = add_class();
     auto is_direction_wrong = [](const Shape& s, size_t edge_id) {
         return s.is_horizontal(edge_id);
     };
@@ -98,18 +98,18 @@ const std::pair<EquivalenceClasses, EquivalenceClasses>
 EquivalenceClasses::build(const Shape& shape, const Graph& graph) {
     EquivalenceClasses equivalence_classes_x(graph);
     EquivalenceClasses equivalence_classes_y(graph);
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         if (!equivalence_classes_y.has_elem_a_class(node_id))
             equivalence_classes_y.horizontal_node_expander(shape, graph, node_id);
         if (!equivalence_classes_x.has_elem_a_class(node_id))
             equivalence_classes_x.vertical_node_expander(shape, graph, node_id);
-    });
-    graph.for_each_node([&](size_t node_id) {
+    }
+    for (const size_t node_id : graph.get_nodes_ids()) {
         if (!equivalence_classes_x.has_elem_a_class(node_id))
             equivalence_classes_x.set_class(node_id, equivalence_classes_x.add_class());
         if (!equivalence_classes_y.has_elem_a_class(node_id))
             equivalence_classes_y.set_class(node_id, equivalence_classes_y.add_class());
-    });
+    }
     return std::make_pair(std::move(equivalence_classes_x), std::move(equivalence_classes_y));
 }
 
@@ -127,31 +127,33 @@ Ordering Ordering::build(
     EdgesLabels ordering_x_edge_to_graph_edge(ordering_x);
     EdgesLabels ordering_y_edge_to_graph_edge(ordering_y);
 
-    graph.for_each_node([&](size_t node_id) {
-        graph.for_each_edge(node_id, [&](graph::EdgeIter edge) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
+        for (const graph::EdgeIter edge : graph.get_edges(node_id)) {
             if (shape.is_right(graph, edge.id, node_id, edge.neighbor_id)) {
-                size_t node_class_x = equivalence_classes_x.get_class_of_elem(node_id);
-                size_t neighbor_class_x = equivalence_classes_x.get_class_of_elem(edge.neighbor_id);
+                const size_t node_class_x = equivalence_classes_x.get_class_of_elem(node_id);
+                const size_t neighbor_class_x =
+                    equivalence_classes_x.get_class_of_elem(edge.neighbor_id);
                 if (node_class_x == neighbor_class_x)
-                    return;
+                    continue;
                 if (ordering_x.has_edge(node_class_x, neighbor_class_x))
-                    return;
-                size_t ordering_edge_id = ordering_x.add_edge(node_class_x, neighbor_class_x);
+                    continue;
+                const size_t ordering_edge_id = ordering_x.add_edge(node_class_x, neighbor_class_x);
                 ordering_x_edge_to_graph_edge.update_size(ordering_edge_id);
                 ordering_x_edge_to_graph_edge.add_label(ordering_edge_id, edge.id);
             } else if (shape.is_up(graph, edge.id, node_id, edge.neighbor_id)) {
-                size_t node_class_y = equivalence_classes_y.get_class_of_elem(node_id);
-                size_t neighbor_class_y = equivalence_classes_y.get_class_of_elem(edge.neighbor_id);
+                const size_t node_class_y = equivalence_classes_y.get_class_of_elem(node_id);
+                const size_t neighbor_class_y =
+                    equivalence_classes_y.get_class_of_elem(edge.neighbor_id);
                 if (node_class_y == neighbor_class_y)
-                    return;
+                    continue;
                 if (ordering_y.has_edge(node_class_y, neighbor_class_y))
-                    return;
-                size_t ordering_edge_id = ordering_y.add_edge(node_class_y, neighbor_class_y);
+                    continue;
+                const size_t ordering_edge_id = ordering_y.add_edge(node_class_y, neighbor_class_y);
                 ordering_y_edge_to_graph_edge.update_size(ordering_edge_id);
                 ordering_y_edge_to_graph_edge.add_label(ordering_edge_id, edge.id);
             }
-        });
-    });
+        }
+    }
     return Ordering(
         std::move(ordering_x),
         std::move(ordering_y),

@@ -164,7 +164,7 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
 std::tuple<Graph, Attributes, Shape>
 remove_useless_bends(const Graph& graph, const Attributes& attributes, const Shape& shape) {
     std::vector<bool> kept_nodes(graph.get_number_of_nodes(), true);
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (attributes.get_node_color(node_id) == Color::BLACK)
             continue;
         DOMUS_ASSERT(
@@ -180,14 +180,14 @@ remove_useless_bends(const Graph& graph, const Attributes& attributes, const Sha
     }
     Graph new_graph;
     utilities::NodesLabels old_id_to_new_id(graph);
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (kept_nodes[node_id]) {
             size_t new_id = new_graph.add_node();
             old_id_to_new_id.add_label(node_id, new_id);
         }
     }
     utilities::NodesLabels new_id_to_old_id(new_graph);
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (kept_nodes[node_id]) {
             size_t new_id = old_id_to_new_id.get_label(node_id);
             new_id_to_old_id.add_label(new_id, node_id);
@@ -232,7 +232,7 @@ ShapeMetricsDrawing make_orthogonal_drawing(const Graph& graph) {
     Graph augmented_graph;
     for (size_t i = 0; i < graph.get_number_of_nodes(); ++i)
         augmented_graph.add_node();
-    for (size_t node_id : graph.get_node_ids())
+    for (size_t node_id : graph.get_nodes_ids())
         for (size_t neighbor_id : graph.get_out_neighbors(node_id))
             augmented_graph.add_edge(node_id, neighbor_id);
 
@@ -393,7 +393,7 @@ find_edges_to_fix(const Graph& graph, const Shape& shape, const Attributes& attr
         graph.get_number_of_edges(),
         std::nullopt
     );
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (graph.get_degree_of_node(node_id) <= 4)
             continue;
         std::optional<size_t> downest_left, downest_right, leftest_up, leftest_down;
@@ -502,14 +502,14 @@ fix_useless_green_blue_nodes(const Graph& graph, const Attributes& attributes, c
     Attributes new_attributes;
     new_attributes.add_attribute(Attribute::NODES_COLOR);
 
-    for (size_t node_id : graph.get_node_ids())
+    for (size_t node_id : graph.get_nodes_ids())
         if (!skip_node.has_node(node_id)) {
             size_t new_id = new_graph.add_node();
             old_id_to_new_id.add_label(node_id, new_id);
             new_attributes.set_node_color(new_id, attributes.get_node_color(node_id));
         }
 
-    for (size_t node_id : graph.get_node_ids()) {
+    for (size_t node_id : graph.get_nodes_ids()) {
         if (skip_node.has_node(node_id))
             continue;
         for (auto [edge_id, neighbor_id] : graph.get_edges(node_id)) {
@@ -561,7 +561,7 @@ fix_useless_green_blue_nodes(const Graph& graph, const Attributes& attributes, c
 
 void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape) {
     std::vector<size_t> nodes;
-    for (size_t node_id : graph.get_node_ids())
+    for (size_t node_id : graph.get_nodes_ids())
         if (graph.get_degree_of_node(node_id) > 4)
             nodes.push_back(node_id);
 

@@ -90,3 +90,58 @@ void EdgesLabels::update_size(size_t edge_id) {
     while (m_labels.size() <= edge_id)
         m_labels.push_back(std::nullopt);
 }
+
+EdgesContainer::EdgesContainer(const Graph& graph)
+    : m_has_edge(graph.get_number_of_edges(), false) {}
+
+EdgesContainer::EdgesContainer(size_t number_of_edges_ids)
+    : m_has_edge(number_of_edges_ids, false) {}
+
+void EdgesContainer::add_edge(size_t edge_id) {
+    DOMUS_ASSERT(!has_edge(edge_id), "EdgesContainer::add_edge: edge already exists");
+    m_has_edge[edge_id] = true;
+    m_number_of_edges++;
+}
+
+bool EdgesContainer::has_edge(size_t edge_id) const { return m_has_edge.at(edge_id); }
+
+size_t EdgesContainer::size() const { return m_number_of_edges; }
+
+bool EdgesContainer::empty() const { return size() == 0; }
+
+void EdgesContainer::erase(size_t edge_id) {
+    DOMUS_ASSERT(has_edge(edge_id), "EdgesContainer::erase: edge does not exist");
+    m_has_edge[edge_id] = false;
+    m_number_of_edges--;
+}
+
+VisitedEdges::VisitedEdges(const Graph& graph)
+    : m_visited_edges_1(graph), m_visited_edges_2(graph) {}
+
+VisitedEdges::VisitedEdges(size_t number_of_edges_ids)
+    : m_visited_edges_1(number_of_edges_ids), m_visited_edges_2(number_of_edges_ids) {}
+
+bool VisitedEdges::has_edge(size_t from_id, size_t to_id, size_t edge_id) const {
+    if (from_id < to_id)
+        return m_visited_edges_1.has_edge(edge_id);
+    else
+        return m_visited_edges_2.has_edge(edge_id);
+}
+
+void VisitedEdges::add_edge(size_t from_id, size_t to_id, size_t edge_id) {
+    if (from_id < to_id)
+        m_visited_edges_1.add_edge(edge_id);
+    else
+        m_visited_edges_2.add_edge(edge_id);
+}
+
+void VisitedEdges::erase(size_t from_id, size_t to_id, size_t edge_id) {
+    if (from_id < to_id)
+        m_visited_edges_1.erase(edge_id);
+    else
+        m_visited_edges_2.erase(edge_id);
+}
+
+size_t VisitedEdges::size() const { return m_visited_edges_1.size() + m_visited_edges_2.size(); }
+
+bool VisitedEdges::empty() const { return size() == 0; }

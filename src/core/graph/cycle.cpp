@@ -20,6 +20,10 @@ Cycle::Cycle(const Path& path) {
         m_nodes_ids.push_back(prev_node_id);
         m_edges_ids.push_back(edge_id);
     });
+    DOMUS_ASSERT(
+        !DOMUS_HAS_DUPLICATES(m_nodes_ids) && !DOMUS_HAS_DUPLICATES(m_edges_ids),
+        "Cycle::Cycle: class is for SIMPLE cycles only"
+    );
 }
 
 bool Cycle::empty() const { return m_nodes_ids.empty(); }

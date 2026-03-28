@@ -48,4 +48,32 @@ class EdgesLabels {
     void update_size(size_t edge_id);
 };
 
+class EdgesContainer {
+    size_t m_number_of_edges = 0;
+    std::vector<bool> m_has_edge;
+
+  public:
+    EdgesContainer(const Graph& graph);
+    EdgesContainer(size_t number_of_edges_ids);
+    void add_edge(size_t edge_id);
+    bool has_edge(size_t edge_id) const;
+    size_t size() const;
+    bool empty() const;
+    void erase(size_t edge_id);
+};
+
+class VisitedEdges {
+    EdgesContainer m_visited_edges_1;
+    EdgesContainer m_visited_edges_2;
+
+  public:
+    VisitedEdges(const Graph& graph);
+    VisitedEdges(size_t number_of_edges_ids);
+    bool has_edge(size_t from_id, size_t to_id, size_t edge_id) const;
+    void add_edge(size_t from_id, size_t to_id, size_t edge_id);
+    void erase(size_t from_id, size_t to_id, size_t edge_id);
+    size_t size() const;
+    bool empty() const;
+};
+
 } // namespace domus::graph::utilities

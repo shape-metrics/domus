@@ -99,6 +99,8 @@ set(COMMON_SRCS
     src/core/graph/embedding.cpp
     src/planarity/interlacement.cpp
     src/torus/embedder.cpp
+    src/torus/embed_two_cycles.cpp
+    src/test_graphs.cpp
 )
 
 add_library(core ${COMMON_SRCS})

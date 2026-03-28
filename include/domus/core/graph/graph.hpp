@@ -54,7 +54,7 @@ class Graph {
 
     void for_each_node(std::function<void(size_t)> f) const;
 
-    auto get_node_ids() const;
+    auto get_nodes_ids() const;
 
     void for_each_out_neighbor(size_t node_id, std::function<void(size_t)> f) const;
     void for_each_in_neighbor(size_t node_id, std::function<void(size_t)> f) const;
@@ -93,7 +93,7 @@ class Graph {
     void print(bool undirected) const;
 };
 
-inline auto Graph::get_node_ids() const {
+inline auto Graph::get_nodes_ids() const {
     return std::views::iota(size_t{0}, get_number_of_nodes());
 }
 

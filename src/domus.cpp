@@ -14,24 +14,24 @@
 #include "test_graphs.hpp"
 
 using namespace domus;
+using namespace domus::graph;
 using namespace domus::planarity;
 using namespace domus::orthogonal;
 
 void planarity_test(const graph::Graph& graph) {
-    const std::optional<graph::Embedding> embedding = compute_planar_embedding(graph);
+    const std::optional<Embedding> embedding = compute_planar_embedding(graph);
     if (embedding.has_value()) {
         std::println("Embedding found");
         embedding->print();
         std::println(
             "number of faces: {}",
-            compute_number_of_faces_in_embedding(embedding.value())
+            compute_number_of_faces_in_embedding(graph, embedding.value())
         );
-        std::println("{}", is_embedding_planar(graph, embedding.value()));
     } else
         std::println("Embedding not found");
 }
 
-void make_orthogonal(const graph::Graph& graph) {
+void make_orthogonal(const Graph& graph) {
     static constexpr std::string svg_filename = "drawing.svg";
     const auto result = make_orthogonal_drawing(graph);
     make_svg(
@@ -48,13 +48,13 @@ void make_orthogonal(const graph::Graph& graph) {
 }
 
 void toroidal_test(const graph::Graph& graph) {
-    const std::optional<graph::Embedding> embedding = torus::compute_toroidal_embedding(graph);
+    const std::optional<Embedding> embedding = torus::compute_toroidal_embedding(graph);
     if (embedding.has_value()) {
         std::println("Embedding found");
         embedding->print();
         std::println(
             "number of faces: {}",
-            compute_number_of_faces_in_embedding(embedding.value())
+            compute_number_of_faces_in_embedding(graph, embedding.value())
         );
         std::println("genus: {}", compute_embedding_genus(graph, embedding.value()));
     } else
@@ -63,14 +63,20 @@ void toroidal_test(const graph::Graph& graph) {
 
 int main() {
     std::string input_graph_filename = "graph.txt";
-    const auto graph = graph::loader::load_graph_from_txt_file(input_graph_filename);
+    const auto graph = loader::load_graph_from_txt_file(input_graph_filename);
     if (!graph) {
         println("{}", graph.error());
         return 1;
     }
     graph->print(true);
+    // std::println("{}", generators::code_to_generate_graph(*graph));
+    // return 0;
+
     planarity_test(*graph);
-    // make_orthogonal(*graph);
-    // toroidal_test(two_cycles_graph_3());
+    for (const auto& forbidden_minor : test::forbidden_minors)
+        planarity_test(forbidden_minor);
+
+    make_orthogonal(*graph);
+    toroidal_test(test::two_cycle_graphs[2]);
     return 0;
 }

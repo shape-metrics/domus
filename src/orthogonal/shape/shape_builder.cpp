@@ -34,7 +34,7 @@ Shape result_to_shape(
             handler.set_variable_value(static_cast<size_t>(-var), false);
     }
     Shape shape;
-    for (size_t node_id : graph.get_node_ids())
+    for (size_t node_id : graph.get_nodes_ids())
         for (auto [edge_id, neighbor_id] : graph.get_out_edges(node_id)) {
             Direction direction = handler.get_direction_of_edge(edge_id);
             shape.set_direction(edge_id, direction);
