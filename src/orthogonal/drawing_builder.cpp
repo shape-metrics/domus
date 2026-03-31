@@ -568,28 +568,25 @@ void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape) {
             nodes.push_back(node_id);
 
     for (size_t node_id : nodes) {
-        std::vector<size_t> edge_ids_to_remove;
-        std::vector<std::pair<Edge, Direction>> edges_to_add;
-        for (const EdgeIter edge : graph.get_edges(node_id)) {
-            size_t added_id = graph.add_node();
+        std::vector<EdgeIter> edges_to_subdivide =
+            std::ranges::to<std::vector<EdgeIter>>(graph.get_edges(node_id));
+        for (const EdgeIter edge : edges_to_subdivide) {
             Direction direction = shape.get_direction(graph, edge.id, node_id, edge.neighbor_id);
-            edges_to_add.push_back({{added_id, edge.neighbor_id}, direction});
-            if (shape.is_horizontal(edge.id)) {
-                attributes.set_node_color(added_id, Color::GREEN);
-                edges_to_add.push_back({{node_id, added_id}, Direction::UP});
+            shape.remove_direction(edge.id);
+            Subdivision s = graph.subdivide_edge(edge.id);
+            const size_t edge_id_1 =
+                (s.from_id == node_id) ? s.edge_from_between_id : s.edge_between_to_id;
+            const size_t edge_id_2 =
+                (s.from_id == node_id) ? s.edge_between_to_id : s.edge_from_between_id;
+
+            shape.set_direction(graph, edge_id_2, s.in_between_id, edge.neighbor_id, direction);
+            if (shape::is_horizontal(direction)) {
+                attributes.set_node_color(s.in_between_id, Color::GREEN);
+                shape.set_direction(graph, edge_id_1, node_id, s.in_between_id, Direction::UP);
             } else {
-                attributes.set_node_color(added_id, Color::BLUE);
-                edges_to_add.push_back({{node_id, added_id}, Direction::RIGHT});
+                attributes.set_node_color(s.in_between_id, Color::BLUE);
+                shape.set_direction(graph, edge_id_1, node_id, s.in_between_id, Direction::RIGHT);
             }
-            edge_ids_to_remove.emplace_back(edge.id);
-        }
-        for (size_t edge_id : edge_ids_to_remove) {
-            shape.remove_direction(edge_id);
-            graph.remove_edge(edge_id);
-        }
-        for (auto [edge, direction] : edges_to_add) {
-            size_t edge_id = graph.add_edge(edge.from_id, edge.to_id);
-            shape.set_direction(edge_id, direction);
         }
     }
     auto [classes_x, classes_y] = EquivalenceClasses::build(shape, graph);
