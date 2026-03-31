@@ -20,17 +20,21 @@ class Embedding {
   public:
     Embedding(const graph::Graph& graph);
 
+    bool has_node(size_t node_id) const;
+    bool are_neighbors(size_t node_1_id, size_t node_2_id) const;
+
+    auto get_nodes_ids() const;
+
     void add_edge(size_t from_id, size_t to_id, size_t edge_id);
 
-    size_t get_node_degree(size_t node_id) const;
+    size_t get_degree_of_node(size_t node_id) const;
     EdgeIter next_in_adjacency_list(size_t node_id, size_t neighbor_id, size_t edge_id) const;
+
     size_t get_number_of_nodes() const;
-    size_t total_number_of_edges() const;
+    size_t get_number_of_edges() const;
 
-    void for_each_node(std::function<void(size_t)> func) const;
-
-    void for_each_neighbor(size_t node_id, std::function<void(size_t)> func) const;
-    void for_each_edge(size_t node_id, std::function<void(EdgeIter)> func) const;
+    auto get_neighbors(size_t node_id) const;
+    auto get_edges(size_t node_id) const;
 
     bool is_consistent() const;
 
@@ -40,7 +44,7 @@ class Embedding {
 
 std::vector<graph::Path> compute_faces_in_embedding(const Graph& graph, const Embedding& embedding);
 
-size_t compute_number_of_faces_in_embedding(const Graph& graph, const Embedding& embedding);
+size_t compute_number_of_faces_in_embedding(const Embedding& embedding);
 
 size_t compute_embedding_genus(
     size_t number_of_nodes,
@@ -49,8 +53,22 @@ size_t compute_embedding_genus(
     size_t connected_components
 );
 
-size_t compute_embedding_genus(const Graph& graph, const Embedding& embedding);
+size_t compute_embedding_genus(const Embedding& embedding);
 
-bool is_embedding_planar(const Graph& graph, const Embedding& embedding);
+bool is_embedding_planar(const Embedding& embedding);
+
+inline auto Embedding::get_nodes_ids() const {
+    return std::views::iota(size_t{0}, get_number_of_nodes());
+}
+
+inline auto Embedding::get_neighbors(size_t node_id) const {
+    return std::views::transform(m_adjacency_list[node_id], [&](EdgeIter edge) {
+        return edge.neighbor_id;
+    });
+}
+
+inline auto Embedding::get_edges(size_t node_id) const {
+    return std::views::all(m_adjacency_list[node_id]);
+}
 
 } // namespace domus::graph

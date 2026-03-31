@@ -5,7 +5,7 @@
 #include "domus/core/graph/cycle.hpp"
 #include "segment.hpp"
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::planarity {
 using Cycle = domus::graph::Cycle;

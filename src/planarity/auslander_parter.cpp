@@ -4,13 +4,14 @@
 #include <utility>
 #include <vector>
 
+#include "domus/core/graph/concept.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 #include "interlacement.hpp"
 #include "segment.hpp"
 
@@ -38,10 +39,10 @@ Embedding merge_biconnected_components(
         const NodesLabels& labels = biconnected_components.get_labels_of_component(i);
         for (size_t node_id : component.get_nodes_ids()) {
             size_t old_node_id = labels.get_label(node_id);
-            embedding.for_each_edge(node_id, [&](EdgeIter component_edge) {
+            for (const EdgeIter component_edge : embedding.get_edges(node_id)) {
                 size_t old_neighbor_id = labels.get_label(component_edge.neighbor_id);
                 output.add_edge(old_node_id, old_neighbor_id, component_edge.id);
-            });
+            }
         }
     }
     return output;
@@ -58,10 +59,7 @@ Embedding base_case_graph(const Graph& graph) {
     for (size_t node_id : graph.get_nodes_ids())
         for (EdgeIter edge : graph.get_edges(node_id))
             embedding.add_edge(node_id, edge.neighbor_id, edge.id);
-    DOMUS_ASSERT(
-        is_embedding_planar(graph, embedding),
-        "base_case_graph: output embedding is not planar"
-    );
+    DOMUS_ASSERT(is_embedding_planar(embedding), "base_case_graph: output embedding is not planar");
     return embedding;
 }
 
@@ -74,12 +72,11 @@ Embedding base_case_graph(const Graph& graph) {
  */
 Embedding base_case_component(const Graph& component, const Cycle& cycle) {
     Embedding embedding(component);
-    component.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : component.get_nodes_ids()) {
         if (component.get_degree_of_node(node_id) == 2) {
-            component.for_each_edge(node_id, [&](EdgeIter edge) {
+            for (const EdgeIter edge : component.get_edges(node_id))
                 embedding.add_edge(node_id, edge.neighbor_id, edge.id);
-            });
-            return;
+            continue;
         }
         DOMUS_ASSERT(
             component.get_degree_of_node(node_id) == 3,
@@ -91,14 +88,13 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
         );
         std::optional<EdgeIter> edge_in_between;
         size_t position = cycle.node_id_position(node_id);
-        component.for_each_edge(node_id, [&](EdgeIter edge) {
-            if (edge_in_between.has_value())
-                return;
+        for (const EdgeIter edge : component.get_edges(node_id)) {
             if (cycle.node_id_at(position + 1) == edge.neighbor_id ||
                 cycle.node_id_at(position + cycle.size() - 1) == edge.neighbor_id)
-                return;
+                continue;
             edge_in_between = edge;
-        });
+            break;
+        }
         embedding.add_edge(node_id, cycle.node_id_at(position + 1), cycle.edge_id_at(position));
         embedding.add_edge(node_id, edge_in_between->neighbor_id, edge_in_between->id);
         embedding.add_edge(
@@ -106,9 +102,9 @@ Embedding base_case_component(const Graph& component, const Cycle& cycle) {
             cycle.node_id_at(position + cycle.size() - 1),
             cycle.edge_id_at(position + cycle.size() - 1)
         );
-    });
+    }
     DOMUS_ASSERT(
-        is_embedding_planar(component, embedding),
+        is_embedding_planar(embedding),
         "base_case_component: output embedding is not planar"
     );
     return embedding;
@@ -314,7 +310,7 @@ void add_middle_edges(
     std::vector<EdgeIter> edges_to_add;
     size_t current = prev_cycle_position;
     size_t current_edge_id = prev_cycle_position;
-    for (size_t i = 0; i < embedding.get_node_degree(cycle_node_position); ++i) {
+    for (size_t i = 0; i < embedding.get_degree_of_node(cycle_node_position); ++i) {
         auto edge = embedding.next_in_adjacency_list(cycle_node_position, current, current_edge_id);
         current = edge.neighbor_id;
         current_edge_id = edge.id;
@@ -436,14 +432,12 @@ void add_edges_not_incident_to_cycle(
         const Embedding& embedding = embeddings[i];
         const NodesLabels& labels_to_old_ids = segment.get_new_id_to_old_id();
         const EdgesLabels& labels_to_old_edge_ids = segment.get_new_edge_id_to_old_id();
-        segment.get_segment().for_each_node([&](size_t node_id) {
+        for (const size_t node_id : segment.get_segment().get_nodes_ids()) {
             if (node_id < cycle.size())
-                return;
+                continue;
             const size_t old_node_id = labels_to_old_ids.get_label(node_id);
-            std::vector<EdgeIter> edges_to_add;
-            embedding.for_each_edge(node_id, [&edges_to_add](EdgeIter edge) {
-                edges_to_add.push_back(edge);
-            });
+            std::vector<EdgeIter> edges_to_add =
+                std::ranges::to<std::vector<EdgeIter>>(embedding.get_edges(node_id));
             if (is_segment_inside.get_side(i) == is_embedding_inside[i])
                 for (EdgeIter edge : edges_to_add) {
                     const size_t old_neighbor_id = labels_to_old_ids.get_label(edge.neighbor_id);
@@ -458,7 +452,7 @@ void add_edges_not_incident_to_cycle(
                         labels_to_old_edge_ids.get_label(edges_to_add[j - 1].id);
                     output.add_edge(old_node_id, old_neighbor_id, old_edge_id);
                 }
-        });
+        }
     }
 }
 
@@ -501,24 +495,18 @@ bool is_embedding_valid(const Segment& segment, const Embedding& embedding) {
     const Graph& graph = segment.get_segment();
     if (graph.get_number_of_nodes() != embedding.get_number_of_nodes())
         return false;
-    if (graph.get_number_of_edges() * 2 != embedding.total_number_of_edges())
+    if (graph.get_number_of_edges() * 2 != embedding.get_number_of_edges())
         return false;
-    bool is_valid = true;
-    embedding.for_each_node([&](size_t node_id) {
-        if (!is_valid)
-            return;
+    for (const size_t node_id : embedding.get_nodes_ids()) {
         if (!graph.has_node(node_id))
-            is_valid = false;
-        embedding.for_each_neighbor(node_id, [&](size_t neighbor_id) {
+            return false;
+        for (const size_t neighbor_id : embedding.get_neighbors(node_id))
             if (!graph.are_neighbors(node_id, neighbor_id))
-                is_valid = false;
-        });
-        if (embedding.get_node_degree(node_id) != graph.get_degree_of_node(node_id))
-            is_valid = false;
-    });
-    if (!is_valid)
-        return false;
-    return is_embedding_planar(graph, embedding);
+                return false;
+        if (embedding.get_degree_of_node(node_id) != graph.get_degree_of_node(node_id))
+            return false;
+    }
+    return is_embedding_planar(embedding);
 }
 
 std::optional<Embedding> embed_biconnected_component(const Graph& component, const Cycle& cycle) {
@@ -583,7 +571,7 @@ std::optional<Embedding> compute_planar_embedding(const Graph& graph) {
     }
     Embedding result = merge_biconnected_components(graph, bic_comps, embeddings);
     DOMUS_ASSERT(
-        is_embedding_planar(graph, result),
+        is_embedding_planar(result),
         "compute_planar_embedding: output embedding is not planar"
     );
     return result;

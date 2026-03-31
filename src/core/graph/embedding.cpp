@@ -1,12 +1,14 @@
 #include "domus/core/graph/embedding.hpp"
 
+#include <cstddef>
 #include <print>
 
+#include "domus/core/graph/concept.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 
-#include "../domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::graph {
 
@@ -28,6 +30,19 @@ Embedding::Embedding(const Graph& graph) {
         m_adjacency_list.push_back({});
 }
 
+bool Embedding::has_node(size_t node_id) const { return node_id < get_number_of_nodes(); }
+
+bool Embedding::are_neighbors(size_t node_1_id, size_t node_2_id) const {
+    DOMUS_ASSERT(node_1_id != node_2_id, "Embedding::are_neighbors: nodes are equal");
+    for (EdgeIter edge : m_adjacency_list.at(node_1_id))
+        if (edge.neighbor_id == node_2_id)
+            return true;
+    for (EdgeIter edge : m_adjacency_list.at(node_2_id))
+        if (edge.neighbor_id == node_1_id)
+            return true;
+    return false;
+}
+
 EdgeIter
 Embedding::next_in_adjacency_list(size_t node_id, size_t neighbor_id, size_t edge_id) const {
     if (node_id < neighbor_id) {
@@ -45,12 +60,7 @@ Embedding::next_in_adjacency_list(size_t node_id, size_t neighbor_id, size_t edg
     }
 }
 
-void Embedding::for_each_edge(size_t node_id, std::function<void(EdgeIter)> func) const {
-    for (EdgeIter edge : m_adjacency_list.at(node_id))
-        func(edge);
-}
-
-size_t Embedding::get_node_degree(size_t node_id) const {
+size_t Embedding::get_degree_of_node(size_t node_id) const {
     return m_adjacency_list.at(node_id).size();
 }
 
@@ -98,7 +108,7 @@ void Embedding::add_edge(size_t from_id, size_t to_id, size_t edge_id) {
         }
     }
 
-    m_adjacency_list.at(from_id).push_back(new_edge);
+    adj.push_back(new_edge);
     m_number_of_edges++;
 }
 
@@ -106,49 +116,33 @@ std::string Embedding::to_string() const {
     std::string result;
     auto out = std::back_inserter(result);
     std::format_to(out, "Embedding:\n");
-    for_each_node([&](size_t node_id) {
+    for (const size_t node_id : get_nodes_ids()) {
         std::format_to(out, "{}: [ ", node_id);
-        for_each_neighbor(node_id, [&](size_t neighbor_id) {
+        for (const size_t neighbor_id : get_neighbors(node_id))
             std::format_to(out, "{} ", neighbor_id);
-        });
         std::format_to(out, "]\n");
-    });
+    }
     return result;
 }
 
 size_t Embedding::get_number_of_nodes() const { return m_adjacency_list.size(); }
 
-void Embedding::for_each_node(std::function<void(size_t)> func) const {
-    for (size_t node_id = 0; node_id < m_adjacency_list.size(); ++node_id)
-        func(node_id);
-}
-
-void Embedding::for_each_neighbor(size_t node_id, std::function<void(size_t)> func) const {
-    for (EdgeIter edge : m_adjacency_list.at(node_id))
-        func(edge.neighbor_id);
-}
-
-size_t Embedding::total_number_of_edges() const { return m_number_of_edges; }
+size_t Embedding::get_number_of_edges() const { return m_number_of_edges; }
 
 void Embedding::print() const { std::print("{}", to_string()); }
 
-// struct edge_hash {
-//     size_t operator()(const graph::Edge& edge) const {
-//         size_t h1 = std::hash<size_t>{}(edge.from_id);
-//         size_t h2 = std::hash<size_t>{}(edge.to_id);
-//         size_t mult = h2 * 0x9e3779b9;
-//         return h1 ^ (mult + (h1 << 6) + (h1 >> 2));
-//     }
-// };
-
-size_t compute_number_of_faces_in_embedding(const Graph& graph, const Embedding& embedding) {
+size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
     size_t number_of_faces = 0;
-    utilities::VisitedEdges visited_edges(graph);
+    utilities::VisitedEdges visited_edges(embedding);
 
-    embedding.for_each_node([&](size_t start_node) {
-        embedding.for_each_edge(start_node, [&](EdgeIter start_edge) {
+    for (const size_t start_node : embedding.get_nodes_ids()) {
+        if (embedding.get_degree_of_node(start_node) == 0) {
+            ++number_of_faces;
+            continue;
+        }
+        for (const EdgeIter start_edge : embedding.get_edges(start_node)) {
             if (visited_edges.has_edge(start_node, start_edge.neighbor_id, start_edge.id))
-                return;
+                continue;
 
             ++number_of_faces;
             size_t u = start_node;
@@ -163,8 +157,8 @@ size_t compute_number_of_faces_in_embedding(const Graph& graph, const Embedding&
                 u = v;
                 edge_uv = next_edge;
             }
-        });
-    });
+        }
+    }
     return number_of_faces;
 }
 
@@ -173,10 +167,10 @@ compute_faces_in_embedding(const Graph& graph, const Embedding& embedding) {
     std::vector<graph::Path> faces;
     utilities::VisitedEdges visited_edges(graph);
 
-    embedding.for_each_node([&](size_t start_node) {
-        embedding.for_each_edge(start_node, [&](EdgeIter start_edge) {
+    for (const size_t start_node : embedding.get_nodes_ids()) {
+        for (const EdgeIter start_edge : embedding.get_edges(start_node)) {
             if (visited_edges.has_edge(start_node, start_edge.neighbor_id, start_edge.id))
-                return;
+                continue;
 
             graph::Path current_face;
             size_t u = start_node;
@@ -195,28 +189,28 @@ compute_faces_in_embedding(const Graph& graph, const Embedding& embedding) {
             }
 
             faces.push_back(std::move(current_face));
-        });
-    });
+        }
+    }
 
     return faces;
 }
 
-bool is_embedding_planar(const Graph& graph, const Embedding& embedding) {
-    return compute_embedding_genus(graph, embedding) == 0;
+bool is_embedding_planar(const Embedding& embedding) {
+    return compute_embedding_genus(embedding) == 0;
 }
 
 // This function verifies that for every edge from_id-to_id there is the edge to_id-from_id
 // It is intended to be used only for debug purposes
 bool Embedding::is_consistent() const {
-    utilities::VisitedEdges edges(total_number_of_edges());
-    for_each_node([this, &edges](size_t node_id) {
-        for_each_edge(node_id, [&edges, node_id](EdgeIter edge) {
+    utilities::VisitedEdges edges(get_number_of_edges());
+    for (const size_t node_id : get_nodes_ids()) {
+        for (const EdgeIter edge : get_edges(node_id)) {
             if (edges.has_edge(edge.neighbor_id, node_id, edge.id))
                 edges.erase(edge.neighbor_id, node_id, edge.id);
             else
                 edges.add_edge(node_id, edge.neighbor_id, edge.id);
-        });
-    });
+        }
+    }
     return edges.empty();
 }
 
@@ -230,24 +224,33 @@ size_t compute_embedding_genus(
     // f - e + v = 2p - 2g
     // 2g = 2p - f + e - v
     // g = p - (f - e + v) / 2
-    int n = static_cast<int>(number_of_nodes);
-    int e = static_cast<int>(number_of_edges);
-    int f = static_cast<int>(number_of_faces);
-    int p = static_cast<int>(connected_components);
-    int genus = p - (f - e + n) / 2;
+    const int n = static_cast<int>(number_of_nodes);
+    const int e = static_cast<int>(number_of_edges);
+    const int f = static_cast<int>(number_of_faces);
+    const int p = static_cast<int>(connected_components);
+    const int genus = p - (f - e + n) / 2;
     DOMUS_ASSERT(genus >= 0, "compute_embedding_genus: genus is negative");
     return static_cast<size_t>(genus);
 }
 
-size_t compute_embedding_genus(const Graph& graph, const Embedding& embedding) {
+size_t compute_embedding_genus(const Embedding& embedding) {
     DOMUS_ASSERT(
         embedding.is_consistent(),
         "compute_embedding_genus: embedding is not fully undirected"
     );
     size_t number_of_nodes = embedding.get_number_of_nodes();
-    size_t number_of_edges = embedding.total_number_of_edges() / 2;
-    size_t number_of_faces = compute_number_of_faces_in_embedding(graph, embedding);
-    size_t connected_components = graph::algorithms::compute_number_of_connected_components(graph);
+    size_t number_of_edges = embedding.get_number_of_edges() / 2;
+    size_t number_of_faces = compute_number_of_faces_in_embedding(embedding);
+    size_t connected_components = algorithms::compute_number_of_connected_components(embedding);
+
+    std::println(
+        "{} {} {} {}",
+        number_of_nodes,
+        number_of_edges,
+        number_of_faces,
+        connected_components
+    );
+
     return compute_embedding_genus(
         number_of_nodes,
         number_of_edges,
@@ -255,5 +258,7 @@ size_t compute_embedding_genus(const Graph& graph, const Embedding& embedding) {
         connected_components
     );
 }
+
+static_assert(UndirectedGraphLike<Embedding>);
 
 } // namespace domus::graph

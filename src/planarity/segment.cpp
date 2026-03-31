@@ -6,7 +6,7 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::planarity {
 using namespace domus::graph;

@@ -17,7 +17,7 @@
 #include "../nlohmann/json.hpp"
 #include "domus/orthogonal/shape/direction.hpp"
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::orthogonal {
 
@@ -30,35 +30,26 @@ std::expected<void, std::string>
 save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, std::filesystem::path path) {
     json data;
     const Graph& graph = result.augmented_graph;
-    std::vector<size_t> nodes;
-    graph.for_each_node([&nodes](size_t node_id) { nodes.push_back(node_id); });
-    data["nodes"] = nodes;
-    std::vector<std::pair<size_t, size_t>> edges;
-    graph.for_each_node([&graph, &edges](size_t node_id) {
-        graph.for_each_neighbor(node_id, [&edges, node_id](size_t neighbor_id) {
-            if (neighbor_id < node_id)
-                return;
-            edges.push_back({node_id, neighbor_id});
-        });
-    });
-    data["edges"] = edges;
+    data["nodes"] = graph.get_nodes_ids() | std::ranges::to<std::vector<size_t>>();
+    data["edges"] = graph.get_all_edges() | std::views::transform([](const EdgeId edge) {
+                        return std::make_pair(edge.edge.from_id, edge.edge.to_id);
+                    }) |
+                    std::ranges::to<std::vector<std::pair<size_t, size_t>>>();
     const Attributes& attributes = result.attributes;
 
-    graph.for_each_node([&data, &attributes](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         std::string s_id = std::to_string(node_id);
         data["node_colors"][s_id] = color_to_string(attributes.get_node_color(node_id));
         data["node_positions"][s_id] = {
             attributes.get_position_x(node_id),
             attributes.get_position_y(node_id)
         };
-    });
+    }
     json shape_array = json::array();
-    graph.for_each_node([&](size_t node_id) {
-        graph.for_each_out_edge(node_id, [&](EdgeIter edge) {
-            Direction direction = result.shape.get_direction(edge.id);
-            shape_array.push_back({{"edge_id", edge.id}, {"dir", direction_to_string(direction)}});
-        });
-    });
+    for (const EdgeId edge : graph.get_all_edges()) {
+        Direction direction = result.shape.get_direction(edge.id);
+        shape_array.push_back({{"edge_id", edge.id}, {"dir", direction_to_string(direction)}});
+    }
     data["shape"] = shape_array;
     std::ofstream file(path);
     if (file.is_open()) {
@@ -129,19 +120,17 @@ get_other_edge_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
     );
     std::optional<size_t> other;
     std::optional<size_t> other_edge_id;
-    graph.for_each_edge(node_id, [&](EdgeIter edge) {
-        if (other.has_value())
-            return;
+    for (const EdgeIter edge : graph.get_edges(node_id))
         if (edge.neighbor_id != neighbor_id) {
             other = edge.neighbor_id;
             other_edge_id = edge.id;
+            break;
         }
-    });
     DOMUS_ASSERT(
         other.has_value(),
         "get_other_neighbor_id: internal error happened, no other neighbor found for node"
     );
-    return {other.value(), other_edge_id.value()};
+    return {*other, *other_edge_id};
 }
 
 inline size_t get_other_neighbor_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
@@ -187,16 +176,16 @@ std::expected<void, std::string> make_svg(
 ) {
     int max_x = -INT_MAX;
     int max_y = -INT_MAX;
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         max_x = std::max(max_x, attributes.get_position_x(node_id));
         max_y = std::max(max_y, attributes.get_position_y(node_id));
-    });
+    }
     int min_x = INT_MAX;
     int min_y = INT_MAX;
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         min_x = std::min(min_x, attributes.get_position_x(node_id));
         min_y = std::min(min_y, attributes.get_position_y(node_id));
-    });
+    }
     const int width = max_x - min_x;
     const int height = max_y - min_y;
     SvgDrawer drawer{width, height};
@@ -204,41 +193,39 @@ std::expected<void, std::string> make_svg(
     auto scale_y = ScaleLinear(min_y - 100, max_y + 100, 0, height);
     std::vector<std::unique_ptr<Point2D>> points;
     points.resize(graph.get_number_of_nodes());
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         const double x = scale_x.map(attributes.get_position_x(node_id));
         const double y = scale_y.map(attributes.get_position_y(node_id));
         while (points.size() <= node_id) {
             points.push_back(nullptr);
         }
         points[node_id].reset(new Point2D(x, y));
-    });
-    graph.for_each_node([&](size_t node_id) {
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            Line2D line(*points.at(node_id), *points.at(neighbor_id));
-            drawer.add(line);
-        });
-    });
+    }
+    for (const EdgeId edge : graph.get_all_edges()) {
+        Line2D line(*points.at(edge.edge.from_id), *points.at(edge.edge.to_id));
+        drawer.add(line);
+    }
     const double side = compute_side_length(graph, shape, attributes);
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         Color color = attributes.get_node_color(node_id);
         if (color == Color::RED)
-            return;
+            continue;
         if (color == Color::GREEN)
-            return;
+            continue;
         if (color == Color::BLUE)
-            return;
+            continue;
         if (color == Color::RED_SPECIAL)
-            return;
+            continue;
         if (color == Color::BLUE_DARK)
-            return;
+            continue;
         if (color == Color::GREEN_DARK)
-            return;
+            continue;
         Square2D square{*points.at(node_id), side};
         square.setColor(color_to_string(color));
         square.setColor("cornflowerblue");
         square.setLabel(std::to_string(node_id));
         drawer.add(square, side / 4);
-    });
+    }
     return drawer.save_to_file(path);
 }
 
@@ -250,15 +237,15 @@ std::pair<std::vector<size_t>, std::vector<size_t>>
 compute_node_to_index_position(const Graph& graph, const Attributes& attributes) {
     constexpr int THRESHOLD = 45;
     std::map<int, std::vector<size_t>> coordinate_y_to_nodes;
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         int y = attributes.get_position_y(node_id);
         coordinate_y_to_nodes[y].push_back(node_id);
-    });
+    }
     std::map<int, std::vector<size_t>> coordinate_x_to_nodes;
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         int x = attributes.get_position_x(node_id);
         coordinate_x_to_nodes[x].push_back(node_id);
-    });
+    }
     size_t y_index = 0;
     std::vector<std::optional<size_t>> node_to_coordinate_y(
         graph.get_number_of_nodes(),

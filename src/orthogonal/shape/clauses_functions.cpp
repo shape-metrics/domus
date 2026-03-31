@@ -8,7 +8,7 @@
 #include "domus/orthogonal/shape/direction.hpp"
 #include "domus/sat/cnf.hpp"
 
-#include "../../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 #include "variables_handler.hpp"
 
 namespace domus::orthogonal::shape {
@@ -56,16 +56,15 @@ void add_constraints_one_direction_per_edge(
 void add_constraints_one_direction_per_edge(
     const Graph& graph, Cnf& cnf_builder, const VariablesHandler& handler
 ) {
-
-    graph.for_each_node([&](size_t node_id_1) {
-        graph.for_each_out_edge(node_id_1, [&](EdgeIter edge) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
+        for (const EdgeIter edge : graph.get_out_edges(node_id)) {
             int up = static_cast<int>(handler.get_up_variable(edge.id));
             int down = static_cast<int>(handler.get_down_variable(edge.id));
             int right = static_cast<int>(handler.get_right_variable(edge.id));
             int left = static_cast<int>(handler.get_left_variable(edge.id));
             add_constraints_one_direction_per_edge(cnf_builder, up, down, right, left);
-        });
-    });
+        }
+    }
 }
 
 void add_clause_at_least_one_in_direction(
@@ -76,10 +75,10 @@ void add_clause_at_least_one_in_direction(
     Direction direction
 ) {
     std::vector<int> clause;
-    graph.for_each_edge(node_id, [&](EdgeIter edge) {
+    for (const EdgeIter edge : graph.get_edges(node_id)) {
         int variable = get_variable(graph, handler, node_id, edge.neighbor_id, edge.id, direction);
         clause.push_back(variable);
-    });
+    }
     cnf_builder.add_clause(clause);
 }
 
@@ -95,23 +94,23 @@ void add_one_edge_per_direction_clauses(
         add_clause_at_least_one_in_direction(graph, cnf_builder, handler, node_id, direction);
     } else if (degree == 3) {
         std::vector<int> variables;
-        graph.for_each_edge(node_id, [&](EdgeIter edge) {
+        for (const EdgeIter edge : graph.get_edges(node_id)) {
             int variable =
                 get_variable(graph, handler, node_id, edge.neighbor_id, edge.id, direction);
 
             variables.push_back(variable);
-        });
+        }
         // at most one is true (at least 2 are false)
         cnf_builder.add_clause({-variables[0], -variables[1]});
         cnf_builder.add_clause({-variables[0], -variables[2]});
         cnf_builder.add_clause({-variables[1], -variables[2]});
     } else if (degree == 2) {
         std::vector<int> clause;
-        graph.for_each_edge(node_id, [&](EdgeIter edge) {
+        for (const EdgeIter edge : graph.get_edges(node_id)) {
             int variable =
                 get_variable(graph, handler, node_id, edge.neighbor_id, edge.id, direction);
             clause.push_back(-variable);
-        });
+        }
         // at most one is true (at least 1 is false)
         cnf_builder.add_clause(clause);
     } else if (degree != 1) {
@@ -182,7 +181,7 @@ void add_cycles_constraints(
 }
 
 void add_nodes_constraints(const Graph& graph, Cnf& cnf_builder, const VariablesHandler& handler) {
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         if (graph.get_degree_of_node(node_id) <= 4) {
             add_one_edge_per_direction_clauses(graph, cnf_builder, handler, Direction::UP, node_id);
             add_one_edge_per_direction_clauses(
@@ -236,7 +235,7 @@ void add_nodes_constraints(const Graph& graph, Cnf& cnf_builder, const Variables
                 Direction::LEFT
             );
         }
-    });
+    }
 }
 
 } // namespace domus::orthogonal::shape

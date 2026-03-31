@@ -54,14 +54,12 @@ save_graph_to_file(const Graph& graph, std::filesystem::path path) {
         );
     }
     outfile << "nodes:\n";
-    graph.for_each_node([&outfile](size_t node_id) { outfile << node_id << '\n'; });
+    for (const size_t node_id : graph.get_nodes_ids())
+        outfile << node_id << '\n';
+
     outfile << "edges:\n";
-    graph.for_each_node([&](size_t node_id) {
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            if (neighbor_id > node_id)
-                outfile << node_id << ' ' << neighbor_id << '\n';
-        });
-    });
+    for (const EdgeId edge : graph.get_all_edges())
+        outfile << edge.edge.from_id << ' ' << edge.edge.to_id << '\n';
     return {};
 }
 
@@ -89,7 +87,7 @@ void save_to_graphml(std::ostream& os, const Graph& graph, const Attributes& att
     }
     os << "\n";
     os << "  <graph id=\"G\" edgedefault=\"undirected\">\n";
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         os << "    <node id=\"n" << node_id << "\">\n";
         if (attributes.has_attribute(Attribute::NODES_COLOR)) {
             const Color color = attributes.get_node_color(node_id);
@@ -100,15 +98,12 @@ void save_to_graphml(std::ostream& os, const Graph& graph, const Attributes& att
             write_data_tag(os, "d2", std::to_string(attributes.get_position_y(node_id)));
         }
         os << "    </node>\n";
-    });
-    graph.for_each_node([&](size_t node_id) {
-        graph.for_each_neighbor(node_id, [node_id, &os](size_t neighbor_id) {
-            if (neighbor_id > node_id)
-                return;
-            os << "    <source=\"n" << node_id << "\" target=\"n" << neighbor_id << "\">\n";
-            os << "    </edge>\n";
-        });
-    });
+    }
+    for (const EdgeId edge : graph.get_all_edges()) {
+        os << "    <source=\"n" << edge.edge.from_id << "\" target=\"n" << edge.edge.to_id
+           << "\">\n";
+        os << "    </edge>\n";
+    }
     os << "\n";
     os << "  </graph>\n";
     os << "</graphml>\n";

@@ -1,6 +1,6 @@
 #include "domus/orthogonal/shape/direction.hpp"
 
-#include "../../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::orthogonal::shape {
 

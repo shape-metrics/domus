@@ -5,7 +5,7 @@
 
 #include "domus/core/graph/graph.hpp"
 
-#include "../../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::orthogonal::shape {
 
@@ -48,11 +48,8 @@ VariablesHandler::VariablesHandler(const graph::Graph& graph) {
     m_edge_down_variable.resize(graph.get_number_of_edges());
     m_edge_left_variable.resize(graph.get_number_of_edges());
     m_edge_right_variable.resize(graph.get_number_of_edges());
-    graph.for_each_node([&](size_t node_id) {
-        graph.for_each_out_edge(node_id, [&](graph::EdgeIter edge) {
-            add_edge_variables(edge.id);
-        });
-    });
+    for (const auto edge : graph.get_all_edges())
+        add_edge_variables(edge.id);
 }
 
 size_t VariablesHandler::get_up_variable(size_t edge_id) const {

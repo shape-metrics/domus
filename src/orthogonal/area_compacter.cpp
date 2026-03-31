@@ -8,7 +8,7 @@
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::orthogonal {
 using namespace graph;
@@ -17,20 +17,20 @@ auto build_index_to_nodes(const Graph& graph, const Attributes& attributes) {
     const auto [node_to_index_x, node_to_index_y] =
         compute_node_to_index_position(graph, attributes);
     std::vector<std::vector<size_t>> index_x_to_nodes;
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         size_t index = node_to_index_x[node_id];
         if (index_x_to_nodes.size() <= index)
             index_x_to_nodes.resize(index + 1);
         index_x_to_nodes[index].push_back(node_id);
-    });
+    }
 
     std::vector<std::vector<size_t>> index_y_to_nodes;
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         size_t index = node_to_index_y[node_id];
         if (index_y_to_nodes.size() <= index)
             index_y_to_nodes.resize(index + 1);
         index_y_to_nodes[index].push_back(node_id);
-    });
+    }
 
     return make_tuple(
         std::move(index_x_to_nodes),

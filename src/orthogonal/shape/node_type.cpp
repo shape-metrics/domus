@@ -1,6 +1,6 @@
 #include "domus/orthogonal/shape/node_type.hpp"
 
-#include "../../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::orthogonal::shape {
 

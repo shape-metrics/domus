@@ -2,7 +2,7 @@
 
 #include "domus/core/graph/graph.hpp"
 
-#include "../../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::orthogonal::shape {
 using namespace graph;
@@ -125,21 +125,16 @@ bool Shape::are_parallel(size_t edge_id_1, size_t edge_id_2) const {
 }
 
 bool is_shape_valid(const Graph& graph, const Shape& shape) {
-    bool is_valid = true;
-    graph.for_each_node([&](size_t node_id) {
-        if (!is_valid)
-            return;
-        graph.for_each_out_edge(node_id, [&](EdgeIter edge) {
-            if (!is_valid)
-                return;
+    for (const size_t node_id : graph.get_nodes_ids()) {
+        for (const EdgeIter edge : graph.get_out_edges(node_id)) {
             if (!shape.contains(edge.id))
-                is_valid = false;
+                return false;
             if (shape.get_direction(graph, edge.id, node_id, edge.neighbor_id) !=
                 opposite_direction(shape.get_direction(graph, edge.id, edge.neighbor_id, node_id)))
-                is_valid = false;
-        });
-    });
-    return is_valid;
+                return false;
+        }
+    }
+    return true;
 }
 
 } // namespace domus::orthogonal::shape

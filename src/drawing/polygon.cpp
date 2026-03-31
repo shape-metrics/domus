@@ -4,7 +4,7 @@
 #include <cmath>
 #include <stddef.h>
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::drawing {
 

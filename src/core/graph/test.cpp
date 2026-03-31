@@ -1,4 +1,4 @@
-#include "test_graphs.hpp"
+#include "domus/core/graph/test.hpp"
 
 #include "domus/core/graph/generators.hpp"
 #include "domus/core/graph/graph.hpp"
@@ -80,4 +80,13 @@ std::vector<Graph> planar_graphs{[]() {
     return graph;
 }()};
 
+Graph subdivided_k_5 = []() {
+    Graph k_5 = generators::generate_k_n(5);
+    const auto edges_ids = k_5.get_all_edges() |
+                           std::views::transform([](const EdgeId& edge) { return edge.id; }) |
+                           std::ranges::to<std::vector<size_t>>();
+    for (const size_t edge_id : edges_ids)
+        k_5.subdivide_edge(edge_id);
+    return k_5;
+}();
 } // namespace domus::graph::test

@@ -6,7 +6,7 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/sat/cnf.hpp"
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::sat {
 using namespace graph;

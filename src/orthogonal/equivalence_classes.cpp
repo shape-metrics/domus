@@ -4,10 +4,11 @@
 #include <functional>
 #include <utility>
 
+#include "domus/core/graph/concept.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::orthogonal {
 using Graph = graph::Graph;
@@ -67,13 +68,13 @@ void EquivalenceClasses::directional_node_expander(
     const std::function<bool(const Shape&, size_t)>& is_direction_wrong
 ) {
     set_class(node_id, class_id);
-    graph.for_each_edge(node_id, [&](graph::EdgeIter edge) {
+    for (const graph::EdgeIter edge : graph.get_edges(node_id)) {
         if (has_elem_a_class(edge.neighbor_id))
-            return;
+            continue;
         if (is_direction_wrong(shape, edge.id))
-            return;
+            continue;
         directional_node_expander(shape, graph, edge.neighbor_id, class_id, is_direction_wrong);
-    });
+    }
 }
 
 void EquivalenceClasses::horizontal_node_expander(

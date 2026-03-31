@@ -16,7 +16,7 @@ bool is_graph_connected(const Graph& graph);
 std::pair<std::vector<Graph>, utilities::NodesLabels>
 compute_connected_components(const Graph& graph);
 
-size_t compute_number_of_connected_components(const Graph& graph);
+template <UndirectedGraphLike G> size_t compute_number_of_connected_components(const G& graph);
 
 class SpanningTree {
     const domus::tree::Tree m_tree;
@@ -29,6 +29,9 @@ class SpanningTree {
 
     static std::optional<SpanningTree> compute(const Graph& graph);
 };
+
+std::optional<Path>
+find_shortest_path_between_nodes(const Graph& graph, size_t node_id_1, size_t node_id_2);
 
 std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph);
 std::optional<Cycle> find_a_directed_cycle_in_graph(const Graph& graph);
@@ -91,3 +94,5 @@ struct StrongConnectedComponents {
 };
 
 } // namespace domus::graph::algorithms
+
+#include "graphs_algorithms.ipp"

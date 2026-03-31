@@ -6,18 +6,11 @@
 #include <string>
 #include <vector>
 
+#include "domus/core/graph/concept.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
 namespace domus::graph {
-
-struct Edge {
-    size_t from_id;
-    size_t to_id;
-    bool operator==(const Edge& other) const {
-        return from_id == other.from_id && to_id == other.to_id;
-    }
-};
 
 struct EdgeId {
     size_t id;
@@ -30,11 +23,6 @@ struct Subdivision {
     const size_t to_id;
     const size_t edge_from_between_id;
     const size_t edge_between_to_id;
-};
-
-struct EdgeIter {
-    size_t id;
-    size_t neighbor_id;
 };
 
 class Graph {
@@ -52,21 +40,11 @@ class Graph {
 
     bool add_subdivision_to_cycle(const Subdivision& subdivision, Cycle& cycle) const;
 
-    void for_each_node(std::function<void(size_t)> f) const;
-
     auto get_nodes_ids() const;
-
-    void for_each_out_neighbor(size_t node_id, std::function<void(size_t)> f) const;
-    void for_each_in_neighbor(size_t node_id, std::function<void(size_t)> f) const;
-    void for_each_neighbor(size_t node_id, std::function<void(size_t)> f) const;
 
     auto get_out_neighbors(size_t node_id) const;
     auto get_in_neighbors(size_t node_id) const;
     auto get_neighbors(size_t node_id) const;
-
-    void for_each_out_edge(size_t node_id, std::function<void(EdgeIter)> f) const;
-    void for_each_in_edge(size_t node_id, std::function<void(EdgeIter)> f) const;
-    void for_each_edge(size_t node_id, std::function<void(EdgeIter)> f) const;
 
     auto get_out_edges(size_t node_id) const;
     auto get_in_edges(size_t node_id) const;
@@ -81,6 +59,8 @@ class Graph {
     bool has_edge(size_t from_id, size_t to_id) const;
     bool are_neighbors(size_t node_1_id, size_t node_2_id) const;
     Edge get_edge(size_t edge_id) const;
+
+    auto get_all_edges() const;
 
     size_t get_number_of_nodes() const;
     size_t get_number_of_edges() const;
@@ -127,6 +107,12 @@ inline auto Graph::get_in_edges(size_t node_id) const {
 
 inline auto Graph::get_edges(size_t node_id) const {
     return std::views::concat(get_out_edges(node_id), get_in_edges(node_id));
+}
+
+inline auto Graph::get_all_edges() const {
+    return m_edges |
+           std::views::filter([](const std::optional<EdgeId>& edge) { return edge.has_value(); }) |
+           std::views::transform([](const std::optional<EdgeId>& edge) { return *edge; });
 }
 
 } // namespace domus::graph

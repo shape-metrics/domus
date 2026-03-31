@@ -6,7 +6,7 @@
 
 #include <variant>
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -67,13 +67,15 @@ std::variant<Path, size_t> compute_intersection_between_cycles(
     return intersection_path;
 }
 
-graph::Embedding compute_embedding_of_two_cycles(
+std::pair<graph::Embedding, FaceType> compute_embedding_of_two_cycles(
     const Graph& graph, const Cycle& cycle_1, Cycle& cycle_2, const size_t intersection_node_id
 ) {
     graph::Embedding embedding(graph);
-    auto intersection =
+    FaceType face_type;
+    const auto intersection =
         compute_intersection_between_cycles(graph, cycle_1, cycle_2, intersection_node_id);
     if (std::holds_alternative<Path>(intersection)) {
+        face_type = FaceType::TYPE_4;
         const Path& intersection_path = std::get<Path>(intersection);
         for (size_t pos = 0; pos < intersection_path.number_of_edges(); ++pos) {
             const size_t node_1 = intersection_path.node_id_at_position(pos);
@@ -101,6 +103,7 @@ graph::Embedding compute_embedding_of_two_cycles(
             curr = cycle_2.node_id_at(pos_curr);
         }
     } else {
+        face_type = FaceType::TYPE_3;
         size_t pos_1 = cycle_1.node_id_position(intersection_node_id);
         size_t pos_2 = cycle_2.node_id_position(intersection_node_id);
         embedding.add_edge(
@@ -174,7 +177,7 @@ graph::Embedding compute_embedding_of_two_cycles(
             pos_2++;
         }
     }
-    return embedding;
+    return {embedding, face_type};
 }
 
 } // namespace domus::torus

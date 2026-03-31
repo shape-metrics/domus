@@ -3,9 +3,7 @@
 #include <optional>
 #include <vector>
 
-namespace domus::graph {
-class Graph;
-}
+#include "domus/core/graph/concept.hpp"
 
 namespace domus::graph::utilities {
 
@@ -14,7 +12,7 @@ class NodesContainer {
     std::vector<bool> m_has_node;
 
   public:
-    NodesContainer(const Graph& graph);
+    template <UndirectedGraphLike G> NodesContainer(const G& graph);
     void add_node(size_t node_id);
     bool has_node(size_t node_id) const;
     size_t size() const;
@@ -24,21 +22,24 @@ class NodesContainer {
 
 class NodesLabels {
     std::vector<std::optional<size_t>> m_labels;
+    size_t m_number_of_labels = 0;
 
   public:
-    NodesLabels(const Graph& graph);
+    template <UndirectedGraphLike G> NodesLabels(const G& graph);
     void add_label(size_t node_id, size_t label);
     bool has_label(size_t node_id) const;
     size_t get_label(size_t node_id) const;
     void erase_label(size_t node_id);
     void update_label(size_t node_id, size_t new_label);
+    void add_or_update_label(size_t node_id, size_t label);
+    size_t get_number_of_labels() const;
 };
 
 class EdgesLabels {
     std::vector<std::optional<size_t>> m_labels;
 
   public:
-    EdgesLabels(const Graph& graph);
+    template <UndirectedGraphLike G> EdgesLabels(const G& graph);
     EdgesLabels(size_t number_of_edges);
     void add_label(size_t edge_id, size_t label);
     bool has_label(size_t edge_id) const;
@@ -53,7 +54,7 @@ class EdgesContainer {
     std::vector<bool> m_has_edge;
 
   public:
-    EdgesContainer(const Graph& graph);
+    template <UndirectedGraphLike G> EdgesContainer(const G& graph);
     EdgesContainer(size_t number_of_edges_ids);
     void add_edge(size_t edge_id);
     bool has_edge(size_t edge_id) const;
@@ -67,7 +68,7 @@ class VisitedEdges {
     EdgesContainer m_visited_edges_2;
 
   public:
-    VisitedEdges(const Graph& graph);
+    template <UndirectedGraphLike G> VisitedEdges(const G& graph);
     VisitedEdges(size_t number_of_edges_ids);
     bool has_edge(size_t from_id, size_t to_id, size_t edge_id) const;
     void add_edge(size_t from_id, size_t to_id, size_t edge_id);
@@ -75,5 +76,22 @@ class VisitedEdges {
     size_t size() const;
     bool empty() const;
 };
+
+template <UndirectedGraphLike G>
+NodesContainer::NodesContainer(const G& graph) : m_has_node(graph.get_number_of_nodes(), false) {}
+
+template <UndirectedGraphLike G> NodesLabels::NodesLabels(const G& graph) {
+    m_labels.resize(graph.get_number_of_nodes());
+}
+
+template <UndirectedGraphLike G>
+EdgesContainer::EdgesContainer(const G& graph) : m_has_edge(graph.get_number_of_edges(), false) {}
+
+template <UndirectedGraphLike G>
+VisitedEdges::VisitedEdges(const G& graph) : m_visited_edges_1(graph), m_visited_edges_2(graph) {}
+
+template <UndirectedGraphLike G> EdgesLabels::EdgesLabels(const G& graph) {
+    m_labels.resize(graph.get_number_of_edges());
+}
 
 } // namespace domus::graph::utilities

@@ -8,53 +8,11 @@
 
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include "../domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
-using namespace domus::graph;
+namespace domus::graph {
 
 bool Graph::has_node(size_t node_id) const { return node_id < get_number_of_nodes(); }
-
-void Graph::for_each_node(std::function<void(size_t)> f) const {
-    for (size_t node_id = 0; node_id < get_number_of_nodes(); ++node_id) {
-        f(node_id);
-    }
-}
-
-void Graph::for_each_out_neighbor(size_t node_id, std::function<void(size_t)> f) const {
-    DOMUS_ASSERT(has_node(node_id), "Graph::for_each_out_neighbors: node does not exist");
-    for (const size_t edge_id : m_out_adjacency_list[node_id])
-        f(m_edges[edge_id]->edge.to_id);
-}
-
-void Graph::for_each_in_neighbor(size_t node_id, std::function<void(size_t)> f) const {
-    DOMUS_ASSERT(has_node(node_id), "Graph::for_each_in_neighbors: node does not exist");
-    for (const size_t edge_id : m_in_adjacency_list[node_id])
-        f(m_edges[edge_id]->edge.from_id);
-}
-
-void Graph::for_each_neighbor(size_t node_id, std::function<void(size_t)> f) const {
-    DOMUS_ASSERT(has_node(node_id), "Graph::for_each_neighbor: node does not exist");
-    for_each_in_neighbor(node_id, f);
-    for_each_out_neighbor(node_id, f);
-}
-
-void Graph::for_each_out_edge(size_t node_id, std::function<void(EdgeIter)> f) const {
-    DOMUS_ASSERT(has_node(node_id), "Graph::for_each_out_edge: node does not exist");
-    for (const size_t edge_id : m_out_adjacency_list[node_id])
-        f(EdgeIter{edge_id, m_edges[edge_id]->edge.to_id});
-}
-
-void Graph::for_each_in_edge(size_t node_id, std::function<void(EdgeIter)> f) const {
-    DOMUS_ASSERT(has_node(node_id), "Graph::for_each_in_edge: node does not exist");
-    for (const size_t edge_id : m_in_adjacency_list[node_id])
-        f(EdgeIter{edge_id, m_edges[edge_id]->edge.from_id});
-}
-
-void Graph::for_each_edge(size_t node_id, std::function<void(EdgeIter)> f) const {
-    DOMUS_ASSERT(has_node(node_id), "Graph::for_each_edge: node does not exist");
-    for_each_in_edge(node_id, f);
-    for_each_out_edge(node_id, f);
-}
 
 size_t Graph::add_node() {
     m_in_adjacency_list.push_back({});
@@ -173,25 +131,25 @@ std::string Graph::to_string(bool undirected) const {
     std::string result;
     auto out = std::back_inserter(result);
     std::format_to(out, "Graph:\n");
-    for_each_node([&](size_t node_id) {
+    for (size_t node_id : get_nodes_ids()) {
         if (undirected) {
             std::format_to(out, "{}: [ ", node_id);
-            for_each_neighbor(node_id, [&](size_t neighbor_id) {
+            for (size_t neighbor_id : get_neighbors(node_id)) {
                 std::format_to(out, "{} ", neighbor_id);
-            });
+            }
             std::format_to(out, "]\n");
         } else {
             std::format_to(out, "{}: out[ ", node_id);
-            for_each_out_neighbor(node_id, [&](size_t neighbor_id) {
+            for (size_t neighbor_id : get_out_neighbors(node_id)) {
                 std::format_to(out, "{} ", neighbor_id);
-            });
+            }
             std::format_to(out, "] in[ ");
-            for_each_in_neighbor(node_id, [&](size_t neighbor_id) {
+            for (size_t neighbor_id : get_in_neighbors(node_id)) {
                 std::format_to(out, "{} ", neighbor_id);
-            });
+            }
             std::format_to(out, "]\n");
         }
-    });
+    }
     return result;
 }
 
@@ -203,29 +161,29 @@ std::string Graph::to_string(
     std::string result;
     auto out = std::back_inserter(result);
     std::format_to(out, "{}:\n", name);
-    for_each_node([&](const size_t node_id) {
+    for (const size_t node_id : get_nodes_ids()) {
         const size_t node_label = labels.get_label(node_id);
         if (undirected) {
             std::format_to(out, "{}: [ ", node_label);
-            for_each_neighbor(node_id, [&](size_t neighbor_id) {
+            for (const size_t neighbor_id : get_neighbors(node_id)) {
                 const size_t neighbor_label = labels.get_label(neighbor_id);
                 std::format_to(out, "{} ", neighbor_label);
-            });
+            }
             std::format_to(out, "]\n");
         } else {
             std::format_to(out, "{}: out[ ", node_label);
-            for_each_out_neighbor(node_id, [&](size_t neighbor_id) {
+            for (size_t neighbor_id : get_out_neighbors(node_id)) {
                 const size_t neighbor_label = labels.get_label(neighbor_id);
                 std::format_to(out, "{} ", neighbor_label);
-            });
+            }
             std::format_to(out, "] in[ ");
-            for_each_in_neighbor(node_id, [&](size_t neighbor_id) {
+            for (size_t neighbor_id : get_in_neighbors(node_id)) {
                 const size_t neighbor_label = labels.get_label(neighbor_id);
                 std::format_to(out, "{} ", neighbor_label);
-            });
+            }
             std::format_to(out, "]\n");
         }
-    });
+    }
     return result;
 }
 
@@ -274,3 +232,7 @@ bool Graph::add_subdivision_to_cycle(const Subdivision& subdivision, Cycle& cycl
     }
     return false;
 }
+
+static_assert(UndirectedGraphLike<Graph>);
+
+} // namespace domus::graph

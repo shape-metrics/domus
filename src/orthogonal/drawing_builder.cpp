@@ -10,6 +10,7 @@
 
 #include "domus/core/color.hpp"
 #include "domus/core/graph/attributes.hpp"
+#include "domus/core/graph/concept.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
@@ -21,7 +22,7 @@
 #include "domus/orthogonal/shape/shape.hpp"
 #include "domus/orthogonal/shape/shape_builder.hpp"
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::orthogonal {
 using namespace domus::graph;
@@ -69,19 +70,18 @@ get_other_edge_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
     );
     std::optional<size_t> other;
     std::optional<size_t> other_edge_id;
-    graph.for_each_edge(node_id, [&](EdgeIter edge) {
-        if (other.has_value())
-            return;
+    for (const EdgeIter& edge : graph.get_edges(node_id))
         if (edge.neighbor_id != neighbor_id) {
             other = edge.neighbor_id;
             other_edge_id = edge.id;
+            break;
         }
-    });
+
     DOMUS_ASSERT(
         other.has_value(),
         "get_other_neighbor_id: internal error happened, no other neighbor found for node"
     );
-    return {other.value(), other_edge_id.value()};
+    return {*other, *other_edge_id};
 }
 
 inline size_t get_other_neighbor_id(const Graph& graph, size_t node_id, size_t neighbor_id) {
@@ -173,7 +173,9 @@ remove_useless_bends(const Graph& graph, const Attributes& attributes, const Sha
         );
         std::array<size_t, 2> edge_ids{graph.get_number_of_nodes(), graph.get_number_of_nodes()};
         size_t i = 0;
-        graph.for_each_edge(node_id, [&edge_ids, &i](EdgeIter edge) { edge_ids[i++] = edge.id; });
+        for (const EdgeIter edge : graph.get_edges(node_id)) {
+            edge_ids[i++] = edge.id;
+        }
         // if the added corner is not flat, keep it
         if (shape.are_parallel(edge_ids[0], edge_ids[1]))
             kept_nodes[node_id] = false;
@@ -196,10 +198,10 @@ remove_useless_bends(const Graph& graph, const Attributes& attributes, const Sha
     Shape new_shape;
     Attributes new_attributes;
     new_attributes.add_attribute(Attribute::NODES_COLOR);
-    new_graph.for_each_node([&](size_t new_node_id) {
+    for (const size_t new_node_id : new_graph.get_nodes_ids()) {
         size_t old_node_id = new_id_to_old_id.get_label(new_node_id);
         new_attributes.set_node_color(new_node_id, attributes.get_node_color(old_node_id));
-        graph.for_each_edge(old_node_id, [&](EdgeIter edge) {
+        for (const EdgeIter edge : graph.get_edges(old_node_id)) {
             size_t old_prev = old_node_id;
             size_t old_curr = edge.neighbor_id;
             // Traverse down the chain of useless nodes until we hit a kept node.
@@ -217,8 +219,8 @@ remove_useless_bends(const Graph& graph, const Attributes& attributes, const Sha
                 size_t new_edge_id = new_graph.add_edge(new_node_id, new_curr);
                 new_shape.set_direction(new_edge_id, direction);
             }
-        });
-    });
+        }
+    }
     DOMUS_ASSERT(
         is_shape_valid(new_graph, new_shape),
         "remove_useless_bends: built shape is not valid"
@@ -281,12 +283,10 @@ std::optional<Cycle> check_if_metrics_exist(Shape& shape, Graph& graph) {
 void build_nodes_positions(Graph& graph, Attributes& attributes, Shape& shape);
 
 bool has_graph_degree_more_than_4(const Graph& graph) {
-    bool has_degree_more_than_4 = false;
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids())
         if (graph.get_degree_of_node(node_id) > 4)
-            has_degree_more_than_4 = true;
-    });
-    return has_degree_more_than_4;
+            return true;
+    return false;
 }
 
 void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape);
@@ -307,7 +307,9 @@ void build_nodes_position_degree_more_than_4(
 ShapeMetricsDrawing make_orthogonal_drawing_incremental(Graph& graph, std::vector<Cycle>& cycles) {
     Attributes attributes;
     attributes.add_attribute(Attribute::NODES_COLOR);
-    graph.for_each_node([&](size_t node_id) { attributes.set_node_color(node_id, Color::BLACK); });
+    for (const size_t node_id : graph.get_nodes_ids()) {
+        attributes.set_node_color(node_id, Color::BLACK);
+    }
     Shape shape = build_shape(graph, attributes, cycles);
     std::optional<Cycle> cycle_to_add = check_if_metrics_exist(shape, graph);
     size_t number_of_added_cycles = 0;
@@ -380,11 +382,11 @@ void build_nodes_positions(Graph& graph, Attributes& attributes, Shape& shape) {
         current_position_y += 100;
     }
     attributes.add_attribute(Attribute::NODES_POSITION);
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         const size_t x = node_id_to_position_x.get_label(node_id);
         const size_t y = node_id_to_position_y.get_label(node_id);
         attributes.set_position(node_id, static_cast<int>(x), static_cast<int>(y));
-    });
+    }
 }
 
 const std::vector<std::optional<std::pair<Edge, Direction>>>
@@ -399,7 +401,7 @@ find_edges_to_fix(const Graph& graph, const Shape& shape, const Attributes& attr
         std::optional<size_t> downest_left, downest_right, leftest_up, leftest_down;
         std::optional<size_t> downest_edge_id_left, downest_edge_id_right, leftest_edge_id_up,
             leftest_edge_id_down;
-        graph.for_each_edge(node_id, [&](EdgeIter edge) {
+        for (const EdgeIter edge : graph.get_edges(node_id)) {
             const size_t added_id = edge.neighbor_id;
             if (shape.is_horizontal(edge.id)) {
                 DOMUS_ASSERT(
@@ -408,12 +410,12 @@ find_edges_to_fix(const Graph& graph, const Shape& shape, const Attributes& attr
                 );
                 size_t other_neighbor_id = 0;
                 size_t other_edge_id = 0;
-                graph.for_each_edge(added_id, [&](EdgeIter e) {
+                for (const EdgeIter e : graph.get_edges(added_id)) {
                     if (e.neighbor_id == node_id)
-                        return;
+                        continue;
                     other_neighbor_id = e.neighbor_id;
                     other_edge_id = e.id;
-                });
+                }
                 if (shape.is_up(graph, other_edge_id, added_id, other_neighbor_id)) {
                     if (!leftest_up.has_value()) {
                         leftest_up = added_id;
@@ -440,12 +442,12 @@ find_edges_to_fix(const Graph& graph, const Shape& shape, const Attributes& attr
                 );
                 size_t other_neighbor_id = 0;
                 size_t other_edge_id = 0;
-                graph.for_each_edge(added_id, [&](EdgeIter e) {
+                for (const EdgeIter e : graph.get_edges(added_id)) {
                     if (e.neighbor_id == node_id)
-                        return;
+                        continue;
                     other_neighbor_id = e.neighbor_id;
                     other_edge_id = e.id;
-                });
+                }
                 if (shape.is_left(graph, other_edge_id, added_id, other_neighbor_id)) {
                     if (!downest_left.has_value()) {
                         downest_left = added_id;
@@ -466,7 +468,7 @@ find_edges_to_fix(const Graph& graph, const Shape& shape, const Attributes& attr
                     }
                 }
             }
-        });
+        }
         edge_direction[leftest_edge_id_up.value()] = {{node_id, leftest_up.value()}, Direction::UP};
         edge_direction[leftest_edge_id_down.value()] = {
             {node_id, leftest_down.value()},
@@ -568,7 +570,7 @@ void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape) {
     for (size_t node_id : nodes) {
         std::vector<size_t> edge_ids_to_remove;
         std::vector<std::pair<Edge, Direction>> edges_to_add;
-        graph.for_each_edge(node_id, [&](EdgeIter edge) {
+        for (const EdgeIter edge : graph.get_edges(node_id)) {
             size_t added_id = graph.add_node();
             Direction direction = shape.get_direction(graph, edge.id, node_id, edge.neighbor_id);
             edges_to_add.push_back({{added_id, edge.neighbor_id}, direction});
@@ -580,7 +582,7 @@ void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape) {
                 edges_to_add.push_back({{node_id, added_id}, Direction::RIGHT});
             }
             edge_ids_to_remove.emplace_back(edge.id);
-        });
+        }
         for (size_t edge_id : edge_ids_to_remove) {
             shape.remove_direction(edge_id);
             graph.remove_edge(edge_id);
@@ -615,11 +617,11 @@ void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape) {
         ++current_position_y;
     }
     attributes.add_attribute(Attribute::NODES_POSITION);
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         const size_t x = node_id_to_position_x.get_label(node_id);
         const size_t y = node_id_to_position_y.get_label(node_id);
         attributes.set_position(node_id, static_cast<int>(x), static_cast<int>(y));
-    });
+    }
     auto [new_graph, new_attributes, new_shape] =
         fix_useless_green_blue_nodes(graph, attributes, shape);
     graph = std::move(new_graph);
@@ -647,11 +649,11 @@ void fix_inconsistency(
     size_t neighbors_ids[2] = {graph.get_number_of_nodes(), graph.get_number_of_nodes()};
     size_t edge_ids[2];
     int i = 0;
-    graph.for_each_edge(colored_node_id, [&](EdgeIter edge) {
+    for (const EdgeIter edge : graph.get_edges(colored_node_id)) {
         neighbors_ids[i] = edge.neighbor_id;
         edge_ids[i] = edge.id;
         ++i;
-    });
+    }
     if (shape.is_up(graph, edge_ids[0], neighbors_ids[0], colored_node_id)) {
         shape.remove_direction(edge_ids[0]);
         shape.set_direction(graph, edge_ids[0], colored_node_id, neighbors_ids[0], direction);
@@ -778,7 +780,7 @@ void make_shifts(
             : [](Attributes& a, size_t id, int value) { a.change_position_x(id, value); };
     size_t index_of_fixed_node = find_fixed_index_node(attributes, nodes_at_direction);
     int initial_position = position_function_other(attributes, node_id);
-    graph.for_each_node([&](size_t id) {
+    for (const size_t id : graph.get_nodes_ids()) {
         int old_position_y = position_function_other(attributes, id);
         if (old_position_y > initial_position) {
             int node_count = static_cast<int>(nodes_at_direction.size());
@@ -790,7 +792,7 @@ void make_shifts(
             const int new_position_y = old_position_y - 5 * static_cast<int>(index_of_fixed_node);
             change_position_other(attributes, id, new_position_y);
         }
-    });
+    }
     for (size_t i = 0; i < nodes_at_direction.size(); ++i) {
         if (i == index_of_fixed_node)
             continue;
@@ -842,7 +844,7 @@ void make_shifts(
 
 auto neighbors_at_each_direction(const Graph& graph, size_t node_id, const Shape& shape) {
     std::array<std::vector<size_t>, 4> nodes_at_direction{};
-    graph.for_each_edge(node_id, [&](EdgeIter edge) {
+    for (const EdgeIter edge : graph.get_edges(node_id)) {
         Direction dir = shape.get_direction(graph, edge.id, node_id, edge.neighbor_id);
         switch (dir) {
         case Direction::RIGHT:
@@ -861,16 +863,16 @@ auto neighbors_at_each_direction(const Graph& graph, size_t node_id, const Shape
             DOMUS_ASSERT(false, "neighbors_at_each_direction: found invalid direction");
             break;
         }
-    });
+    }
     return nodes_at_direction;
 }
 
 void make_shifts_overlapped_edges(Graph& graph, Attributes& attributes, Shape& shape) {
     std::vector<size_t> nodes;
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         if (graph.get_degree_of_node(node_id) > 4)
             nodes.push_back(node_id);
-    });
+    }
     for (size_t node_id : nodes) {
         auto nodes_to_sort = neighbors_at_each_direction(graph, node_id, shape);
         make_shifts(
@@ -921,18 +923,18 @@ void fix_negative_positions(const Graph& graph, Attributes& attributes) {
         return;
     int min_x = std::numeric_limits<int>::max();
     int min_y = std::numeric_limits<int>::max();
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         min_x = std::min(min_x, attributes.get_position_x(node_id));
         min_y = std::min(min_y, attributes.get_position_y(node_id));
-    });
+    }
     if (min_x < 0)
-        graph.for_each_node([&](size_t node_id) {
+        for (const size_t node_id : graph.get_nodes_ids()) {
             attributes.change_position_x(node_id, attributes.get_position_x(node_id) - min_x);
-        });
+        }
     if (min_y < 0)
-        graph.for_each_node([&](size_t node_id) {
+        for (const size_t node_id : graph.get_nodes_ids()) {
             attributes.change_position_y(node_id, attributes.get_position_y(node_id) - min_y);
-        });
+        }
 }
 
 } // namespace domus::orthogonal

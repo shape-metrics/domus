@@ -7,7 +7,7 @@
 
 #include "domus/core/graph/path.hpp"
 
-#include "../domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::graph {
 

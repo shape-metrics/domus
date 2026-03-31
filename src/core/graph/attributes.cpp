@@ -1,6 +1,6 @@
 #include "domus/core/graph/attributes.hpp"
 
-#include "../domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::graph {
 

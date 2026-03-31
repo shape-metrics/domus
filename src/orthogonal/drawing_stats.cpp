@@ -4,6 +4,7 @@
 #include <climits>
 #include <cmath>
 #include <print>
+#include <ranges>
 #include <stdlib.h>
 #include <utility>
 #include <vector>
@@ -13,7 +14,7 @@
 #include "domus/core/utils.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::orthogonal::stats {
 using namespace domus::graph;
@@ -93,16 +94,16 @@ std::vector<size_t> compute_bends_counts(const Graph& graph, const Attributes& a
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     std::vector<size_t> bends_counts;
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         if (attributes.get_node_color(node_id) != Color::BLACK)
-            return;
+            continue;
         graph::utilities::NodesContainer visited(graph);
         std::function<void(size_t, size_t, size_t, size_t)> dfs =
             [&](size_t current, size_t black, size_t count, size_t previous_id) {
                 visited.add_node(current);
-                graph.for_each_neighbor(current, [&](size_t neighbor_id) {
+                for (const size_t neighbor_id : graph.get_neighbors(current)) {
                     if (visited.has_node(neighbor_id))
-                        return;
+                        continue;
                     Color neighbor_color = attributes.get_node_color(neighbor_id);
                     if (neighbor_color != Color::BLACK) {
                         if (node_to_coordinate_x[previous_id] ==
@@ -117,11 +118,11 @@ std::vector<size_t> compute_bends_counts(const Graph& graph, const Attributes& a
                             count--;
                         bends_counts.push_back(count);
                     }
-                });
+                }
                 visited.erase(current);
             };
         dfs(node_id, node_id, 0, node_id);
-    });
+    }
     return bends_counts;
 }
 
@@ -160,14 +161,14 @@ size_t compute_total_area(const OrthogonalDrawing& result) {
     size_t max_y = 0;
     size_t min_x = INT_MAX;
     size_t min_y = INT_MAX;
-    graph.for_each_node([&](size_t node_id) {
+    for (const size_t node_id : graph.get_nodes_ids()) {
         size_t x = node_to_coordinate_x[node_id];
         size_t y = node_to_coordinate_y[node_id];
         max_x = std::max(max_x, x);
         max_y = std::max(max_y, y);
         min_x = std::min(min_x, x);
         min_y = std::min(min_y, y);
-    });
+    }
     return static_cast<size_t>((max_x - min_x + 1) * (max_y - min_y + 1));
 }
 
@@ -253,14 +254,9 @@ size_t compute_total_crossings(const OrthogonalDrawing& result) {
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     size_t total_crossings = 0;
-    std::vector<graph::Edge> edges;
-    graph.for_each_node([&](size_t node_id) {
-        graph.for_each_neighbor(node_id, [&](size_t neighbor_id) {
-            if (neighbor_id < node_id)
-                return;
-            edges.emplace_back(node_id, neighbor_id);
-        });
-    });
+    std::vector<graph::Edge> edges = graph.get_all_edges() |
+                                     std::views::transform([](EdgeId edge) { return edge.edge; }) |
+                                     std::ranges::to<std::vector<Edge>>();
     for (size_t i = 0; i < edges.size(); ++i) {
         size_t node_1_id = edges[i].from_id;
         size_t node_2_id = edges[i].to_id;

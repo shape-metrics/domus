@@ -11,7 +11,7 @@
 #include "domus/planarity/auslander_parter.hpp"
 #include "domus/torus/embedder.hpp"
 
-#include "test_graphs.hpp"
+#include "domus/core/graph/test.hpp"
 
 using namespace domus;
 using namespace domus::graph;
@@ -25,7 +25,7 @@ void planarity_test(const graph::Graph& graph) {
         embedding->print();
         std::println(
             "number of faces: {}",
-            compute_number_of_faces_in_embedding(graph, embedding.value())
+            compute_number_of_faces_in_embedding(embedding.value())
         );
     } else
         std::println("Embedding not found");
@@ -54,9 +54,9 @@ void toroidal_test(const graph::Graph& graph) {
         embedding->print();
         std::println(
             "number of faces: {}",
-            compute_number_of_faces_in_embedding(graph, embedding.value())
+            compute_number_of_faces_in_embedding(embedding.value())
         );
-        std::println("genus: {}", compute_embedding_genus(graph, embedding.value()));
+        std::println("genus: {}", compute_embedding_genus(embedding.value()));
     } else
         std::println("Embedding not found");
 }
@@ -78,5 +78,10 @@ int main() {
 
     make_orthogonal(*graph);
     toroidal_test(test::two_cycle_graphs[2]);
+
+    std::println("k5");
+    test::subdivided_k_5.print(true);
+
+    toroidal_test(test::subdivided_k_5);
     return 0;
 }

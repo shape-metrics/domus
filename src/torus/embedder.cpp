@@ -9,7 +9,7 @@
 #include "embed_two_cycles.hpp"
 #include "faces_types.hpp"
 
-#include "../core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -17,10 +17,11 @@ using namespace domus::graph;
 std::optional<graph::Embedding> compute_toroidal_embedding(
     const Graph& graph, const Cycle& cycle_1, Cycle& cycle_2, const size_t intersection_node_id
 ) {
-    Embedding embedding =
+    auto [embedding, face_type] =
         compute_embedding_of_two_cycles(graph, cycle_1, cycle_2, intersection_node_id);
+    embedding.print();
     DOMUS_ASSERT(
-        compute_embedding_genus(graph, embedding) == 1,
+        compute_embedding_genus(embedding) == 1,
         "compute_toroidal_embedding: the embedding of the two cycles is not toroidal"
     );
     auto faces = graph::compute_faces_in_embedding(graph, embedding);
@@ -29,11 +30,8 @@ std::optional<graph::Embedding> compute_toroidal_embedding(
         "compute_toroidal_embedding: should have obtained a single face"
     );
     const Path& path = faces.front();
-    // FaceType face_type = compute_type_of_face(path);
-    // DOMUS_ASSERT(
-    //     face_type == FaceType::TYPE_3 || face_type == FaceType::TYPE_4,
-    //     "compute_toroidal_embedding: face from cycles should be type 3 or 4"
-    // );
+    path.print();
+
     return embedding;
 }
 

@@ -2,7 +2,7 @@
 
 #include <print>
 
-#include "../domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 
 namespace domus::tree {
 

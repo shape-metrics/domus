@@ -1,14 +1,9 @@
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include "domus/core/graph/graph.hpp"
+#include "domus/core/domus_debug.hpp"
 
-#include "../domus_debug.hpp"
-
-using namespace domus::graph::utilities;
+namespace domus::graph::utilities {
 using namespace domus::graph;
-
-NodesContainer::NodesContainer(const Graph& graph)
-    : m_has_node(graph.get_number_of_nodes(), false) {}
 
 void NodesContainer::add_node(size_t node_id) {
     DOMUS_ASSERT(!has_node(node_id), "NodesContainer::add_node: node already exists");
@@ -28,11 +23,10 @@ void NodesContainer::erase(size_t node_id) {
     m_number_of_nodes--;
 }
 
-NodesLabels::NodesLabels(const Graph& graph) { m_labels.resize(graph.get_number_of_nodes()); }
-
 void NodesLabels::add_label(size_t node_id, size_t label) {
     DOMUS_ASSERT(!has_label(node_id), "NodesLabels::add_label: node already has a label");
     m_labels[node_id] = label;
+    ++m_number_of_labels;
 }
 
 bool NodesLabels::has_label(size_t node_id) const { return m_labels[node_id].has_value(); }
@@ -49,14 +43,13 @@ size_t NodesLabels::get_label(size_t node_id) const {
 void NodesLabels::erase_label(size_t node_id) {
     DOMUS_ASSERT(has_label(node_id), "NodesLabels::erase_label: node does not have a label");
     m_labels[node_id].reset();
+    --m_number_of_labels;
 }
 
 void NodesLabels::update_label(size_t node_id, size_t new_label) {
     DOMUS_ASSERT(has_label(node_id), "NodesLabels::update_label: node does not have a label");
     m_labels[node_id] = new_label;
 }
-
-EdgesLabels::EdgesLabels(const Graph& graph) { m_labels.resize(graph.get_number_of_edges()); }
 
 EdgesLabels::EdgesLabels(size_t number_of_edges) { m_labels.resize(number_of_edges); }
 
@@ -91,9 +84,6 @@ void EdgesLabels::update_size(size_t edge_id) {
         m_labels.push_back(std::nullopt);
 }
 
-EdgesContainer::EdgesContainer(const Graph& graph)
-    : m_has_edge(graph.get_number_of_edges(), false) {}
-
 EdgesContainer::EdgesContainer(size_t number_of_edges_ids)
     : m_has_edge(number_of_edges_ids, false) {}
 
@@ -114,9 +104,6 @@ void EdgesContainer::erase(size_t edge_id) {
     m_has_edge[edge_id] = false;
     m_number_of_edges--;
 }
-
-VisitedEdges::VisitedEdges(const Graph& graph)
-    : m_visited_edges_1(graph), m_visited_edges_2(graph) {}
 
 VisitedEdges::VisitedEdges(size_t number_of_edges_ids)
     : m_visited_edges_1(number_of_edges_ids), m_visited_edges_2(number_of_edges_ids) {}
@@ -145,3 +132,5 @@ void VisitedEdges::erase(size_t from_id, size_t to_id, size_t edge_id) {
 size_t VisitedEdges::size() const { return m_visited_edges_1.size() + m_visited_edges_2.size(); }
 
 bool VisitedEdges::empty() const { return size() == 0; }
+
+} // namespace domus::graph::utilities
