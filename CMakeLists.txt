@@ -90,6 +90,7 @@ set(COMMON_SRCS
     src/core/tree/tree_algorithms.cpp
     src/planarity/segment.cpp
     src/drawing/svg_drawer.cpp
+    src/drawing/linear_scale.cpp
     src/orthogonal/drawing_builder.cpp
     src/orthogonal/drawing_stats.cpp
     src/core/graph/generators.cpp
