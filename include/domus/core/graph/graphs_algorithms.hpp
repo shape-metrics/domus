@@ -93,6 +93,31 @@ struct StrongConnectedComponents {
     );
 };
 
-} // namespace domus::graph::algorithms
+/*
+ * templates implementations
+ */
 
-#include "graphs_algorithms.ipp"
+template <UndirectedGraphLike G> size_t compute_number_of_connected_components(const G& graph) {
+    utilities::NodesContainer visited(graph);
+    size_t components = 0;
+    for (const size_t node_id : graph.get_nodes_ids()) {
+        if (!visited.has_node(node_id)) {
+            components++;
+            std::stack<size_t> stack;
+            stack.push(node_id);
+            while (!stack.empty()) {
+                const size_t n_id = stack.top();
+                stack.pop();
+                if (!visited.has_node(n_id)) {
+                    visited.add_node(n_id);
+                    for (const size_t neighbor_id : graph.get_neighbors(n_id))
+                        if (!visited.has_node(neighbor_id))
+                            stack.push(neighbor_id);
+                }
+            }
+        }
+    }
+    return components;
+}
+
+} // namespace domus::graph::algorithms

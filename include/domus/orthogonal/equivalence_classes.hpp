@@ -35,15 +35,25 @@ class EquivalenceClasses {
   public:
     bool has_elem_a_class(size_t elem) const;
     size_t get_class_of_elem(size_t elem) const;
-    void for_each_elem_of_class(size_t class_id, std::function<void(size_t)> f) const;
+    auto get_elems_of_class(size_t class_id) const;
     size_t number_of_elems_in_class(size_t class_id) const;
 
     std::string to_string() const;
     void print() const;
-    void for_each_class(std::function<void(size_t)> f) const;
+
+    auto get_classes() const;
+
     static const std::pair<EquivalenceClasses, EquivalenceClasses>
     build(const Shape& shape, const domus::graph::Graph& graph);
 };
+
+inline auto EquivalenceClasses::get_classes() const {
+    return std::views::iota(size_t{0}, m_number_of_classes);
+}
+
+inline auto EquivalenceClasses::get_elems_of_class(size_t class_id) const {
+    return std::views::all(m_class_to_elems[class_id]);
+}
 
 class Ordering {
     const domus::graph::Graph m_ordering_x;

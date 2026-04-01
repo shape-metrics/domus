@@ -1,9 +1,9 @@
 #pragma once
 
-#include <functional>
 #include <optional>
 #include <ranges>
 #include <string>
+#include <vector>
 
 namespace domus::tree {
 
@@ -25,11 +25,7 @@ class Tree {
     bool has_edge(size_t node_id_1, size_t node_id_2) const;
     size_t get_number_of_nodes() const;
 
-    void for_each_node(std::function<void(size_t)> f) const;
-    void for_each_child(size_t node_id, std::function<void(size_t)> f) const;
-
     auto get_node_ids() const;
-
     auto get_children(size_t node_id) const;
 
     std::string to_string() const;

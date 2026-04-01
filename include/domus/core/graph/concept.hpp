@@ -1,7 +1,7 @@
 #pragma once
 
 #include <concepts>
-#include <functional>
+#include <ranges>
 #include <utility>
 
 namespace domus::graph {

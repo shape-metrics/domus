@@ -1,7 +1,5 @@
 #include "domus/orthogonal/equivalence_classes.hpp"
 
-#include <cstddef>
-#include <functional>
 #include <utility>
 
 #include "domus/core/graph/concept.hpp"
@@ -43,21 +41,8 @@ size_t EquivalenceClasses::get_class_of_elem(size_t elem) const {
     return m_elem_to_class.get_label(elem);
 }
 
-void EquivalenceClasses::for_each_elem_of_class(
-    size_t class_id, std::function<void(size_t)> f
-) const {
-    DOMUS_ASSERT(has_class(class_id), "EquivalenceClasses::get_elems class does not exist");
-    for (size_t elem : m_class_to_elems.at(class_id))
-        f(elem);
-}
-
 size_t EquivalenceClasses::number_of_elems_in_class(size_t class_id) const {
     return m_class_to_elems.at(class_id).size();
-}
-
-void EquivalenceClasses::for_each_class(std::function<void(size_t)> f) const {
-    for (size_t class_id = 0; class_id < m_number_of_classes; ++class_id)
-        f(class_id);
 }
 
 void EquivalenceClasses::directional_node_expander(
@@ -123,8 +108,10 @@ Ordering Ordering::build(
     Graph ordering_x;
     Graph ordering_y;
 
-    equivalence_classes_x.for_each_class([&ordering_x](size_t) { ordering_x.add_node(); });
-    equivalence_classes_y.for_each_class([&ordering_y](size_t) { ordering_y.add_node(); });
+    for (size_t i = 0; i < equivalence_classes_x.get_classes().size(); ++i)
+        ordering_x.add_node();
+    for (size_t i = 0; i < equivalence_classes_y.get_classes().size(); ++i)
+        ordering_y.add_node();
     EdgesLabels ordering_x_edge_to_graph_edge(ordering_x);
     EdgesLabels ordering_y_edge_to_graph_edge(ordering_y);
 

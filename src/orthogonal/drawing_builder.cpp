@@ -1,7 +1,6 @@
 #include "domus/orthogonal/drawing_builder.hpp"
 
 #include <algorithm>
-#include <functional>
 #include <limits.h>
 #include <optional>
 #include <tuple>
@@ -360,25 +359,21 @@ void build_nodes_positions(Graph& graph, Attributes& attributes, Shape& shape) {
     size_t current_position_x = 0;
     utilities::NodesLabels node_id_to_position_x(graph);
     for (size_t class_id : new_classes_x_ordering) {
-        classes_x.for_each_elem_of_class(class_id, [&](size_t node_id) {
+        for (const size_t node_id : classes_x.get_elems_of_class(class_id))
             if (attributes.get_node_color(node_id) == Color::BLUE)
                 current_position_x += 100;
-        });
-        classes_x.for_each_elem_of_class(class_id, [&](size_t node_id) {
+        for (const size_t node_id : classes_x.get_elems_of_class(class_id))
             node_id_to_position_x.add_label(node_id, current_position_x);
-        });
         current_position_x += 100;
     }
     size_t current_position_y = 0;
     utilities::NodesLabels node_id_to_position_y(graph);
     for (size_t class_id : new_classes_y_ordering) {
-        classes_y.for_each_elem_of_class(class_id, [&](size_t node_id) {
+        for (const size_t node_id : classes_y.get_elems_of_class(class_id))
             if (attributes.get_node_color(node_id) == Color::GREEN)
                 current_position_y += 100;
-        });
-        classes_y.for_each_elem_of_class(class_id, [&](size_t node_id) {
+        for (const size_t node_id : classes_y.get_elems_of_class(class_id))
             node_id_to_position_y.add_label(node_id, current_position_y);
-        });
         current_position_y += 100;
     }
     attributes.add_attribute(Attribute::NODES_POSITION);
@@ -562,18 +557,19 @@ fix_useless_green_blue_nodes(const Graph& graph, const Attributes& attributes, c
 }
 
 void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape) {
-    std::vector<size_t> nodes;
-    for (size_t node_id : graph.get_nodes_ids())
-        if (graph.get_degree_of_node(node_id) > 4)
-            nodes.push_back(node_id);
+    const auto nodes = graph.get_nodes_ids() | std::views::filter([&graph](size_t node_id) {
+                           return graph.get_degree_of_node(node_id) > 4;
+                       }) |
+                       std::ranges::to<std::vector<size_t>>();
 
-    for (size_t node_id : nodes) {
-        std::vector<EdgeIter> edges_to_subdivide =
+    for (const size_t node_id : nodes) {
+        const std::vector<EdgeIter> edges_to_subdivide =
             std::ranges::to<std::vector<EdgeIter>>(graph.get_edges(node_id));
         for (const EdgeIter edge : edges_to_subdivide) {
-            Direction direction = shape.get_direction(graph, edge.id, node_id, edge.neighbor_id);
+            const Direction direction =
+                shape.get_direction(graph, edge.id, node_id, edge.neighbor_id);
             shape.remove_direction(edge.id);
-            Subdivision s = graph.subdivide_edge(edge.id);
+            const Subdivision s = graph.subdivide_edge(edge.id);
             const size_t edge_id_1 =
                 (s.from_id == node_id) ? s.edge_from_between_id : s.edge_between_to_id;
             const size_t edge_id_2 =
@@ -589,28 +585,26 @@ void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape) {
             }
         }
     }
-    auto [classes_x, classes_y] = EquivalenceClasses::build(shape, graph);
-    auto ordering = Ordering::build(classes_x, classes_y, graph, shape);
+    const auto [classes_x, classes_y] = EquivalenceClasses::build(shape, graph);
+    const Ordering ordering = Ordering::build(classes_x, classes_y, graph, shape);
     const Graph& ordering_x = ordering.get_ordering_x();
     const Graph& ordering_y = ordering.get_ordering_y();
-    std::vector<size_t> classes_x_ordering =
+    const std::vector<size_t> classes_x_ordering =
         algorithms::make_topological_ordering(ordering_x).value();
-    std::vector<size_t> classes_y_ordering =
+    const std::vector<size_t> classes_y_ordering =
         algorithms::make_topological_ordering(ordering_y).value();
     size_t current_position_x = 0;
     utilities::NodesLabels node_id_to_position_x(graph);
-    for (size_t class_id : classes_x_ordering) {
-        classes_x.for_each_elem_of_class(class_id, [&](size_t node_id) {
+    for (const size_t class_id : classes_x_ordering) {
+        for (const size_t node_id : classes_x.get_elems_of_class(class_id))
             node_id_to_position_x.add_label(node_id, 100 * current_position_x);
-        });
         ++current_position_x;
     }
     size_t current_position_y = 0;
     utilities::NodesLabels node_id_to_position_y(graph);
-    for (size_t class_id : classes_y_ordering) {
-        classes_y.for_each_elem_of_class(class_id, [&](size_t node_id) {
+    for (const size_t class_id : classes_y_ordering) {
+        for (const size_t node_id : classes_y.get_elems_of_class(class_id))
             node_id_to_position_y.add_label(node_id, 100 * current_position_y);
-        });
         ++current_position_y;
     }
     attributes.add_attribute(Attribute::NODES_POSITION);
@@ -619,7 +613,7 @@ void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape) {
         const size_t y = node_id_to_position_y.get_label(node_id);
         attributes.set_position(node_id, static_cast<int>(x), static_cast<int>(y));
     }
-    auto [new_graph, new_attributes, new_shape] =
+    const auto [new_graph, new_attributes, new_shape] =
         fix_useless_green_blue_nodes(graph, attributes, shape);
     graph = std::move(new_graph);
     attributes = std::move(new_attributes);
@@ -631,16 +625,17 @@ void fix_inconsistency(
     Attributes& attributes,
     const Graph& graph,
     Shape& shape,
-    Color color_to_find
+    const Color color_to_find
 ) {
     const Direction direction = color_to_find == Color::GREEN ? Direction::UP : Direction::RIGHT;
     const Color dark_color = color_to_find == Color::GREEN ? Color::GREEN_DARK : Color::BLUE_DARK;
     std::optional<size_t> colored_node;
-    cycle.for_each([&](size_t node_id) {
+    for (const size_t node_id : cycle.get_nodes_ids()) {
         if (attributes.get_node_color(node_id) != color_to_find)
-            return;
+            continue;
         colored_node = node_id;
-    });
+        break;
+    }
     DOMUS_ASSERT(colored_node.has_value(), "fix_inconsistency: internal error happened");
     size_t colored_node_id = colored_node.value();
     size_t neighbors_ids[2] = {graph.get_number_of_nodes(), graph.get_number_of_nodes()};

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <deque>
-#include <functional>
 #include <ranges>
 #include <string>
 
@@ -26,8 +25,6 @@ class Path {
     void push_front(const Graph& graph, size_t next_node_id, size_t edge_id);
     void push_back(const Graph& graph, size_t prev_node_id, size_t edge_id);
     void reverse();
-
-    void for_each(std::function<void(size_t, size_t)> f) const; // edge_id, prev_node_id
 
     auto get_edges() const; // edge_id, prev_node_id
 

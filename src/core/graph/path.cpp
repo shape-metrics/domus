@@ -56,11 +56,6 @@ void Path::reverse() {
     m_last_node_id = first;
 }
 
-void Path::for_each(std::function<void(size_t, size_t)> f) const { // edge_id, prev_node_id
-    for (size_t i = 0; i < number_of_edges(); ++i)
-        f(m_edges_ids[i], m_nodes_ids[i]);
-}
-
 size_t Path::number_of_edges() const { return m_nodes_ids.size(); }
 
 size_t Path::node_id_at_position(size_t position) const {

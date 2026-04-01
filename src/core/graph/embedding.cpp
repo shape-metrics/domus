@@ -243,14 +243,6 @@ size_t compute_embedding_genus(const Embedding& embedding) {
     size_t number_of_faces = compute_number_of_faces_in_embedding(embedding);
     size_t connected_components = algorithms::compute_number_of_connected_components(embedding);
 
-    std::println(
-        "{} {} {} {}",
-        number_of_nodes,
-        number_of_edges,
-        number_of_faces,
-        connected_components
-    );
-
     return compute_embedding_genus(
         number_of_nodes,
         number_of_edges,

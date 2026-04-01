@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <climits>
 #include <cmath>
+#include <functional>
 #include <print>
 #include <ranges>
 #include <stdlib.h>

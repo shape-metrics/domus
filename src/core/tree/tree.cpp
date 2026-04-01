@@ -6,17 +6,6 @@
 
 namespace domus::tree {
 
-void Tree::for_each_node(std::function<void(size_t)> f) const {
-    for (size_t node_id = 0; node_id < get_number_of_nodes(); ++node_id)
-        f(node_id);
-}
-
-void Tree::for_each_child(size_t node_id, std::function<void(size_t)> f) const {
-    DOMUS_ASSERT(has_node(node_id), "Tree::for_each_child: node does not exist");
-    for (size_t child_id : m_nodeid_to_childrenid.at(node_id))
-        f(child_id);
-}
-
 bool Tree::is_root(size_t node_id) const { return node_id == 0; }
 
 bool Tree::has_edge(size_t node_id_1, size_t node_id_2) const {
@@ -59,15 +48,16 @@ std::string Tree::to_string() const {
     std::string result;
     auto out = std::back_inserter(result);
     std::format_to(out, "Tree\n");
-    for_each_node([&](size_t node_id) {
+    for (const size_t node_id : get_node_ids()) {
         if (is_root(node_id))
             std::format_to(out, "Node {} is root\n", node_id);
         else
             std::format_to(out, "Node {} has parent {}\n", node_id, get_parent(node_id));
         std::format_to(out, "Children of node {}:", node_id);
-        for_each_child(node_id, [&](size_t child_id) { std::format_to(out, "  {}", child_id); });
+        for (const size_t child_id : get_children(node_id))
+            std::format_to(out, "  {}", child_id);
         std::format_to(out, "\n");
-    });
+    }
     return result;
 }
 

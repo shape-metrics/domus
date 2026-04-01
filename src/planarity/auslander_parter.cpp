@@ -148,11 +148,11 @@ Cycle make_cycle_good(const Graph& graph, const Cycle& cycle, const Segment& seg
     auto& nodes_labels = segment.get_new_id_to_old_id();
     auto& edge_labels = segment.get_new_edge_id_to_old_id();
     Path old_path;
-    path.for_each([&](size_t edge_id, size_t prev_node_id) {
+    for (auto [edge_id, prev_node_id] : path.get_edges()) {
         size_t old_edge_id = edge_labels.get_label(edge_id);
         size_t old_prev_node_id = nodes_labels.get_label(prev_node_id);
         old_path.push_back(graph, old_prev_node_id, old_edge_id);
-    });
+    }
     if (attachments_to_use.size() == 3) {
         return change_cycle_with_path(
             graph,

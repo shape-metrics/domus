@@ -16,10 +16,10 @@ Cycle::Cycle(const Path& path) {
         path.get_first_node_id() == path.get_last_node_id(),
         "Cycle::Cycle: path is not a cycle"
     );
-    path.for_each([this](size_t edge_id, size_t prev_node_id) {
+    for (auto [edge_id, prev_node_id] : path.get_edges()) {
         m_nodes_ids.push_back(prev_node_id);
         m_edges_ids.push_back(edge_id);
-    });
+    }
     DOMUS_ASSERT(
         !DOMUS_HAS_DUPLICATES(m_nodes_ids) && !DOMUS_HAS_DUPLICATES(m_edges_ids),
         "Cycle::Cycle: class is for SIMPLE cycles only"
@@ -62,11 +62,6 @@ size_t Cycle::node_id_position(size_t node_id) const {
     auto it = std::ranges::find(m_nodes_ids, node_id);
     DOMUS_ASSERT(it != m_nodes_ids.end(), "Cycle::node_position: node {} is not in cycle", node_id);
     return static_cast<size_t>(std::distance(m_nodes_ids.begin(), it));
-}
-
-void Cycle::for_each(std::function<void(size_t)> func) const {
-    for (size_t i = 0; i < size(); ++i)
-        func(node_id_at(i));
 }
 
 size_t Cycle::edge_id_at(size_t index) const { return m_edges_ids[index % size()]; }

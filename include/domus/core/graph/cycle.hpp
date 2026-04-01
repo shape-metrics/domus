@@ -1,8 +1,8 @@
 #pragma once
 
-#include <functional>
 #include <ranges>
 #include <string>
+#include <vector>
 
 namespace domus::graph {
 class Path;
@@ -25,8 +25,6 @@ class Cycle {
 
     size_t node_id_at(size_t index) const;
     size_t edge_id_at(size_t index) const;
-
-    void for_each(std::function<void(size_t)> func) const;
 
     auto get_nodes_ids() const;
 
