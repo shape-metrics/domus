@@ -36,7 +36,7 @@ Embedding merge_biconnected_components(
     for (size_t i = 0; i < biconnected_components.get_components().size(); ++i) {
         const Embedding& embedding = embeddings[i];
         const Graph& component = biconnected_components.get_components()[i];
-        const NodesLabels& labels = biconnected_components.get_labels_of_component(i);
+        const NodesLabels<size_t>& labels = biconnected_components.get_labels_of_component(i);
         for (size_t node_id : component.get_nodes_ids()) {
             size_t old_node_id = labels.get_label(node_id);
             for (const EdgeIter component_edge : embedding.get_edges(node_id)) {
@@ -302,8 +302,8 @@ void add_middle_edges(
     const bool compatible,
     Embedding& output,
     const Cycle& cycle,
-    const NodesLabels& labels_to_old_ids,
-    const EdgesLabels& to_old_edge_ids
+    const NodesLabels<size_t>& labels_to_old_ids,
+    const EdgesLabels<size_t>& to_old_edge_ids
 ) {
     const size_t prev_cycle_position = (cycle_node_position + cycle.size() - 1) % cycle.size();
     const size_t next_cycle_position = (cycle_node_position + 1) % cycle.size();
@@ -379,8 +379,9 @@ void add_edges_incident_to_cycle(
         output.add_edge(cycle_node_id, next_cycle_node, cycle.edge_id_at(cycle_node_position));
         for (const size_t segment_index : inside_order) {
             const Embedding& embedding = embeddings[segment_index];
-            const NodesLabels& labels_to_old_ids = segments[segment_index].get_new_id_to_old_id();
-            const EdgesLabels& labels_to_old_edge_ids =
+            const NodesLabels<size_t>& labels_to_old_ids =
+                segments[segment_index].get_new_id_to_old_id();
+            const EdgesLabels<size_t>& labels_to_old_edge_ids =
                 segments[segment_index].get_new_edge_id_to_old_id();
             const bool is_embedding_compatible =
                 is_segment_inside.get_side(segment_index) == is_embedding_inside[segment_index];
@@ -401,8 +402,9 @@ void add_edges_incident_to_cycle(
         );
         for (const size_t segment_index : outside_order) {
             const Embedding& embedding = embeddings[segment_index];
-            const NodesLabels& labels_to_old_ids = segments[segment_index].get_new_id_to_old_id();
-            const EdgesLabels& labels_to_old_edge_ids =
+            const NodesLabels<size_t>& labels_to_old_ids =
+                segments[segment_index].get_new_id_to_old_id();
+            const EdgesLabels<size_t>& labels_to_old_edge_ids =
                 segments[segment_index].get_new_edge_id_to_old_id();
             const bool is_embedding_compatible =
                 is_segment_inside.get_side(segment_index) == is_embedding_inside[segment_index];
@@ -430,8 +432,8 @@ void add_edges_not_incident_to_cycle(
     for (size_t i = 0; i < segments.size(); ++i) {
         const Segment& segment = segments[i];
         const Embedding& embedding = embeddings[i];
-        const NodesLabels& labels_to_old_ids = segment.get_new_id_to_old_id();
-        const EdgesLabels& labels_to_old_edge_ids = segment.get_new_edge_id_to_old_id();
+        const NodesLabels<size_t>& labels_to_old_ids = segment.get_new_id_to_old_id();
+        const EdgesLabels<size_t>& labels_to_old_edge_ids = segment.get_new_edge_id_to_old_id();
         for (const size_t node_id : segment.get_segment().get_nodes_ids()) {
             if (node_id < cycle.size())
                 continue;

@@ -20,33 +20,33 @@ class NodesContainer {
     void erase(size_t node_id);
 };
 
-class NodesLabels {
-    std::vector<std::optional<size_t>> m_labels;
+template <typename T> class NodesLabels {
+    std::vector<std::optional<T>> m_labels;
     size_t m_number_of_labels = 0;
 
   public:
     template <UndirectedGraphLike G> NodesLabels(const G& graph);
-    void add_label(size_t node_id, size_t label);
+    void add_label(size_t node_id, T label);
     bool has_label(size_t node_id) const;
-    size_t get_label(size_t node_id) const;
+    const T& get_label(size_t node_id) const;
     void erase_label(size_t node_id);
-    void update_label(size_t node_id, size_t new_label);
-    void add_or_update_label(size_t node_id, size_t label);
+    void update_label(size_t node_id, T new_label);
+    void add_or_update_label(size_t node_id, T label);
     size_t get_number_of_labels() const;
 };
 
-class EdgesLabels {
-    std::vector<std::optional<size_t>> m_labels;
+template <typename T> class EdgesLabels {
+    std::vector<std::optional<T>> m_labels;
     size_t m_number_of_labels = 0;
 
   public:
     template <UndirectedGraphLike G> EdgesLabels(const G& graph);
     EdgesLabels(size_t number_of_edges);
-    void add_label(size_t edge_id, size_t label);
+    void add_label(size_t edge_id, T label);
     bool has_label(size_t edge_id) const;
-    size_t get_label(size_t edge_id) const;
+    const T& get_label(size_t edge_id) const;
     void erase_label(size_t edge_id);
-    void update_label(size_t edge_id, size_t new_label);
+    void update_label(size_t edge_id, T new_label);
     void update_size(size_t edge_id);
     bool empty() const;
     size_t get_number_of_labels() const;
@@ -80,25 +80,27 @@ class OrientedEdgesContainer {
     bool empty() const;
 };
 
-class OrientedEdgesLabels {
-    EdgesLabels m_labels_1;
-    EdgesLabels m_labels_2;
+template <typename T> class OrientedEdgesLabels {
+    EdgesLabels<T> m_labels_1;
+    EdgesLabels<T> m_labels_2;
 
   public:
     template <UndirectedGraphLike G> OrientedEdgesLabels(const G& graph);
-    void add_label(size_t from_id, size_t to_id, size_t edge_id, size_t label);
+    void add_label(size_t from_id, size_t to_id, size_t edge_id, T label);
     bool has_label(size_t from_id, size_t to_id, size_t edge_id) const;
-    size_t get_label(size_t from_id, size_t to_id, size_t edge_id) const;
+    const T& get_label(size_t from_id, size_t to_id, size_t edge_id) const;
     void erase_label(size_t from_id, size_t to_id, size_t edge_id);
-    void update_label(size_t from_id, size_t to_id, size_t edge_id, size_t new_label);
+    void update_label(size_t from_id, size_t to_id, size_t edge_id, T new_label);
     size_t get_number_of_labels() const;
     bool empty() const;
 };
 
+// Template specializations
+
 template <UndirectedGraphLike G>
 NodesContainer::NodesContainer(const G& graph) : m_has_node(graph.get_number_of_nodes(), false) {}
 
-template <UndirectedGraphLike G> NodesLabels::NodesLabels(const G& graph) {
+template <typename T> template <UndirectedGraphLike G> NodesLabels<T>::NodesLabels(const G& graph) {
     m_labels.resize(graph.get_number_of_nodes());
 }
 
@@ -109,11 +111,13 @@ template <UndirectedGraphLike G>
 OrientedEdgesContainer::OrientedEdgesContainer(const G& graph)
     : m_visited_edges_1(graph), m_visited_edges_2(graph) {}
 
-template <UndirectedGraphLike G> EdgesLabels::EdgesLabels(const G& graph) {
+template <typename T> template <UndirectedGraphLike G> EdgesLabels<T>::EdgesLabels(const G& graph) {
     m_labels.resize(graph.get_number_of_edges());
 }
 
+template <typename T>
 template <UndirectedGraphLike G>
-OrientedEdgesLabels::OrientedEdgesLabels(const G& graph) : m_labels_1(graph), m_labels_2(graph) {}
+OrientedEdgesLabels<T>::OrientedEdgesLabels(const G& graph)
+    : m_labels_1(graph), m_labels_2(graph) {}
 
 } // namespace domus::graph::utilities

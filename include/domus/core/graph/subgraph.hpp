@@ -7,18 +7,18 @@ namespace domus::graph {
 
 class SubGraph {
     Graph m_sub_graph;
-    utilities::NodesLabels m_sub_graph_labels;
-    utilities::EdgesLabels m_sub_graph_edges_labels;
+    utilities::NodesLabels<size_t> m_sub_graph_labels;
+    utilities::EdgesLabels<size_t> m_sub_graph_edges_labels;
 
   public:
     SubGraph(
         const Graph&& sub_graph,
-        const utilities::NodesLabels&& sub_graph_labels,
-        const utilities::EdgesLabels&& sub_graph_edges_labels
+        const utilities::NodesLabels<size_t>&& sub_graph_labels,
+        const utilities::EdgesLabels<size_t>&& sub_graph_edges_labels
     );
     const Graph& get_sub_graph() const;
-    const utilities::NodesLabels& get_sub_graph_labels() const;
-    const utilities::EdgesLabels& get_sub_graph_edges_labels() const;
+    const utilities::NodesLabels<size_t>& get_sub_graph_labels() const;
+    const utilities::EdgesLabels<size_t>& get_sub_graph_edges_labels() const;
     std::string to_string() const;
     void print() const;
 };

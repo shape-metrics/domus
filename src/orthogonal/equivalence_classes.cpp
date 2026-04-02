@@ -9,7 +9,9 @@
 #include "domus/core/domus_debug.hpp"
 
 namespace domus::orthogonal {
-using Graph = graph::Graph;
+using namespace domus::graph;
+using namespace orthogonal::shape;
+using namespace graph::utilities;
 
 EquivalenceClasses::EquivalenceClasses(const Graph& graph) : m_elem_to_class(graph) {}
 
@@ -53,7 +55,7 @@ void EquivalenceClasses::directional_node_expander(
     const std::function<bool(const Shape&, size_t)>& is_direction_wrong
 ) {
     set_class(node_id, class_id);
-    for (const graph::EdgeIter edge : graph.get_edges(node_id)) {
+    for (const EdgeIter& edge : graph.get_edges(node_id)) {
         if (has_elem_a_class(edge.neighbor_id))
             continue;
         if (is_direction_wrong(shape, edge.id))
@@ -112,8 +114,8 @@ Ordering Ordering::build(
         ordering_x.add_node();
     for (size_t i = 0; i < equivalence_classes_y.get_classes().size(); ++i)
         ordering_y.add_node();
-    EdgesLabels ordering_x_edge_to_graph_edge(ordering_x);
-    EdgesLabels ordering_y_edge_to_graph_edge(ordering_y);
+    EdgesLabels<size_t> ordering_x_edge_to_graph_edge(ordering_x);
+    EdgesLabels<size_t> ordering_y_edge_to_graph_edge(ordering_y);
 
     for (const size_t node_id : graph.get_nodes_ids()) {
         for (const graph::EdgeIter edge : graph.get_edges(node_id)) {
@@ -154,19 +156,19 @@ const Graph& Ordering::get_ordering_x() const { return m_ordering_x; }
 
 const Graph& Ordering::get_ordering_y() const { return m_ordering_y; }
 
-const EdgesLabels& Ordering::get_ordering_x_edge_to_graph_edge() const {
+const EdgesLabels<size_t>& Ordering::get_ordering_x_edge_to_graph_edge() const {
     return m_ordering_x_edge_to_graph_edge;
 }
 
-const EdgesLabels& Ordering::get_ordering_y_edge_to_graph_edge() const {
+const EdgesLabels<size_t>& Ordering::get_ordering_y_edge_to_graph_edge() const {
     return m_ordering_y_edge_to_graph_edge;
 }
 
 Ordering::Ordering(
     const Graph&& ordering_x,
     const Graph&& ordering_y,
-    const EdgesLabels&& ordering_x_edge_to_graph_edge,
-    const EdgesLabels&& ordering_y_edge_to_graph_edge
+    const EdgesLabels<size_t>&& ordering_x_edge_to_graph_edge,
+    const EdgesLabels<size_t>&& ordering_y_edge_to_graph_edge
 )
     : m_ordering_x(ordering_x), m_ordering_y(ordering_y),
       m_ordering_x_edge_to_graph_edge(ordering_x_edge_to_graph_edge),

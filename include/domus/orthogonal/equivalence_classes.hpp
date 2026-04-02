@@ -9,11 +9,9 @@
 #include "domus/orthogonal/shape/shape.hpp"
 
 namespace domus::orthogonal {
-using Shape = shape::Shape;
-using EdgesLabels = graph::utilities::EdgesLabels;
 
 class EquivalenceClasses {
-    graph::utilities::NodesLabels m_elem_to_class;
+    graph::utilities::NodesLabels<size_t> m_elem_to_class;
     std::vector<std::vector<size_t>> m_class_to_elems;
     size_t m_number_of_classes = 0;
     bool has_class(size_t class_id) const;
@@ -21,16 +19,16 @@ class EquivalenceClasses {
     size_t add_class();
     EquivalenceClasses(const domus::graph::Graph& graph);
     void directional_node_expander(
-        const Shape& shape,
-        const domus::graph::Graph& graph,
+        const shape::Shape& shape,
+        const graph::Graph& graph,
         size_t node_id,
         size_t class_id,
-        const std::function<bool(const Shape&, size_t)>& is_direction_wrong
+        const std::function<bool(const shape::Shape&, size_t)>& is_direction_wrong
     );
     void
-    horizontal_node_expander(const Shape& shape, const domus::graph::Graph& graph, size_t node_id);
+    horizontal_node_expander(const shape::Shape& shape, const graph::Graph& graph, size_t node_id);
     void
-    vertical_node_expander(const Shape& shape, const domus::graph::Graph& graph, size_t node_id);
+    vertical_node_expander(const shape::Shape& shape, const graph::Graph& graph, size_t node_id);
 
   public:
     bool has_elem_a_class(size_t elem) const;
@@ -44,7 +42,7 @@ class EquivalenceClasses {
     auto get_classes() const;
 
     static const std::pair<EquivalenceClasses, EquivalenceClasses>
-    build(const Shape& shape, const domus::graph::Graph& graph);
+    build(const shape::Shape& shape, const graph::Graph& graph);
 };
 
 inline auto EquivalenceClasses::get_classes() const {
@@ -56,28 +54,28 @@ inline auto EquivalenceClasses::get_elems_of_class(size_t class_id) const {
 }
 
 class Ordering {
-    const domus::graph::Graph m_ordering_x;
-    const domus::graph::Graph m_ordering_y;
-    const EdgesLabels m_ordering_x_edge_to_graph_edge;
-    const EdgesLabels m_ordering_y_edge_to_graph_edge;
+    const graph::Graph m_ordering_x;
+    const graph::Graph m_ordering_y;
+    const graph::utilities::EdgesLabels<size_t> m_ordering_x_edge_to_graph_edge;
+    const graph::utilities::EdgesLabels<size_t> m_ordering_y_edge_to_graph_edge;
     Ordering(
-        const domus::graph::Graph&& ordering_x,
-        const domus::graph::Graph&& ordering_y,
-        const EdgesLabels&& ordering_x_edge_to_graph_edge,
-        const EdgesLabels&& ordering_y_edge_to_graph_edge
+        const graph::Graph&& ordering_x,
+        const graph::Graph&& ordering_y,
+        const graph::utilities::EdgesLabels<size_t>&& ordering_x_edge_to_graph_edge,
+        const graph::utilities::EdgesLabels<size_t>&& ordering_y_edge_to_graph_edge
     );
 
   public:
-    const domus::graph::Graph& get_ordering_x() const;
-    const domus::graph::Graph& get_ordering_y() const;
-    const EdgesLabels& get_ordering_x_edge_to_graph_edge() const;
-    const EdgesLabels& get_ordering_y_edge_to_graph_edge() const;
+    const graph::Graph& get_ordering_x() const;
+    const graph::Graph& get_ordering_y() const;
+    const graph::utilities::EdgesLabels<size_t>& get_ordering_x_edge_to_graph_edge() const;
+    const graph::utilities::EdgesLabels<size_t>& get_ordering_y_edge_to_graph_edge() const;
 
     static Ordering build(
         const EquivalenceClasses& equivalence_classes_x,
         const EquivalenceClasses& equivalence_classes_y,
-        const domus::graph::Graph& graph,
-        const Shape& shape
+        const graph::Graph& graph,
+        const shape::Shape& shape
     );
 };
 

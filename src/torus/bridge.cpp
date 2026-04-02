@@ -20,11 +20,13 @@ const Graph& Bridge::get_bridge() const { return m_bridge.get_sub_graph(); }
 
 size_t Bridge::number_of_attachments() const { return m_is_attachment.size(); }
 
-const NodesLabels& Bridge::get_new_id_to_old_id() const { return m_bridge.get_sub_graph_labels(); }
+const NodesLabels<size_t>& Bridge::get_new_id_to_old_id() const {
+    return m_bridge.get_sub_graph_labels();
+}
 
 bool Bridge::is_attachment(const size_t node_id) const { return m_is_attachment.has_node(node_id); }
 
-const EdgesLabels& Bridge::get_new_edge_id_to_old_id() const {
+const EdgesLabels<size_t>& Bridge::get_new_edge_id_to_old_id() const {
     return m_bridge.get_sub_graph_edges_labels();
 }
 
@@ -56,7 +58,7 @@ class BridgeFactory {
     static Bridge build_bridge(
         std::vector<graph::EdgeId>& edges,
         const NodesContainer& nodes_in_subgraph,
-        graph::utilities::NodesLabels& old_id_to_new_id
+        graph::utilities::NodesLabels<size_t>& old_id_to_new_id
     );
     static void find_chords(
         const graph::Graph& graph,
@@ -68,7 +70,7 @@ class BridgeFactory {
         const graph::Graph& graph,
         const graph::utilities::NodesContainer& nodes_in_subgraph,
         std::vector<Bridge>& bridges,
-        graph::utilities::NodesLabels& old_id_to_new_id
+        graph::utilities::NodesLabels<size_t>& old_id_to_new_id
     );
 
   public:
@@ -113,7 +115,7 @@ void BridgeFactory::find_bridges(
     const Graph& graph,
     const NodesContainer& nodes_in_subgraph,
     std::vector<Bridge>& bridges,
-    NodesLabels& old_id_to_new_id
+    NodesLabels<size_t>& old_id_to_new_id
 ) {
     NodesContainer is_node_visited(graph);
     for (size_t node_id : graph.get_nodes_ids())
@@ -133,7 +135,7 @@ void BridgeFactory::find_bridges(
 Bridge BridgeFactory::build_bridge(
     std::vector<graph::EdgeId>& edges_in_bridge,
     const NodesContainer& nodes_in_subgraph,
-    NodesLabels& old_id_to_new_id
+    NodesLabels<size_t>& old_id_to_new_id
 ) {
     DOMUS_ASSERT(
         old_id_to_new_id.get_number_of_labels() == 0,
@@ -160,8 +162,8 @@ Bridge BridgeFactory::build_bridge(
         }
     }
 
-    NodesLabels new_id_to_old_id(bridge);
-    EdgesLabels edges_labels(edges_in_bridge.size());
+    NodesLabels<size_t> new_id_to_old_id(bridge);
+    EdgesLabels<size_t> edges_labels(edges_in_bridge.size());
 
     // adding edges
     for (const auto& [old_edge_id, edge] : edges_in_bridge) {
@@ -201,12 +203,12 @@ Bridge BridgeFactory::build_chord(
     Graph chord;
     const size_t new_node_1_id = chord.add_node();
     const size_t new_node_2_id = chord.add_node();
-    NodesLabels new_id_to_old_id(chord);
+    NodesLabels<size_t> new_id_to_old_id(chord);
 
     new_id_to_old_id.add_label(new_node_1_id, attachment_1);
     new_id_to_old_id.add_label(new_node_2_id, attachment_2);
 
-    EdgesLabels edges_labels(1);
+    EdgesLabels<size_t> edges_labels(1);
 
     const size_t new_edge_id = chord.add_edge(new_node_1_id, new_node_2_id);
     edges_labels.add_label(new_edge_id, edge_id);
@@ -238,7 +240,7 @@ void BridgeFactory::find_chords(
 
 std::vector<Bridge> BridgeFactory::compute(const Graph& graph, const SubGraph& subgraph) {
     std::vector<Bridge> bridges;
-    NodesLabels old_id_to_new_id(graph);
+    NodesLabels<size_t> old_id_to_new_id(graph);
     NodesContainer nodes_in_subgraph(graph);
     for (const size_t node_id : subgraph.get_sub_graph().get_nodes_ids()) {
         size_t old_node_id = subgraph.get_sub_graph_labels().get_label(node_id);
@@ -257,7 +259,7 @@ std::vector<Bridge> BridgeFactory::compute(const Graph& graph, const SubGraph& s
 
 std::vector<Bridge> BridgeFactory::compute(const Graph& graph, const Embedding& embedding) {
     std::vector<Bridge> bridges;
-    NodesLabels old_id_to_new_id(graph);
+    NodesLabels<size_t> old_id_to_new_id(graph);
     NodesContainer nodes_in_subgraph(graph);
     for (const size_t node_id : embedding.get_nodes_ids())
         if (embedding.get_degree_of_node(node_id) != 0)

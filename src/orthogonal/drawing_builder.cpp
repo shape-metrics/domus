@@ -27,11 +27,12 @@ namespace domus::orthogonal {
 using namespace domus::graph;
 using shape::build_shape;
 using shape::Direction;
+using shape::Shape;
 
 const Path path_in_class(
     const Graph& graph, size_t from_id, size_t to_id, const Shape& shape, bool go_horizontal
 ) {
-    utilities::NodesLabels parent(graph);
+    utilities::NodesLabels<size_t> parent(graph);
     std::stack<size_t> stack;
     stack.push(from_id);
 
@@ -115,7 +116,7 @@ Cycle build_cycle_in_graph_from_cycle_in_ordering(
     const Graph& graph,
     const Shape& shape,
     const Cycle& cycle_in_ordering,
-    const EdgesLabels& ordering_edge_to_graph_edge,
+    const graph::utilities::EdgesLabels<size_t>& ordering_edge_to_graph_edge,
     bool go_horizontal
 ) {
     Path cycle;
@@ -180,14 +181,14 @@ remove_useless_bends(const Graph& graph, const Attributes& attributes, const Sha
             kept_nodes[node_id] = false;
     }
     Graph new_graph;
-    utilities::NodesLabels old_id_to_new_id(graph);
+    utilities::NodesLabels<size_t> old_id_to_new_id(graph);
     for (size_t node_id : graph.get_nodes_ids()) {
         if (kept_nodes[node_id]) {
             size_t new_id = new_graph.add_node();
             old_id_to_new_id.add_label(node_id, new_id);
         }
     }
-    utilities::NodesLabels new_id_to_old_id(new_graph);
+    utilities::NodesLabels<size_t> new_id_to_old_id(new_graph);
     for (size_t node_id : graph.get_nodes_ids()) {
         if (kept_nodes[node_id]) {
             size_t new_id = old_id_to_new_id.get_label(node_id);
@@ -357,7 +358,7 @@ void build_nodes_positions(Graph& graph, Attributes& attributes, Shape& shape) {
     auto new_classes_y_ordering =
         algorithms::make_topological_ordering(ordering.get_ordering_y()).value();
     size_t current_position_x = 0;
-    utilities::NodesLabels node_id_to_position_x(graph);
+    utilities::NodesLabels<size_t> node_id_to_position_x(graph);
     for (size_t class_id : new_classes_x_ordering) {
         for (const size_t node_id : classes_x.get_elems_of_class(class_id))
             if (attributes.get_node_color(node_id) == Color::BLUE)
@@ -367,7 +368,7 @@ void build_nodes_positions(Graph& graph, Attributes& attributes, Shape& shape) {
         current_position_x += 100;
     }
     size_t current_position_y = 0;
-    utilities::NodesLabels node_id_to_position_y(graph);
+    utilities::NodesLabels<size_t> node_id_to_position_y(graph);
     for (size_t class_id : new_classes_y_ordering) {
         for (const size_t node_id : classes_y.get_elems_of_class(class_id))
             if (attributes.get_node_color(node_id) == Color::GREEN)
@@ -494,7 +495,7 @@ fix_useless_green_blue_nodes(const Graph& graph, const Attributes& attributes, c
     }
 
     Graph new_graph;
-    utilities::NodesLabels old_id_to_new_id(graph);
+    utilities::NodesLabels<size_t> old_id_to_new_id(graph);
     Shape new_shape;
     Attributes new_attributes;
     new_attributes.add_attribute(Attribute::NODES_COLOR);
@@ -594,14 +595,14 @@ void add_green_blue_nodes(Graph& graph, Attributes& attributes, Shape& shape) {
     const std::vector<size_t> classes_y_ordering =
         algorithms::make_topological_ordering(ordering_y).value();
     size_t current_position_x = 0;
-    utilities::NodesLabels node_id_to_position_x(graph);
+    utilities::NodesLabels<size_t> node_id_to_position_x(graph);
     for (const size_t class_id : classes_x_ordering) {
         for (const size_t node_id : classes_x.get_elems_of_class(class_id))
             node_id_to_position_x.add_label(node_id, 100 * current_position_x);
         ++current_position_x;
     }
     size_t current_position_y = 0;
-    utilities::NodesLabels node_id_to_position_y(graph);
+    utilities::NodesLabels<size_t> node_id_to_position_y(graph);
     for (const size_t class_id : classes_y_ordering) {
         for (const size_t node_id : classes_y.get_elems_of_class(class_id))
             node_id_to_position_y.add_label(node_id, 100 * current_position_y);

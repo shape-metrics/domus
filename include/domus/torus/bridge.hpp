@@ -22,8 +22,8 @@ class Bridge {
 
   public:
     const graph::Graph& get_bridge() const;
-    const graph::utilities::NodesLabels& get_new_id_to_old_id() const;
-    const graph::utilities::EdgesLabels& get_new_edge_id_to_old_id() const;
+    const graph::utilities::NodesLabels<size_t>& get_new_id_to_old_id() const;
+    const graph::utilities::EdgesLabels<size_t>& get_new_edge_id_to_old_id() const;
     size_t number_of_attachments() const;
     bool is_attachment(size_t node_id) const;
     std::string to_string() const;

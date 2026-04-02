@@ -156,7 +156,7 @@ std::string Graph::to_string(bool undirected) const {
 void Graph::print(bool undirected) const { std::print("{}", to_string(undirected)); }
 
 std::string Graph::to_string(
-    bool undirected, const utilities::NodesLabels& labels, const std::string_view name
+    bool undirected, const utilities::NodesLabels<size_t>& labels, const std::string_view name
 ) const {
     std::string result;
     auto out = std::back_inserter(result);

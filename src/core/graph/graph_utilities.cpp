@@ -23,15 +23,17 @@ void NodesContainer::erase(size_t node_id) {
     m_number_of_nodes--;
 }
 
-void NodesLabels::add_label(size_t node_id, size_t label) {
+template <typename T> void NodesLabels<T>::add_label(size_t node_id, T label) {
     DOMUS_ASSERT(!has_label(node_id), "NodesLabels::add_label: node already has a label");
-    m_labels[node_id] = label;
+    m_labels[node_id] = std::move(label);
     ++m_number_of_labels;
 }
 
-bool NodesLabels::has_label(size_t node_id) const { return m_labels[node_id].has_value(); }
+template <typename T> bool NodesLabels<T>::has_label(size_t node_id) const {
+    return m_labels[node_id].has_value();
+}
 
-size_t NodesLabels::get_label(size_t node_id) const {
+template <typename T> const T& NodesLabels<T>::get_label(size_t node_id) const {
     DOMUS_ASSERT(
         has_label(node_id),
         "NodesLabels::get_label: node {} does not have a label",
@@ -40,37 +42,43 @@ size_t NodesLabels::get_label(size_t node_id) const {
     return m_labels[node_id].value();
 }
 
-void NodesLabels::erase_label(size_t node_id) {
+template <typename T> void NodesLabels<T>::erase_label(size_t node_id) {
     DOMUS_ASSERT(has_label(node_id), "NodesLabels::erase_label: node does not have a label");
     m_labels[node_id].reset();
     --m_number_of_labels;
 }
 
-void NodesLabels::update_label(size_t node_id, size_t new_label) {
+template <typename T> void NodesLabels<T>::update_label(size_t node_id, T new_label) {
     DOMUS_ASSERT(has_label(node_id), "NodesLabels::update_label: node does not have a label");
-    m_labels[node_id] = new_label;
+    m_labels[node_id] = std::move(new_label);
 }
 
-size_t NodesLabels::get_number_of_labels() const { return m_number_of_labels; }
+template <typename T> size_t NodesLabels<T>::get_number_of_labels() const {
+    return m_number_of_labels;
+}
 
-void NodesLabels::add_or_update_label(size_t node_id, size_t label) {
+template <typename T> void NodesLabels<T>::add_or_update_label(size_t node_id, T label) {
     if (has_label(node_id))
-        update_label(node_id, label);
+        update_label(node_id, std::move(label));
     else
-        add_label(node_id, label);
+        add_label(node_id, std::move(label));
 }
 
-EdgesLabels::EdgesLabels(size_t number_of_edges) { m_labels.resize(number_of_edges); }
+template <typename T> EdgesLabels<T>::EdgesLabels(size_t number_of_edges) {
+    m_labels.resize(number_of_edges);
+}
 
-void EdgesLabels::add_label(size_t edge_id, size_t label) {
+template <typename T> void EdgesLabels<T>::add_label(size_t edge_id, T label) {
     DOMUS_ASSERT(!has_label(edge_id), "EdgesLabels::add_label: edge already has a label");
-    m_labels[edge_id] = label;
+    m_labels[edge_id] = std::move(label);
     ++m_number_of_labels;
 }
 
-bool EdgesLabels::has_label(size_t edge_id) const { return m_labels[edge_id].has_value(); }
+template <typename T> bool EdgesLabels<T>::has_label(size_t edge_id) const {
+    return m_labels[edge_id].has_value();
+}
 
-size_t EdgesLabels::get_label(size_t edge_id) const {
+template <typename T> const T& EdgesLabels<T>::get_label(size_t edge_id) const {
     DOMUS_ASSERT(
         has_label(edge_id),
         "EdgesLabels::get_label: edge {} does not have a label",
@@ -79,25 +87,27 @@ size_t EdgesLabels::get_label(size_t edge_id) const {
     return *m_labels[edge_id];
 }
 
-void EdgesLabels::erase_label(size_t edge_id) {
+template <typename T> void EdgesLabels<T>::erase_label(size_t edge_id) {
     DOMUS_ASSERT(has_label(edge_id), "EdgesLabels::erase_label: edge does not have a label");
     m_labels[edge_id].reset();
     --m_number_of_labels;
 }
 
-void EdgesLabels::update_label(size_t edge_id, size_t new_label) {
+template <typename T> void EdgesLabels<T>::update_label(size_t edge_id, T new_label) {
     DOMUS_ASSERT(has_label(edge_id), "EdgesLabels::update_label: edge does not have a label");
-    m_labels[edge_id] = new_label;
+    m_labels[edge_id] = std::move(new_label);
 }
 
-void EdgesLabels::update_size(size_t edge_id) {
+template <typename T> void EdgesLabels<T>::update_size(size_t edge_id) {
     while (m_labels.size() <= edge_id)
         m_labels.push_back(std::nullopt);
 }
 
-bool EdgesLabels::empty() const { return m_number_of_labels == 0; }
+template <typename T> bool EdgesLabels<T>::empty() const { return m_number_of_labels == 0; }
 
-size_t EdgesLabels::get_number_of_labels() const { return m_number_of_labels; }
+template <typename T> size_t EdgesLabels<T>::get_number_of_labels() const {
+    return m_number_of_labels;
+}
 
 EdgesContainer::EdgesContainer(size_t number_of_edges_ids)
     : m_has_edge(number_of_edges_ids, false) {}
@@ -150,47 +160,59 @@ size_t OrientedEdgesContainer::size() const {
 
 bool OrientedEdgesContainer::empty() const { return size() == 0; }
 
-void OrientedEdgesLabels::add_label(size_t from_id, size_t to_id, size_t edge_id, size_t label) {
+template <typename T>
+void OrientedEdgesLabels<T>::add_label(size_t from_id, size_t to_id, size_t edge_id, T label) {
     if (from_id < to_id)
-        m_labels_1.add_label(edge_id, label);
+        m_labels_1.add_label(edge_id, std::move(label));
     else
-        m_labels_2.add_label(edge_id, label);
+        m_labels_2.add_label(edge_id, std::move(label));
 }
 
-bool OrientedEdgesLabels::has_label(size_t from_id, size_t to_id, size_t edge_id) const {
+template <typename T>
+bool OrientedEdgesLabels<T>::has_label(size_t from_id, size_t to_id, size_t edge_id) const {
     if (from_id < to_id)
         return m_labels_1.has_label(edge_id);
     else
         return m_labels_2.has_label(edge_id);
 }
 
-size_t OrientedEdgesLabels::get_label(size_t from_id, size_t to_id, size_t edge_id) const {
+template <typename T>
+const T& OrientedEdgesLabels<T>::get_label(size_t from_id, size_t to_id, size_t edge_id) const {
     if (from_id < to_id)
         return m_labels_1.get_label(edge_id);
     else
         return m_labels_2.get_label(edge_id);
 }
 
-void OrientedEdgesLabels::erase_label(size_t from_id, size_t to_id, size_t edge_id) {
+template <typename T>
+void OrientedEdgesLabels<T>::erase_label(size_t from_id, size_t to_id, size_t edge_id) {
     if (from_id < to_id)
         m_labels_1.erase_label(edge_id);
     else
         m_labels_2.erase_label(edge_id);
 }
 
-void OrientedEdgesLabels::update_label(
-    size_t from_id, size_t to_id, size_t edge_id, size_t new_label
+template <typename T>
+void OrientedEdgesLabels<T>::update_label(
+    size_t from_id, size_t to_id, size_t edge_id, T new_label
 ) {
     if (from_id < to_id)
-        m_labels_1.update_label(edge_id, new_label);
+        m_labels_1.update_label(edge_id, std::move(new_label));
     else
-        m_labels_2.update_label(edge_id, new_label);
+        m_labels_2.update_label(edge_id, std::move(new_label));
 }
 
-size_t OrientedEdgesLabels::get_number_of_labels() const {
+template <typename T> size_t OrientedEdgesLabels<T>::get_number_of_labels() const {
     return m_labels_1.get_number_of_labels() + m_labels_2.get_number_of_labels();
 }
 
-bool OrientedEdgesLabels::empty() const { return get_number_of_labels() == 0; }
+template <typename T> bool OrientedEdgesLabels<T>::empty() const {
+    return get_number_of_labels() == 0;
+}
+
+// Explicit template instantiations for common types
+template class NodesLabels<size_t>;
+template class EdgesLabels<size_t>;
+template class OrientedEdgesLabels<size_t>;
 
 } // namespace domus::graph::utilities

@@ -6,20 +6,22 @@ namespace domus::graph {
 
 SubGraph::SubGraph(
     const Graph&& sub_graph,
-    const utilities::NodesLabels&& sub_graph_labels,
-    const utilities::EdgesLabels&& sub_graph_edges_labels
+    const utilities::NodesLabels<size_t>&& sub_graph_labels,
+    const utilities::EdgesLabels<size_t>&& sub_graph_edges_labels
 )
     : m_sub_graph(std::move(const_cast<Graph&>(sub_graph))),
-      m_sub_graph_labels(std::move(const_cast<utilities::NodesLabels&>(sub_graph_labels))),
+      m_sub_graph_labels(std::move(const_cast<utilities::NodesLabels<size_t>&>(sub_graph_labels))),
       m_sub_graph_edges_labels(
-          std::move(const_cast<utilities::EdgesLabels&>(sub_graph_edges_labels))
+          std::move(const_cast<utilities::EdgesLabels<size_t>&>(sub_graph_edges_labels))
       ) {}
 
 const Graph& SubGraph::get_sub_graph() const { return m_sub_graph; }
 
-const utilities::NodesLabels& SubGraph::get_sub_graph_labels() const { return m_sub_graph_labels; }
+const utilities::NodesLabels<size_t>& SubGraph::get_sub_graph_labels() const {
+    return m_sub_graph_labels;
+}
 
-const utilities::EdgesLabels& SubGraph::get_sub_graph_edges_labels() const {
+const utilities::EdgesLabels<size_t>& SubGraph::get_sub_graph_edges_labels() const {
     return m_sub_graph_edges_labels;
 }
 

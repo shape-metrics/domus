@@ -13,19 +13,19 @@ namespace domus::graph::algorithms {
 
 bool is_graph_connected(const Graph& graph);
 
-std::pair<std::vector<Graph>, utilities::NodesLabels>
+std::pair<std::vector<Graph>, utilities::NodesLabels<size_t>>
 compute_connected_components(const Graph& graph);
 
 template <UndirectedGraphLike G> size_t compute_number_of_connected_components(const G& graph);
 
 class SpanningTree {
     const domus::tree::Tree m_tree;
-    const utilities::NodesLabels m_edge_ids;
-    SpanningTree(const domus::tree::Tree&& tree, const utilities::NodesLabels&& edges_ids);
+    const utilities::NodesLabels<size_t> m_edge_ids;
+    SpanningTree(const domus::tree::Tree&& tree, const utilities::NodesLabels<size_t>&& edges_ids);
 
   public:
     const domus::tree::Tree& get_tree() const;
-    const utilities::NodesLabels& get_edge_ids() const;
+    const utilities::NodesLabels<size_t>& get_edge_ids() const;
 
     static std::optional<SpanningTree> compute(const Graph& graph);
 };
@@ -43,16 +43,16 @@ std::optional<std::vector<size_t>> make_topological_ordering(const Graph& graph)
 class BiconnectedComponents {
     std::vector<size_t> m_cutvertices;
     std::vector<Graph> m_components;
-    std::vector<utilities::NodesLabels> m_components_nodes_to_original_nodes;
+    std::vector<utilities::NodesLabels<size_t>> m_components_nodes_to_original_nodes;
     BiconnectedComponents(
         std::vector<size_t>&& cutvertices,
         std::vector<Graph>&& components,
-        std::vector<utilities::NodesLabels>&& components_to_original_nodes
+        std::vector<utilities::NodesLabels<size_t>>&& components_to_original_nodes
     );
 
   public:
     const std::vector<Graph>& get_components() const;
-    const utilities::NodesLabels& get_labels_of_component(size_t component_id) const;
+    const utilities::NodesLabels<size_t>& get_labels_of_component(size_t component_id) const;
     std::string to_string() const;
     void print() const;
     static BiconnectedComponents compute(const Graph& graph);
@@ -61,7 +61,7 @@ class BiconnectedComponents {
 class Bipartition {
   private:
     size_t m_size;
-    utilities::NodesLabels m_side;
+    utilities::NodesLabels<size_t> m_side;
     Bipartition(const Graph& graph);
 
   public:
@@ -84,12 +84,13 @@ std::optional<size_t> do_cycles_intersect(const Cycle& cycle_1, const Cycle& cyc
 
 struct StrongConnectedComponents {
     const std::vector<std::vector<size_t>> sccs;
-    const utilities::NodesLabels node_to_scc_id;
+    const utilities::NodesLabels<size_t> node_to_scc_id;
     static StrongConnectedComponents compute(const Graph& graph);
 
   private:
     StrongConnectedComponents(
-        const std::vector<std::vector<size_t>>&& sccs, const utilities::NodesLabels&& node_to_scc_id
+        const std::vector<std::vector<size_t>>&& sccs,
+        const utilities::NodesLabels<size_t>&& node_to_scc_id
     );
 };
 

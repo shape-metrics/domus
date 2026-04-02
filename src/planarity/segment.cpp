@@ -14,8 +14,8 @@ using namespace domus::graph::utilities;
 
 Segment::Segment(
     const Graph&& segment,
-    const NodesLabels&& labels,
-    const EdgesLabels&& edges_labels,
+    const NodesLabels<size_t>&& labels,
+    const EdgesLabels<size_t>&& edges_labels,
     const size_t cycle_size
 )
     : m_segment(segment), m_new_id_to_old_id(labels), m_is_attachment(m_segment),
@@ -32,7 +32,7 @@ void Segment::add_attachment(const size_t attachment_id) {
     ++m_number_of_attachments;
 }
 
-const NodesLabels& Segment::get_new_id_to_old_id() const { return m_new_id_to_old_id; }
+const NodesLabels<size_t>& Segment::get_new_id_to_old_id() const { return m_new_id_to_old_id; }
 
 bool Segment::is_attachment(const size_t node_id) const {
     return m_is_attachment.has_node(node_id);
@@ -73,7 +73,7 @@ bool is_segment_a_path(const Segment& segment) {
 Path compute_path_between_attachments(
     const Segment& segment, const size_t attachment_1, const size_t attachment_2
 ) {
-    NodesLabels edge_id_to_prev(segment.get_segment());
+    NodesLabels<size_t> edge_id_to_prev(segment.get_segment());
     std::deque<size_t> queue;
     queue.push_back(attachment_1);
     while (!queue.empty()) {
@@ -140,7 +140,7 @@ void dfs_find_segments(
     }
 }
 
-void add_cycle_edges(const Cycle& cycle, Graph& segment, EdgesLabels& edges_labels) {
+void add_cycle_edges(const Cycle& cycle, Graph& segment, EdgesLabels<size_t>& edges_labels) {
     for (size_t i = 0; i < cycle.size(); ++i) {
         const size_t node_id = i;
         const size_t next_node_id = (i + 1) % cycle.size();
@@ -155,12 +155,12 @@ Segment Segment::build_segment(
     const std::vector<size_t>& nodes,
     std::vector<graph::EdgeId>& edges,
     const Cycle& cycle,
-    NodesLabels& old_id_to_new_id
+    NodesLabels<size_t>& old_id_to_new_id
 ) {
     Graph segment;
     for (size_t i = 0; i < nodes.size() + cycle.size(); ++i)
         segment.add_node();
-    NodesLabels new_id_to_old_id(segment);
+    NodesLabels<size_t> new_id_to_old_id(segment);
     std::vector<size_t> attachments;
     // important that the cycle nodes have new ids from 0 ... cycle.size()-1
     for (size_t i = 0; i < cycle.size(); ++i) {
@@ -176,7 +176,7 @@ Segment Segment::build_segment(
     }
 
     // adding edges
-    EdgesLabels edges_labels(edges.size() + cycle.size());
+    EdgesLabels<size_t> edges_labels(edges.size() + cycle.size());
     // adding cycle edges
     add_cycle_edges(cycle, segment, edges_labels);
     // adding inner edges
@@ -208,7 +208,7 @@ void Segment::find_segments(
     const Graph& graph,
     const Cycle& cycle,
     std::vector<Segment>& segments,
-    NodesLabels& old_id_to_new_id
+    NodesLabels<size_t>& old_id_to_new_id
 ) {
     NodesContainer visited(graph);
     for (size_t node_id : graph.get_nodes_ids()) {
@@ -230,18 +230,18 @@ Segment Segment::build_chord(
     const size_t attachment_2,
     const size_t edge_id,
     const Cycle& cycle,
-    NodesLabels& old_id_to_new_id
+    NodesLabels<size_t>& old_id_to_new_id
 ) {
     Graph chord;
     for (size_t i = 0; i < cycle.size(); ++i)
         chord.add_node();
-    NodesLabels new_id_to_old_id(chord);
+    NodesLabels<size_t> new_id_to_old_id(chord);
     for (size_t i = 0; i < cycle.size(); ++i) {
         const size_t node_id = cycle.node_id_at(i);
         new_id_to_old_id.add_label(i, node_id);
         old_id_to_new_id.update_label(node_id, i);
     }
-    EdgesLabels edges_labels(cycle.size() + 1);
+    EdgesLabels<size_t> edges_labels(cycle.size() + 1);
     add_cycle_edges(cycle, chord, edges_labels);
     // adding chord edge
     size_t new_attachment_1 = old_id_to_new_id.get_label(attachment_1);
@@ -263,7 +263,7 @@ void Segment::find_chords(
     const Graph& graph,
     const Cycle& cycle,
     std::vector<Segment>& segments,
-    NodesLabels& old_id_to_new_id
+    NodesLabels<size_t>& old_id_to_new_id
 ) {
     for (size_t i = 0; i < cycle.size(); ++i) {
         size_t node_id = cycle.node_id_at(i);
@@ -284,12 +284,14 @@ void Segment::find_chords(
 
 std::vector<Segment> Segment::compute(const Graph& graph, const Cycle& cycle) {
     std::vector<Segment> segments;
-    NodesLabels old_id_to_new_id(graph);
+    NodesLabels<size_t> old_id_to_new_id(graph);
     find_segments(graph, cycle, segments, old_id_to_new_id);
     find_chords(graph, cycle, segments, old_id_to_new_id);
     return segments;
 }
 
-const EdgesLabels& Segment::get_new_edge_id_to_old_id() const { return m_new_edge_id_to_old_id; }
+const EdgesLabels<size_t>& Segment::get_new_edge_id_to_old_id() const {
+    return m_new_edge_id_to_old_id;
+}
 
 } // namespace domus::planarity

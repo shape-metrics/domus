@@ -42,8 +42,8 @@ bool is_graph_connected(const Graph& graph) {
 bool dfs_find_cycle(
     size_t node_id,
     const Graph& graph,
-    NodesLabels& state,
-    NodesLabels& child_to_parent_edge,
+    NodesLabels<size_t>& state,
+    NodesLabels<size_t>& child_to_parent_edge,
     std::optional<size_t>& cycle_start,
     std::optional<size_t>& cycle_end,
     std::optional<size_t>& last_edge_id
@@ -77,10 +77,10 @@ bool dfs_find_cycle(
 }
 
 std::optional<Cycle> find_a_directed_cycle_in_graph(const Graph& graph) {
-    NodesLabels state(graph); // 0 means unvisited
+    NodesLabels<size_t> state(graph); // 0 means unvisited
     for (size_t node_id : graph.get_nodes_ids())
         state.add_label(node_id, 0u);
-    NodesLabels child_to_parent_edge(graph);
+    NodesLabels<size_t> child_to_parent_edge(graph);
     std::optional<size_t> cycle_start = std::nullopt;
     std::optional<size_t> cycle_end = std::nullopt;
     std::optional<size_t> last_edge_id = std::nullopt;
@@ -118,7 +118,7 @@ std::vector<Cycle> compute_cycle_basis(const Graph& graph) {
 
     const SpanningTree spanning_tree = *SpanningTree::compute(graph);
     const Tree& spanning = spanning_tree.get_tree();
-    const NodesLabels& labels = spanning_tree.get_edge_ids();
+    const NodesLabels<size_t>& labels = spanning_tree.get_edge_ids();
 
     std::vector<Cycle> cycles;
     for (size_t node_id : graph.get_nodes_ids()) {
@@ -151,7 +151,7 @@ std::vector<Cycle> compute_cycle_basis(const Graph& graph) {
 }
 
 std::optional<std::vector<size_t>> make_topological_ordering(const Graph& graph) {
-    NodesLabels in_degree(graph);
+    NodesLabels<size_t> in_degree(graph);
     for (size_t node_id : graph.get_nodes_ids())
         in_degree.add_label(node_id, graph.get_in_degree_of_node(node_id));
     std::queue<size_t> queue;
@@ -176,9 +176,10 @@ std::optional<std::vector<size_t>> make_topological_ordering(const Graph& graph)
     return topological_order;
 }
 
-std::pair<std::vector<Graph>, NodesLabels> compute_connected_components(const Graph& graph) {
+std::pair<std::vector<Graph>, NodesLabels<size_t>>
+compute_connected_components(const Graph& graph) {
     NodesContainer visited(graph);
-    NodesLabels new_node_ids(graph); // node_id in component to node_id of graph
+    NodesLabels<size_t> new_node_ids(graph); // node_id in component to node_id of graph
     std::vector<Graph> components;
     std::function<void(size_t, Graph& component)> explore_component = [&](size_t node_id,
                                                                           Graph& component) {
@@ -209,27 +210,27 @@ std::pair<std::vector<Graph>, NodesLabels> compute_connected_components(const Gr
 void dfs_bic_com(
     const Graph& graph,
     size_t node_id,
-    NodesLabels& old_node_id_to_new_id,
-    NodesLabels& prev_of_node,
+    NodesLabels<size_t>& old_node_id_to_new_id,
+    NodesLabels<size_t>& prev_of_node,
     size_t& next_id_to_assign,
-    NodesLabels& low_point,
+    NodesLabels<size_t>& low_point,
     std::vector<Edge>& edge_stack,
     std::vector<Graph>& components,
     NodesContainer& cut_vertices,
-    std::vector<NodesLabels>& components_to_old_nodes,
-    NodesLabels& old_to_new_nodes
+    std::vector<NodesLabels<size_t>>& components_to_old_nodes,
+    NodesLabels<size_t>& old_to_new_nodes
 );
 
 BiconnectedComponents BiconnectedComponents::compute(const Graph& graph) {
-    NodesLabels old_node_id_to_new_id(graph);
-    NodesLabels prev_of_node(graph);
-    NodesLabels low_point(graph);
+    NodesLabels<size_t> old_node_id_to_new_id(graph);
+    NodesLabels<size_t> prev_of_node(graph);
+    NodesLabels<size_t> low_point(graph);
     NodesContainer is_cut_vertex(graph);
     std::vector<Graph> components;
-    std::vector<NodesLabels> component_to_old_nodes;
+    std::vector<NodesLabels<size_t>> component_to_old_nodes;
     size_t next_id_to_assign = 0;
     std::vector<Edge> edge_stack{};
-    NodesLabels old_to_new_nodes(graph);
+    NodesLabels<size_t> old_to_new_nodes(graph);
     for (size_t node_id : graph.get_nodes_ids()) {
         old_to_new_nodes.add_label(node_id, graph.get_number_of_nodes());
     }
@@ -270,8 +271,8 @@ BiconnectedComponents BiconnectedComponents::compute(const Graph& graph) {
 void build_component(
     const std::vector<Edge>& edges,
     std::vector<Graph>& components,
-    std::vector<NodesLabels>& components_to_old_nodes,
-    NodesLabels& old_to_new_nodes
+    std::vector<NodesLabels<size_t>>& components_to_old_nodes,
+    NodesLabels<size_t>& old_to_new_nodes
 ) {
     // extracting unique nodes from the edges
     std::vector<size_t> nodes;
@@ -291,7 +292,7 @@ void build_component(
     }
 
     components_to_old_nodes.emplace_back(component);
-    NodesLabels& labels = components_to_old_nodes.back();
+    NodesLabels<size_t>& labels = components_to_old_nodes.back();
 
     for (size_t node_id : nodes)
         labels.add_label(old_to_new_nodes.get_label(node_id), node_id);
@@ -306,15 +307,15 @@ void build_component(
 void dfs_bic_com(
     const Graph& graph,
     size_t node_id,
-    NodesLabels& old_node_id_to_new_id, // acts as discovery time (dfn)
-    NodesLabels& prev_of_node,
+    NodesLabels<size_t>& old_node_id_to_new_id, // acts as discovery time (dfn)
+    NodesLabels<size_t>& prev_of_node,
     size_t& next_id_to_assign,
-    NodesLabels& low_point,
+    NodesLabels<size_t>& low_point,
     std::vector<Edge>& edge_stack,
     std::vector<Graph>& components,
     NodesContainer& cut_vertices,
-    std::vector<NodesLabels>& components_to_old_nodes,
-    NodesLabels& old_to_new_nodes
+    std::vector<NodesLabels<size_t>>& components_to_old_nodes,
+    NodesLabels<size_t>& old_to_new_nodes
 ) {
     old_node_id_to_new_id.add_label(node_id, next_id_to_assign);
     low_point.add_label(node_id, next_id_to_assign);
@@ -406,7 +407,7 @@ std::string BiconnectedComponents::to_string() const {
     std::format_to(out, "\n");
     for (size_t i = 0; i < m_components.size(); ++i) {
         const Graph& component = m_components[i];
-        const NodesLabels& labels = m_components_nodes_to_original_nodes[i];
+        const NodesLabels<size_t>& labels = m_components_nodes_to_original_nodes[i];
         const std::string name = std::format("Component {}", i);
         std::format_to(out, "{}\n", component.to_string(true, labels, name));
     }
@@ -448,7 +449,7 @@ bool Bipartition::is_bipartite(const Graph& graph) {
 
 std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
     NodesContainer visited(graph);
-    NodesLabels edge_to_parent(graph);
+    NodesLabels<size_t> edge_to_parent(graph);
     std::optional<Cycle> found_cycle;
     std::function<void(size_t, int)> dfs = [&](size_t node_id, int parent_id) {
         if (found_cycle)
@@ -484,14 +485,15 @@ std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
 
 const std::vector<Graph>& BiconnectedComponents::get_components() const { return m_components; }
 
-const NodesLabels& BiconnectedComponents::get_labels_of_component(size_t component_id) const {
+const NodesLabels<size_t>&
+BiconnectedComponents::get_labels_of_component(size_t component_id) const {
     return m_components_nodes_to_original_nodes[component_id];
 }
 
 BiconnectedComponents::BiconnectedComponents(
     std::vector<size_t>&& cutvertices,
     std::vector<Graph>&& components,
-    std::vector<NodesLabels>&& old_nodes
+    std::vector<NodesLabels<size_t>>&& old_nodes
 )
     : m_cutvertices{cutvertices}, m_components{components},
       m_components_nodes_to_original_nodes{old_nodes} {}
@@ -534,7 +536,7 @@ void Bipartition::print() const { std::print("{}", to_string()); }
 std::optional<SpanningTree> SpanningTree::compute(const Graph& graph) {
     if (graph.get_number_of_nodes() <= 1)
         return std::nullopt;
-    NodesLabels edge_id_to_parent(graph);
+    NodesLabels<size_t> edge_id_to_parent(graph);
     std::stack<size_t> stack;
     stack.push(0u);
     edge_id_to_parent.add_label(0, 0);
@@ -568,9 +570,9 @@ std::optional<SpanningTree> SpanningTree::compute(const Graph& graph) {
 
 const Tree& SpanningTree::get_tree() const { return m_tree; }
 
-const NodesLabels& SpanningTree::get_edge_ids() const { return m_edge_ids; }
+const NodesLabels<size_t>& SpanningTree::get_edge_ids() const { return m_edge_ids; }
 
-SpanningTree::SpanningTree(const Tree&& tree, const NodesLabels&& edge_ids)
+SpanningTree::SpanningTree(const Tree&& tree, const NodesLabels<size_t>&& edge_ids)
     : m_tree(tree), m_edge_ids(edge_ids) {}
 
 bool is_cycle_in_graph(const Graph& graph, const Cycle& cycle) {
@@ -619,12 +621,12 @@ void dfs_tarjan(
     size_t u,
     const Graph& graph,
     size_t& timer,
-    NodesLabels& discovery,
-    NodesLabels& low_link,
+    NodesLabels<size_t>& discovery,
+    NodesLabels<size_t>& low_link,
     std::stack<size_t>& stack,
     NodesContainer& on_stack,
     std::vector<std::vector<size_t>>& sccs,
-    NodesLabels& node_to_scc_id
+    NodesLabels<size_t>& node_to_scc_id
 ) {
     discovery.add_label(u, timer);
     low_link.add_label(u, timer);
@@ -659,9 +661,9 @@ void dfs_tarjan(
 
 StrongConnectedComponents StrongConnectedComponents::compute(const Graph& graph) {
     size_t timer = 0;
-    NodesLabels discovery(graph);
-    NodesLabels low_link(graph);
-    NodesLabels node_to_scc_id(graph);
+    NodesLabels<size_t> discovery(graph);
+    NodesLabels<size_t> low_link(graph);
+    NodesLabels<size_t> node_to_scc_id(graph);
     NodesContainer on_stack(graph);
     std::stack<size_t> stack;
     std::vector<std::vector<size_t>> sccs;
@@ -685,7 +687,7 @@ StrongConnectedComponents StrongConnectedComponents::compute(const Graph& graph)
 }
 
 StrongConnectedComponents::StrongConnectedComponents(
-    const std::vector<std::vector<size_t>>&& sccs, const NodesLabels&& node_to_scc_id
+    const std::vector<std::vector<size_t>>&& sccs, const NodesLabels<size_t>&& node_to_scc_id
 )
     : sccs(sccs), node_to_scc_id(node_to_scc_id) {}
 
@@ -696,7 +698,7 @@ std::optional<Path> find_shortest_path_between_nodes(
     std::queue<size_t> queue;
     queue.push(node_id_1);
 
-    NodesLabels node_to_incoming_edge(graph);
+    NodesLabels<size_t> node_to_incoming_edge(graph);
 
     bool found = false;
     while (!queue.empty()) {

@@ -67,7 +67,7 @@ class Graph {
     std::string to_string(bool undirected) const;
     std::string to_string() const;
     std::string to_string(
-        bool undirected, const utilities::NodesLabels& labels, const std::string_view name
+        bool undirected, const utilities::NodesLabels<size_t>& labels, const std::string_view name
     ) const;
     void print(bool undirected) const;
 };

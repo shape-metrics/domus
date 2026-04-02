@@ -9,7 +9,7 @@ enum class NodeType { VERTEX, BEND, MINI_BEND, INVALID };
 
 // TODO usare questa invece di usare i colori del GraphAttributes per rappresentare i corner
 class NodesTypes {
-    graph::utilities::NodesLabels m_nodes_types;
+    graph::utilities::NodesLabels<NodeType> m_nodes_types;
 
   public:
     NodesTypes(const graph::Graph& graph);
