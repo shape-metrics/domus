@@ -1,12 +1,12 @@
 #include "embed_two_cycles.hpp"
 
+#include <variant>
+
+#include "domus/core/domus_debug.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/path.hpp"
 
-#include <variant>
-
-#include "domus/core/domus_debug.hpp"
 #include "faces.hpp"
 
 namespace domus::torus {
@@ -149,7 +149,7 @@ std::variant<Path, size_t> compute_intersection_between_cycles(
     }
     curr = intersection_node_id;
     pos_1 = initial_pos_1 + cycle_1.size();
-    pos_2 = initial_pos_2 + cycle_1.size();
+    pos_2 = initial_pos_2 + cycle_2.size();
     while (prev_1 == prev_2) {
         size_t edge_id = cycle_1.edge_id_at(pos_1 - 1);
         DOMUS_ASSERT(

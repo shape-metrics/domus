@@ -31,7 +31,7 @@ std::optional<graph::Embedding> compute_toroidal_embedding(
         // TODO: handle type 3
     }
 
-    return embedding;
+    return std::nullopt;
 }
 
 std::optional<graph::Embedding> compute_toroidal_embedding(const Graph& graph) {
