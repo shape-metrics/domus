@@ -62,22 +62,22 @@ void toroidal_test(const graph::Graph& graph) {
 }
 
 int main() {
-    std::string input_graph_filename = "graph.txt";
-    const auto graph = loader::load_graph_from_txt_file(input_graph_filename);
-    if (!graph) {
-        println("{}", graph.error());
-        return 1;
-    }
-    graph->print(true);
+    // std::string input_graph_filename = "graph.txt";
+    // const auto graph = loader::load_graph_from_txt_file(input_graph_filename);
+    // if (!graph) {
+    //     println("{}", graph.error());
+    //     return 1;
+    // }
+    // graph->print(true);
     // std::println("{}", generators::code_to_generate_graph(*graph));
     // return 0;
 
-    planarity_test(*graph);
-    for (const auto& forbidden_minor : test::forbidden_minors)
-        planarity_test(forbidden_minor);
+    // planarity_test(*graph);
+    // for (const auto& forbidden_minor : test::forbidden_minors)
+    //     planarity_test(forbidden_minor);
 
-    make_orthogonal(*graph);
-    toroidal_test(test::two_cycle_graphs[2]);
+    // make_orthogonal(*graph);
+    // toroidal_test(test::two_cycle_graphs[2]);
 
     std::println("k5");
     test::subdivided_k_5.print(true);

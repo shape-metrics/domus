@@ -1,6 +1,8 @@
 #pragma once
 
-#include "domus/core/graph/path.hpp"
+namespace domus::graph {
+class Path;
+}
 
 namespace domus::torus {
 

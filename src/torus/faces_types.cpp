@@ -1,5 +1,10 @@
 #include "faces_types.hpp"
 
+#include "domus/core/graph/path.hpp"
+
+#include <algorithm>
+#include <vector>
+
 namespace domus::torus {
 
 std::optional<size_t> is_face_simple(const graph::Path& path) {

@@ -51,6 +51,15 @@ void NodesLabels::update_label(size_t node_id, size_t new_label) {
     m_labels[node_id] = new_label;
 }
 
+size_t NodesLabels::get_number_of_labels() const { return m_number_of_labels; }
+
+void NodesLabels::add_or_update_label(size_t node_id, size_t label) {
+    if (has_label(node_id))
+        update_label(node_id, label);
+    else
+        add_label(node_id, label);
+}
+
 EdgesLabels::EdgesLabels(size_t number_of_edges) { m_labels.resize(number_of_edges); }
 
 void EdgesLabels::add_label(size_t edge_id, size_t label) {

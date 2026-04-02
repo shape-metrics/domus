@@ -81,6 +81,7 @@ set(COMMON_SRCS
     src/core/color.cpp
     src/core/graph/graphs_algorithms.cpp
     src/core/graph/graph.cpp
+    src/core/graph/subgraph.cpp
     src/core/graph/graph_utilities.cpp
     src/core/graph/path.cpp
     src/core/graph/cycle.cpp
@@ -102,6 +103,7 @@ set(COMMON_SRCS
     src/torus/embedder.cpp
     src/torus/embed_two_cycles.cpp
     src/torus/bridge.cpp
+    src/torus/type_4.cpp
     src/core/graph/test.cpp
 )
 
