@@ -1,11 +1,10 @@
 #include "domus/torus/type_4.hpp"
 
+// #include "domus/core/domus_debug.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/torus/bridge.hpp"
-
-#include <ranges>
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -35,8 +34,8 @@ auto all_pairs_of_view(auto&& feet) {
 auto candidate_face_splitting_paths(const Graph& graph, const Bridge& bridge) {
     return all_pairs_of_view(compute_all_feet_in_bridge(bridge)) |
            std::views::transform([&](const auto& pair) {
-               const auto& foot_1 = pair.first;
-               const auto& foot_2 = pair.second;
+               const EdgeId& foot_1 = pair.first;
+               const EdgeId& foot_2 = pair.second;
                const size_t from_id_1 = foot_1.edge.from_id;
                const size_t to_id_1 = foot_1.edge.to_id;
                const size_t attachment_1 = (bridge.is_attachment(from_id_1)) ? from_id_1 : to_id_1;

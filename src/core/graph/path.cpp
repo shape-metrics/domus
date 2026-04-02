@@ -85,4 +85,9 @@ std::string Path::to_string() const {
 
 void Path::print() const { std::print("{}", to_string()); }
 
+bool Path::operator==(const Path& other) const {
+    return (m_nodes_ids == other.m_nodes_ids) && (m_edges_ids == other.m_edges_ids) &&
+           (m_last_node_id == other.m_last_node_id);
+}
+
 } // namespace domus::graph

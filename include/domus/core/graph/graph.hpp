@@ -11,11 +11,6 @@
 
 namespace domus::graph {
 
-struct EdgeId {
-    size_t id;
-    Edge edge;
-};
-
 struct Subdivision {
     const size_t from_id;
     const size_t in_between_id;

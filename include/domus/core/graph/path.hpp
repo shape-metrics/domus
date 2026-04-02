@@ -30,6 +30,8 @@ class Path {
 
     std::string to_string() const;
     void print() const;
+
+    bool operator==(const Path& other) const;
 };
 
 inline auto Path::get_edges() const { return std::ranges::views::zip(m_edges_ids, m_nodes_ids); }

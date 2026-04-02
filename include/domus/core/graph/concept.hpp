@@ -14,6 +14,11 @@ struct Edge {
     }
 };
 
+struct EdgeId {
+    size_t id;
+    Edge edge;
+};
+
 struct EdgeIter {
     size_t id;
     size_t neighbor_id;

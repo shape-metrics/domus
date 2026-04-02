@@ -1,4 +1,4 @@
-#include "faces_types.hpp"
+#include "faces.hpp"
 
 #include "domus/core/graph/path.hpp"
 
@@ -6,6 +6,13 @@
 #include <vector>
 
 namespace domus::torus {
+
+Face::Face(FaceType type, graph::Path&& path, std::vector<graph::Path>&& repeated_paths)
+    : m_type(type), m_path(path), m_repeated_paths(repeated_paths) {}
+
+FaceType Face::type() const { return m_type; }
+const graph::Path& Face::path() const { return m_path; }
+const std::vector<graph::Path>& Face::repeated_paths() const { return m_repeated_paths; }
 
 std::optional<size_t> is_face_simple(const graph::Path& path) {
     std::vector<size_t> nodes_in_path;
