@@ -3,17 +3,15 @@
 #include <string>
 
 #include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/path.hpp"
 
 namespace domus::graph {
 
 class Embedding {
     std::vector<std::vector<EdgeIter>> m_adjacency_list;
-    std::vector<std::optional<EdgeIter>> m_next_in_adjacency_list_1;
-    std::vector<std::optional<EdgeIter>> m_next_in_adjacency_list_2;
-
-    std::vector<std::optional<EdgeIter>> m_prev_in_adjacency_list_1;
-    std::vector<std::optional<EdgeIter>> m_prev_in_adjacency_list_2;
+    utilities::OrientedEdgesLabels<EdgeIter> m_next_in_adjacency_list;
+    utilities::OrientedEdgesLabels<EdgeIter> m_prev_in_adjacency_list;
     size_t m_number_of_edges = 0;
 
   public:

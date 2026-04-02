@@ -91,6 +91,7 @@ template <typename T> class OrientedEdgesLabels {
     const T& get_label(size_t from_id, size_t to_id, size_t edge_id) const;
     void erase_label(size_t from_id, size_t to_id, size_t edge_id);
     void update_label(size_t from_id, size_t to_id, size_t edge_id, T new_label);
+    void update_size(size_t edge_id);
     size_t get_number_of_labels() const;
     bool empty() const;
 };

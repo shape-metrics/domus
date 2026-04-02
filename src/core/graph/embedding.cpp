@@ -12,7 +12,8 @@
 
 namespace domus::graph {
 
-Embedding::Embedding(const Graph& graph) {
+Embedding::Embedding(const Graph& graph)
+    : m_next_in_adjacency_list(graph), m_prev_in_adjacency_list(graph) {
     DOMUS_ASSERT(
         [](const Graph& graph) {
             std::vector<size_t> nodes;
@@ -45,19 +46,11 @@ bool Embedding::are_neighbors(size_t node_1_id, size_t node_2_id) const {
 
 EdgeIter
 Embedding::next_in_adjacency_list(size_t node_id, size_t neighbor_id, size_t edge_id) const {
-    if (node_id < neighbor_id) {
-        DOMUS_ASSERT(
-            m_next_in_adjacency_list_1[edge_id].has_value(),
-            "Embedding::next_in_adjacency_list: edge does not exist"
-        );
-        return *m_next_in_adjacency_list_1[edge_id];
-    } else {
-        DOMUS_ASSERT(
-            m_next_in_adjacency_list_2[edge_id].has_value(),
-            "Embedding::next_in_adjacency_list: edge does not exist"
-        );
-        return *m_next_in_adjacency_list_2[edge_id];
-    }
+    DOMUS_ASSERT(
+        m_next_in_adjacency_list.has_label(node_id, neighbor_id, edge_id),
+        "Embedding::next_in_adjacency_list: edge does not exist"
+    );
+    return m_next_in_adjacency_list.get_label(node_id, neighbor_id, edge_id);
 }
 
 size_t Embedding::get_degree_of_node(size_t node_id) const {
@@ -65,47 +58,26 @@ size_t Embedding::get_degree_of_node(size_t node_id) const {
 }
 
 void Embedding::add_edge(size_t from_id, size_t to_id, size_t edge_id) {
-    if (edge_id >= m_next_in_adjacency_list_1.size()) {
-        m_next_in_adjacency_list_1.resize(edge_id + 1, std::nullopt);
-        m_next_in_adjacency_list_2.resize(edge_id + 1, std::nullopt);
-        m_prev_in_adjacency_list_1.resize(edge_id + 1, std::nullopt);
-        m_prev_in_adjacency_list_2.resize(edge_id + 1, std::nullopt);
-    }
+    m_next_in_adjacency_list.update_size(edge_id);
+    m_prev_in_adjacency_list.update_size(edge_id);
 
     EdgeIter new_edge{edge_id, to_id};
     auto& adj = m_adjacency_list.at(from_id);
 
     if (adj.empty()) {
-        if (from_id < to_id) {
-            m_next_in_adjacency_list_1[edge_id] = new_edge;
-            m_prev_in_adjacency_list_1[edge_id] = new_edge;
-        } else {
-            m_next_in_adjacency_list_2[edge_id] = new_edge;
-            m_prev_in_adjacency_list_2[edge_id] = new_edge;
-        }
+        m_next_in_adjacency_list.add_label(from_id, to_id, edge_id, new_edge);
+        m_prev_in_adjacency_list.add_label(from_id, to_id, edge_id, new_edge);
     } else {
         auto [first_edge_id, first_to_id] = adj.front();
         auto [last_edge_id, last_to_id] = adj.back();
 
         // updating old prevs and nexts
-        if (from_id < first_to_id)
-            m_prev_in_adjacency_list_1[first_edge_id] = new_edge;
-        else
-            m_prev_in_adjacency_list_2[first_edge_id] = new_edge;
-
-        if (from_id < last_to_id)
-            m_next_in_adjacency_list_1[last_edge_id] = new_edge;
-        else
-            m_next_in_adjacency_list_2[last_edge_id] = new_edge;
+        m_prev_in_adjacency_list.update_label(from_id, first_to_id, first_edge_id, new_edge);
+        m_next_in_adjacency_list.update_label(from_id, last_to_id, last_edge_id, new_edge);
 
         // adding prev and next of new edge
-        if (from_id < to_id) {
-            m_next_in_adjacency_list_1[edge_id] = {first_edge_id, first_to_id};
-            m_prev_in_adjacency_list_1[edge_id] = {last_edge_id, last_to_id};
-        } else {
-            m_next_in_adjacency_list_2[edge_id] = {first_edge_id, first_to_id};
-            m_prev_in_adjacency_list_2[edge_id] = {last_edge_id, last_to_id};
-        }
+        m_next_in_adjacency_list.add_label(from_id, to_id, edge_id, {first_edge_id, first_to_id});
+        m_prev_in_adjacency_list.add_label(from_id, to_id, edge_id, {last_edge_id, last_to_id});
     }
 
     adj.push_back(new_edge);
@@ -119,12 +91,8 @@ void Embedding::add_edge_after(size_t from_id, size_t to_id, size_t edge_id, siz
         "Embedding::add_edge_after: node does not exist"
     );
 
-    while (m_next_in_adjacency_list_1.size() <= edge_id) {
-        m_next_in_adjacency_list_1.push_back(std::nullopt);
-        m_next_in_adjacency_list_2.push_back(std::nullopt);
-        m_prev_in_adjacency_list_1.push_back(std::nullopt);
-        m_prev_in_adjacency_list_2.push_back(std::nullopt);
-    }
+    m_next_in_adjacency_list.update_size(edge_id);
+    m_prev_in_adjacency_list.update_size(edge_id);
 
     EdgeIter new_edge{edge_id, to_id};
     auto& adj = m_adjacency_list.at(from_id);
@@ -138,35 +106,24 @@ void Embedding::add_edge_after(size_t from_id, size_t to_id, size_t edge_id, siz
     size_t prev_to_id = prev_it->neighbor_id;
 
     // get the next edge after prev_edge
-    EdgeIter next_edge;
-    if (from_id < prev_to_id)
-        next_edge = *m_next_in_adjacency_list_1[prev_edge_id];
-    else
-        next_edge = *m_next_in_adjacency_list_2[prev_edge_id];
+    DOMUS_ASSERT(
+        m_next_in_adjacency_list.has_label(from_id, prev_to_id, prev_edge_id),
+        "Embedding::add_edge_after: prev_edge_id does not exist"
+    );
+    EdgeIter next_edge = m_next_in_adjacency_list.get_label(from_id, prev_to_id, prev_edge_id);
 
     size_t next_edge_id = next_edge.id;
     size_t next_to_id = next_edge.neighbor_id;
 
     // update prev's next to point to new edge
-    if (from_id < prev_to_id)
-        m_next_in_adjacency_list_1[prev_edge_id] = new_edge;
-    else
-        m_next_in_adjacency_list_2[prev_edge_id] = new_edge;
+    m_next_in_adjacency_list.update_label(from_id, prev_to_id, prev_edge_id, new_edge);
 
     // update next's prev to point to new edge
-    if (from_id < next_to_id)
-        m_prev_in_adjacency_list_1[next_edge_id] = new_edge;
-    else
-        m_prev_in_adjacency_list_2[next_edge_id] = new_edge;
+    m_prev_in_adjacency_list.update_label(from_id, next_to_id, next_edge_id, new_edge);
 
     // set new edge's prev and next
-    if (from_id < to_id) {
-        m_prev_in_adjacency_list_1[edge_id] = {prev_edge_id, prev_to_id};
-        m_next_in_adjacency_list_1[edge_id] = next_edge;
-    } else {
-        m_prev_in_adjacency_list_2[edge_id] = {prev_edge_id, prev_to_id};
-        m_next_in_adjacency_list_2[edge_id] = next_edge;
-    }
+    m_prev_in_adjacency_list.add_label(from_id, to_id, edge_id, {prev_edge_id, prev_to_id});
+    m_next_in_adjacency_list.add_label(from_id, to_id, edge_id, next_edge);
 
     // insert new edge after prev_it in the adjacency list
     adj.insert(prev_it + 1, new_edge);
@@ -185,47 +142,25 @@ void Embedding::remove_edge(size_t from_id, size_t to_id, size_t edge_id) {
     DOMUS_ASSERT(it != adj.end(), "Embedding::remove_edge: edge does not exist");
 
     // update the linked list pointers
-    if (from_id < to_id) {
-        EdgeIter prev_edge = *m_prev_in_adjacency_list_1[edge_id];
-        EdgeIter next_edge = *m_next_in_adjacency_list_1[edge_id];
+    DOMUS_ASSERT(
+        m_prev_in_adjacency_list.has_label(from_id, to_id, edge_id) &&
+            m_next_in_adjacency_list.has_label(from_id, to_id, edge_id),
+        "Embedding::remove_edge: edge does not exist"
+    );
 
-        if (prev_edge.id != edge_id) {
-            if (from_id < prev_edge.neighbor_id)
-                m_next_in_adjacency_list_1[prev_edge.id] = next_edge;
-            else
-                m_next_in_adjacency_list_2[prev_edge.id] = next_edge;
-        }
+    EdgeIter prev_edge = m_prev_in_adjacency_list.get_label(from_id, to_id, edge_id);
+    EdgeIter next_edge = m_next_in_adjacency_list.get_label(from_id, to_id, edge_id);
 
-        if (next_edge.id != edge_id) {
-            if (from_id < next_edge.neighbor_id)
-                m_prev_in_adjacency_list_1[next_edge.id] = prev_edge;
-            else
-                m_prev_in_adjacency_list_2[next_edge.id] = prev_edge;
-        }
+    if (prev_edge.id != edge_id)
+        m_next_in_adjacency_list
+            .update_label(from_id, prev_edge.neighbor_id, prev_edge.id, next_edge);
 
-        m_next_in_adjacency_list_1[edge_id] = std::nullopt;
-        m_prev_in_adjacency_list_1[edge_id] = std::nullopt;
-    } else {
-        EdgeIter prev_edge = *m_prev_in_adjacency_list_2[edge_id];
-        EdgeIter next_edge = *m_next_in_adjacency_list_2[edge_id];
+    if (next_edge.id != edge_id)
+        m_prev_in_adjacency_list
+            .update_label(from_id, next_edge.neighbor_id, next_edge.id, prev_edge);
 
-        if (prev_edge.id != edge_id) {
-            if (from_id < prev_edge.neighbor_id)
-                m_next_in_adjacency_list_1[prev_edge.id] = next_edge;
-            else
-                m_next_in_adjacency_list_2[prev_edge.id] = next_edge;
-        }
-
-        if (next_edge.id != edge_id) {
-            if (from_id < next_edge.neighbor_id)
-                m_prev_in_adjacency_list_1[next_edge.id] = prev_edge;
-            else
-                m_prev_in_adjacency_list_2[next_edge.id] = prev_edge;
-        }
-
-        m_next_in_adjacency_list_2[edge_id] = std::nullopt;
-        m_prev_in_adjacency_list_2[edge_id] = std::nullopt;
-    }
+    m_next_in_adjacency_list.erase_label(from_id, to_id, edge_id);
+    m_prev_in_adjacency_list.erase_label(from_id, to_id, edge_id);
 
     adj.erase(it);
     m_number_of_edges--;

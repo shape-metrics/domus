@@ -202,6 +202,11 @@ void OrientedEdgesLabels<T>::update_label(
         m_labels_2.update_label(edge_id, std::move(new_label));
 }
 
+template <typename T> void OrientedEdgesLabels<T>::update_size(size_t edge_id) {
+    m_labels_1.update_size(edge_id);
+    m_labels_2.update_size(edge_id);
+}
+
 template <typename T> size_t OrientedEdgesLabels<T>::get_number_of_labels() const {
     return m_labels_1.get_number_of_labels() + m_labels_2.get_number_of_labels();
 }
@@ -214,5 +219,7 @@ template <typename T> bool OrientedEdgesLabels<T>::empty() const {
 template class NodesLabels<size_t>;
 template class EdgesLabels<size_t>;
 template class OrientedEdgesLabels<size_t>;
+template class EdgesLabels<EdgeIter>;
+template class OrientedEdgesLabels<EdgeIter>;
 
 } // namespace domus::graph::utilities
