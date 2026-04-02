@@ -112,6 +112,125 @@ void Embedding::add_edge(size_t from_id, size_t to_id, size_t edge_id) {
     m_number_of_edges++;
 }
 
+void Embedding::add_edge_after(size_t from_id, size_t to_id, size_t edge_id, size_t prev_edge_id) {
+    DOMUS_ASSERT(from_id != to_id, "Embedding::add_edge_after: from_id and to_id are equal");
+    DOMUS_ASSERT(
+        has_node(from_id) && has_node(to_id),
+        "Embedding::add_edge_after: node does not exist"
+    );
+
+    while (m_next_in_adjacency_list_1.size() <= edge_id) {
+        m_next_in_adjacency_list_1.push_back(std::nullopt);
+        m_next_in_adjacency_list_2.push_back(std::nullopt);
+        m_prev_in_adjacency_list_1.push_back(std::nullopt);
+        m_prev_in_adjacency_list_2.push_back(std::nullopt);
+    }
+
+    EdgeIter new_edge{edge_id, to_id};
+    auto& adj = m_adjacency_list.at(from_id);
+
+    // find the position of prev_edge_id in the adjacency list
+    auto prev_it = std::ranges::find_if(adj, [prev_edge_id](const EdgeIter& e) {
+        return e.id == prev_edge_id;
+    });
+    DOMUS_ASSERT(prev_it != adj.end(), "Embedding::add_edge_after: prev_edge_id not found");
+
+    size_t prev_to_id = prev_it->neighbor_id;
+
+    // get the next edge after prev_edge
+    EdgeIter next_edge;
+    if (from_id < prev_to_id)
+        next_edge = *m_next_in_adjacency_list_1[prev_edge_id];
+    else
+        next_edge = *m_next_in_adjacency_list_2[prev_edge_id];
+
+    size_t next_edge_id = next_edge.id;
+    size_t next_to_id = next_edge.neighbor_id;
+
+    // update prev's next to point to new edge
+    if (from_id < prev_to_id)
+        m_next_in_adjacency_list_1[prev_edge_id] = new_edge;
+    else
+        m_next_in_adjacency_list_2[prev_edge_id] = new_edge;
+
+    // update next's prev to point to new edge
+    if (from_id < next_to_id)
+        m_prev_in_adjacency_list_1[next_edge_id] = new_edge;
+    else
+        m_prev_in_adjacency_list_2[next_edge_id] = new_edge;
+
+    // set new edge's prev and next
+    if (from_id < to_id) {
+        m_prev_in_adjacency_list_1[edge_id] = {prev_edge_id, prev_to_id};
+        m_next_in_adjacency_list_1[edge_id] = next_edge;
+    } else {
+        m_prev_in_adjacency_list_2[edge_id] = {prev_edge_id, prev_to_id};
+        m_next_in_adjacency_list_2[edge_id] = next_edge;
+    }
+
+    // insert new edge after prev_it in the adjacency list
+    adj.insert(prev_it + 1, new_edge);
+    m_number_of_edges++;
+}
+
+void Embedding::remove_edge(size_t from_id, size_t to_id, size_t edge_id) {
+    DOMUS_ASSERT(
+        has_node(from_id) && has_node(to_id),
+        "Embedding::remove_edge: node does not exist"
+    );
+
+    // find and remove the edge from the adjacency list
+    auto& adj = m_adjacency_list.at(from_id);
+    auto it = std::ranges::find_if(adj, [edge_id](const EdgeIter& e) { return e.id == edge_id; });
+    DOMUS_ASSERT(it != adj.end(), "Embedding::remove_edge: edge does not exist");
+
+    // update the linked list pointers
+    if (from_id < to_id) {
+        EdgeIter prev_edge = *m_prev_in_adjacency_list_1[edge_id];
+        EdgeIter next_edge = *m_next_in_adjacency_list_1[edge_id];
+
+        if (prev_edge.id != edge_id) {
+            if (from_id < prev_edge.neighbor_id)
+                m_next_in_adjacency_list_1[prev_edge.id] = next_edge;
+            else
+                m_next_in_adjacency_list_2[prev_edge.id] = next_edge;
+        }
+
+        if (next_edge.id != edge_id) {
+            if (from_id < next_edge.neighbor_id)
+                m_prev_in_adjacency_list_1[next_edge.id] = prev_edge;
+            else
+                m_prev_in_adjacency_list_2[next_edge.id] = prev_edge;
+        }
+
+        m_next_in_adjacency_list_1[edge_id] = std::nullopt;
+        m_prev_in_adjacency_list_1[edge_id] = std::nullopt;
+    } else {
+        EdgeIter prev_edge = *m_prev_in_adjacency_list_2[edge_id];
+        EdgeIter next_edge = *m_next_in_adjacency_list_2[edge_id];
+
+        if (prev_edge.id != edge_id) {
+            if (from_id < prev_edge.neighbor_id)
+                m_next_in_adjacency_list_1[prev_edge.id] = next_edge;
+            else
+                m_next_in_adjacency_list_2[prev_edge.id] = next_edge;
+        }
+
+        if (next_edge.id != edge_id) {
+            if (from_id < next_edge.neighbor_id)
+                m_prev_in_adjacency_list_1[next_edge.id] = prev_edge;
+            else
+                m_prev_in_adjacency_list_2[next_edge.id] = prev_edge;
+        }
+
+        m_next_in_adjacency_list_2[edge_id] = std::nullopt;
+        m_prev_in_adjacency_list_2[edge_id] = std::nullopt;
+    }
+
+    adj.erase(it);
+    m_number_of_edges--;
+}
+
 std::string Embedding::to_string() const {
     std::string result;
     auto out = std::back_inserter(result);
@@ -133,7 +252,7 @@ void Embedding::print() const { std::print("{}", to_string()); }
 
 size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
     size_t number_of_faces = 0;
-    utilities::VisitedEdges visited_edges(embedding);
+    utilities::OrientedEdgesContainer visited_edges(embedding);
 
     for (const size_t start_node : embedding.get_nodes_ids()) {
         if (embedding.get_degree_of_node(start_node) == 0) {
@@ -165,7 +284,7 @@ size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
 std::vector<graph::Path>
 compute_faces_in_embedding(const Graph& graph, const Embedding& embedding) {
     std::vector<graph::Path> faces;
-    utilities::VisitedEdges visited_edges(graph);
+    utilities::OrientedEdgesContainer visited_edges(graph);
 
     for (const size_t start_node : embedding.get_nodes_ids()) {
         for (const EdgeIter start_edge : embedding.get_edges(start_node)) {
@@ -202,7 +321,7 @@ bool is_embedding_planar(const Embedding& embedding) {
 // This function verifies that for every edge from_id-to_id there is the edge to_id-from_id
 // It is intended to be used only for debug purposes
 bool Embedding::is_consistent() const {
-    utilities::VisitedEdges edges(get_number_of_edges());
+    utilities::OrientedEdgesContainer edges(get_number_of_edges());
     for (const size_t node_id : get_nodes_ids()) {
         for (const EdgeIter edge : get_edges(node_id)) {
             if (edges.has_edge(edge.neighbor_id, node_id, edge.id))

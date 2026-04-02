@@ -37,6 +37,7 @@ class NodesLabels {
 
 class EdgesLabels {
     std::vector<std::optional<size_t>> m_labels;
+    size_t m_number_of_labels = 0;
 
   public:
     template <UndirectedGraphLike G> EdgesLabels(const G& graph);
@@ -47,6 +48,8 @@ class EdgesLabels {
     void erase_label(size_t edge_id);
     void update_label(size_t edge_id, size_t new_label);
     void update_size(size_t edge_id);
+    bool empty() const;
+    size_t get_number_of_labels() const;
 };
 
 class EdgesContainer {
@@ -63,17 +66,32 @@ class EdgesContainer {
     void erase(size_t edge_id);
 };
 
-class VisitedEdges {
+class OrientedEdgesContainer {
     EdgesContainer m_visited_edges_1;
     EdgesContainer m_visited_edges_2;
 
   public:
-    template <UndirectedGraphLike G> VisitedEdges(const G& graph);
-    VisitedEdges(size_t number_of_edges_ids);
+    template <UndirectedGraphLike G> OrientedEdgesContainer(const G& graph);
+    OrientedEdgesContainer(size_t number_of_edges_ids);
     bool has_edge(size_t from_id, size_t to_id, size_t edge_id) const;
     void add_edge(size_t from_id, size_t to_id, size_t edge_id);
     void erase(size_t from_id, size_t to_id, size_t edge_id);
     size_t size() const;
+    bool empty() const;
+};
+
+class OrientedEdgesLabels {
+    EdgesLabels m_labels_1;
+    EdgesLabels m_labels_2;
+
+  public:
+    template <UndirectedGraphLike G> OrientedEdgesLabels(const G& graph);
+    void add_label(size_t from_id, size_t to_id, size_t edge_id, size_t label);
+    bool has_label(size_t from_id, size_t to_id, size_t edge_id) const;
+    size_t get_label(size_t from_id, size_t to_id, size_t edge_id) const;
+    void erase_label(size_t from_id, size_t to_id, size_t edge_id);
+    void update_label(size_t from_id, size_t to_id, size_t edge_id, size_t new_label);
+    size_t get_number_of_labels() const;
     bool empty() const;
 };
 
@@ -88,10 +106,14 @@ template <UndirectedGraphLike G>
 EdgesContainer::EdgesContainer(const G& graph) : m_has_edge(graph.get_number_of_edges(), false) {}
 
 template <UndirectedGraphLike G>
-VisitedEdges::VisitedEdges(const G& graph) : m_visited_edges_1(graph), m_visited_edges_2(graph) {}
+OrientedEdgesContainer::OrientedEdgesContainer(const G& graph)
+    : m_visited_edges_1(graph), m_visited_edges_2(graph) {}
 
 template <UndirectedGraphLike G> EdgesLabels::EdgesLabels(const G& graph) {
     m_labels.resize(graph.get_number_of_edges());
 }
+
+template <UndirectedGraphLike G>
+OrientedEdgesLabels::OrientedEdgesLabels(const G& graph) : m_labels_1(graph), m_labels_2(graph) {}
 
 } // namespace domus::graph::utilities

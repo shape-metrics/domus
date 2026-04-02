@@ -65,6 +65,7 @@ EdgesLabels::EdgesLabels(size_t number_of_edges) { m_labels.resize(number_of_edg
 void EdgesLabels::add_label(size_t edge_id, size_t label) {
     DOMUS_ASSERT(!has_label(edge_id), "EdgesLabels::add_label: edge already has a label");
     m_labels[edge_id] = label;
+    ++m_number_of_labels;
 }
 
 bool EdgesLabels::has_label(size_t edge_id) const { return m_labels[edge_id].has_value(); }
@@ -81,6 +82,7 @@ size_t EdgesLabels::get_label(size_t edge_id) const {
 void EdgesLabels::erase_label(size_t edge_id) {
     DOMUS_ASSERT(has_label(edge_id), "EdgesLabels::erase_label: edge does not have a label");
     m_labels[edge_id].reset();
+    --m_number_of_labels;
 }
 
 void EdgesLabels::update_label(size_t edge_id, size_t new_label) {
@@ -92,6 +94,10 @@ void EdgesLabels::update_size(size_t edge_id) {
     while (m_labels.size() <= edge_id)
         m_labels.push_back(std::nullopt);
 }
+
+bool EdgesLabels::empty() const { return m_number_of_labels == 0; }
+
+size_t EdgesLabels::get_number_of_labels() const { return m_number_of_labels; }
 
 EdgesContainer::EdgesContainer(size_t number_of_edges_ids)
     : m_has_edge(number_of_edges_ids, false) {}
@@ -114,32 +120,77 @@ void EdgesContainer::erase(size_t edge_id) {
     m_number_of_edges--;
 }
 
-VisitedEdges::VisitedEdges(size_t number_of_edges_ids)
+OrientedEdgesContainer::OrientedEdgesContainer(size_t number_of_edges_ids)
     : m_visited_edges_1(number_of_edges_ids), m_visited_edges_2(number_of_edges_ids) {}
 
-bool VisitedEdges::has_edge(size_t from_id, size_t to_id, size_t edge_id) const {
+bool OrientedEdgesContainer::has_edge(size_t from_id, size_t to_id, size_t edge_id) const {
     if (from_id < to_id)
         return m_visited_edges_1.has_edge(edge_id);
     else
         return m_visited_edges_2.has_edge(edge_id);
 }
 
-void VisitedEdges::add_edge(size_t from_id, size_t to_id, size_t edge_id) {
+void OrientedEdgesContainer::add_edge(size_t from_id, size_t to_id, size_t edge_id) {
     if (from_id < to_id)
         m_visited_edges_1.add_edge(edge_id);
     else
         m_visited_edges_2.add_edge(edge_id);
 }
 
-void VisitedEdges::erase(size_t from_id, size_t to_id, size_t edge_id) {
+void OrientedEdgesContainer::erase(size_t from_id, size_t to_id, size_t edge_id) {
     if (from_id < to_id)
         m_visited_edges_1.erase(edge_id);
     else
         m_visited_edges_2.erase(edge_id);
 }
 
-size_t VisitedEdges::size() const { return m_visited_edges_1.size() + m_visited_edges_2.size(); }
+size_t OrientedEdgesContainer::size() const {
+    return m_visited_edges_1.size() + m_visited_edges_2.size();
+}
 
-bool VisitedEdges::empty() const { return size() == 0; }
+bool OrientedEdgesContainer::empty() const { return size() == 0; }
+
+void OrientedEdgesLabels::add_label(size_t from_id, size_t to_id, size_t edge_id, size_t label) {
+    if (from_id < to_id)
+        m_labels_1.add_label(edge_id, label);
+    else
+        m_labels_2.add_label(edge_id, label);
+}
+
+bool OrientedEdgesLabels::has_label(size_t from_id, size_t to_id, size_t edge_id) const {
+    if (from_id < to_id)
+        return m_labels_1.has_label(edge_id);
+    else
+        return m_labels_2.has_label(edge_id);
+}
+
+size_t OrientedEdgesLabels::get_label(size_t from_id, size_t to_id, size_t edge_id) const {
+    if (from_id < to_id)
+        return m_labels_1.get_label(edge_id);
+    else
+        return m_labels_2.get_label(edge_id);
+}
+
+void OrientedEdgesLabels::erase_label(size_t from_id, size_t to_id, size_t edge_id) {
+    if (from_id < to_id)
+        m_labels_1.erase_label(edge_id);
+    else
+        m_labels_2.erase_label(edge_id);
+}
+
+void OrientedEdgesLabels::update_label(
+    size_t from_id, size_t to_id, size_t edge_id, size_t new_label
+) {
+    if (from_id < to_id)
+        m_labels_1.update_label(edge_id, new_label);
+    else
+        m_labels_2.update_label(edge_id, new_label);
+}
+
+size_t OrientedEdgesLabels::get_number_of_labels() const {
+    return m_labels_1.get_number_of_labels() + m_labels_2.get_number_of_labels();
+}
+
+bool OrientedEdgesLabels::empty() const { return get_number_of_labels() == 0; }
 
 } // namespace domus::graph::utilities

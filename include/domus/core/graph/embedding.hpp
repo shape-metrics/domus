@@ -26,6 +26,10 @@ class Embedding {
 
     void add_edge(size_t from_id, size_t to_id, size_t edge_id);
 
+    void add_edge_after(size_t from_id, size_t to_id, size_t edge_id, size_t prev_edge_id);
+
+    void remove_edge(size_t from_id, size_t to_id, size_t edge_id);
+
     size_t get_degree_of_node(size_t node_id) const;
     EdgeIter next_in_adjacency_list(size_t node_id, size_t neighbor_id, size_t edge_id) const;
 
