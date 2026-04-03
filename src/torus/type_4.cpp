@@ -79,13 +79,12 @@ void augment_embedding_with_path(Embedding& embedding, const Path& path) {
         embedding.add_edge(node_id_1, node_id_2, edge_id);
         embedding.add_edge(node_id_2, node_id_1, edge_id);
     }
-    const size_t first_node_id = path.get_first_node_id();
-    const size_t second_node_id = path.node_id_at_position(1);
-    const size_t first_edge_id = path.edge_id_at_position(0);
-
-    embedding.add_edge(second_node_id, first_node_id, first_edge_id);
-
     if (path.number_of_edges() > 1) {
+        const size_t first_node_id = path.get_first_node_id();
+        const size_t second_node_id = path.node_id_at_position(1);
+        const size_t first_edge_id = path.edge_id_at_position(0);
+        embedding.add_edge(second_node_id, first_node_id, first_edge_id);
+
         const size_t last_node_id = path.get_last_node_id();
         const size_t second_last_node_id = path.node_id_at_position(path.number_of_edges() - 1);
         const size_t last_edge_id = path.edge_id_at_position(path.number_of_edges() - 1);
@@ -101,13 +100,12 @@ void remove_augment_of_path_in_embedding(Embedding& embedding, const Path& path)
         embedding.remove_edge(node_id_1, node_id_2, edge_id);
         embedding.remove_edge(node_id_2, node_id_1, edge_id);
     }
-    const size_t first_node_id = path.get_first_node_id();
-    const size_t second_node_id = path.node_id_at_position(1);
-    const size_t first_edge_id = path.edge_id_at_position(0);
-
-    embedding.remove_edge(second_node_id, first_node_id, first_edge_id);
-
     if (path.number_of_edges() > 1) {
+        const size_t first_node_id = path.get_first_node_id();
+        const size_t second_node_id = path.node_id_at_position(1);
+        const size_t first_edge_id = path.edge_id_at_position(0);
+        embedding.remove_edge(second_node_id, first_node_id, first_edge_id);
+
         const size_t last_node_id = path.get_last_node_id();
         const size_t second_last_node_id = path.node_id_at_position(path.number_of_edges() - 1);
         const size_t last_edge_id = path.edge_id_at_position(path.number_of_edges() - 1);
@@ -146,27 +144,6 @@ void try_face_splits_with_path(
     for (const EdgeIter e : embedding.get_edges(last_id))
         last_edges.push_back(e);
 
-    if (n_edges == 1) {
-        const size_t edge_id = path.edge_id_at_position(0);
-        for (const EdgeIter edge1 : first_edges) {
-            for (const EdgeIter edge2 : last_edges) {
-                embedding.add_edge_after(first_id, last_id, edge_id, edge1.id);
-                embedding.add_edge_after(last_id, first_id, edge_id, edge2.id);
-
-                if (!did_path_split()) {
-                    embedding.remove_edge(first_id, last_id, edge_id);
-                    embedding.remove_edge(last_id, first_id, edge_id);
-                    continue;
-                }
-
-                // TODO: go on with type 3
-                embedding.remove_edge(first_id, last_id, edge_id);
-                embedding.remove_edge(last_id, first_id, edge_id);
-            }
-        }
-        return;
-    }
-
     augment_embedding_with_path(embedding, path);
 
     const size_t second_id = path.node_id_at_position(1);
@@ -185,6 +162,7 @@ void try_face_splits_with_path(
             }
 
             // TODO: go on with type 3
+
             embedding.remove_edge(first_id, second_id, first_edge_id);
             embedding.remove_edge(last_id, second_last_id, last_edge_id);
         }
