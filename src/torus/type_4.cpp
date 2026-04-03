@@ -33,7 +33,7 @@ auto all_pairs_of_view(auto&& feet) {
            std::views::join; // flatten
 }
 
-auto candidate_face_splitting_paths(const Graph& graph, const Bridge& bridge) {
+auto candidate_face_splitting_paths_in_graph(const Graph& graph, const Bridge& bridge) {
     return all_pairs_of_view(compute_all_feet_in_bridge(bridge)) |
            std::views::transform([&](const auto& pair) {
                const EdgeId& foot_1 = pair.first;
@@ -113,9 +113,35 @@ void remove_augment_of_path_in_embedding(Embedding& embedding, const Path& path)
     }
 }
 
-bool did_path_split() {
-    // TODO: implement
-    return false;
+bool did_path_split(
+    const Graph& graph, const Embedding& embedding, const Face& initial_face, const Path& path
+) {
+    const size_t first_of_path = path.get_first_node_id();
+    const size_t last_of_path = path.get_last_node_id();
+
+    const size_t first_repeated_id = initial_face.repeated_paths()[0].get_first_node_id();
+    const size_t last_repeated_id = initial_face.repeated_paths()[0].get_last_node_id();
+
+    if ((first_of_path == first_repeated_id && last_of_path == last_repeated_id) ||
+        (first_of_path == last_repeated_id && last_of_path == first_repeated_id))
+        return true;
+
+    std::vector<Path> faces = compute_faces_in_embedding(graph, embedding);
+    DOMUS_ASSERT(faces.size() == 2, "did_path_split: embedding should have exactly 2 faces");
+    for (const Path& face : faces) {
+        size_t first_count = 0;
+        size_t last_count = 0;
+        for (size_t i = 0; i < face.number_of_edges(); ++i) {
+            const size_t node_id = face.node_id_at_position(i);
+            if (first_repeated_id == node_id)
+                first_count++;
+            if (last_repeated_id == node_id)
+                last_count++;
+        }
+        if (first_count == 3 && last_count == 3)
+            return false;
+    }
+    return true;
 }
 
 void try_face_splits_with_path(
@@ -123,17 +149,16 @@ void try_face_splits_with_path(
 ) {
     const size_t first_id = path.get_first_node_id();
     const size_t last_id = path.get_last_node_id();
-
     const size_t n_edges = path.number_of_edges();
-    DOMUS_ASSERT(n_edges > 0, "try_face_splits_with_path: empty path");
 
+    DOMUS_ASSERT(n_edges > 0, "try_face_splits_with_path: empty path");
     DOMUS_ASSERT(
         embedding.get_degree_of_node(first_id) > 1,
-        "try_face_splits: first node degree <= 1"
+        "try_face_splits_with_path: first node degree <= 1"
     );
     DOMUS_ASSERT(
         embedding.get_degree_of_node(last_id) > 1,
-        "try_face_splits: last node degree <= 1"
+        "try_face_splits_with_path: last node degree <= 1"
     );
 
     std::vector<EdgeIter> first_edges;
@@ -155,7 +180,8 @@ void try_face_splits_with_path(
         for (const EdgeIter edge2 : last_edges) {
             embedding.add_edge_after(first_id, second_id, first_edge_id, edge1.id);
             embedding.add_edge_after(last_id, second_last_id, last_edge_id, edge2.id);
-            if (!did_path_split()) {
+
+            if (!did_path_split(graph, embedding, face, path)) {
                 embedding.remove_edge(first_id, second_id, first_edge_id);
                 embedding.remove_edge(last_id, second_last_id, last_edge_id);
                 continue;
@@ -178,18 +204,21 @@ void handle_type_4(
     const Face& face
 ) {
     Embedding emb_cpy = embedding;
+
+    // trying path actually in the graph
     for (const Bridge& bridge : bridges) {
-        bridge.print();
         if (bridge.get_bridge().get_number_of_nodes() == 2) {
             const Path path = path_of_chord(graph, bridge);
             try_face_splits_with_path(graph, path, emb_cpy, face);
         } else {
-            auto paths = candidate_face_splitting_paths(graph, bridge);
+            auto paths = candidate_face_splitting_paths_in_graph(graph, bridge);
             for (const Path& path : paths) {
                 try_face_splits_with_path(graph, path, emb_cpy, face);
             }
         }
     }
+
+    // trying paths (edges) not in the graph
 }
 
 void handle_type_4(const Graph& graph, const Embedding& embedding, const Face& face) {

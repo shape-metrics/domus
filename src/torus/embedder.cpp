@@ -38,8 +38,10 @@ std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
     std::vector<Cycle> cycle_basis = algorithms::compute_cycle_basis(graph);
     for (size_t i = 0; i < cycle_basis.size(); ++i) {
         Cycle& cycle_1 = cycle_basis[i];
+        cycle_1.print();
         for (size_t j = i + 1; j < cycle_basis.size(); ++j) {
             Cycle& cycle_2 = cycle_basis[j];
+            cycle_2.print();
             std::optional<size_t> intersection_node_id =
                 algorithms::do_cycles_intersect(cycle_1, cycle_2);
             if (!intersection_node_id.has_value())

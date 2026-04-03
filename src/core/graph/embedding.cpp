@@ -216,9 +216,8 @@ size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
     return number_of_faces;
 }
 
-std::vector<graph::Path>
-compute_faces_in_embedding(const Graph& graph, const Embedding& embedding) {
-    std::vector<graph::Path> faces;
+std::vector<Path> compute_faces_in_embedding(const Graph& graph, const Embedding& embedding) {
+    std::vector<Path> faces;
     utilities::OrientedEdgesContainer visited_edges(graph);
 
     for (const size_t start_node : embedding.get_nodes_ids()) {
@@ -226,7 +225,7 @@ compute_faces_in_embedding(const Graph& graph, const Embedding& embedding) {
             if (visited_edges.has_edge(start_node, start_edge.neighbor_id, start_edge.id))
                 continue;
 
-            graph::Path current_face;
+            Path current_face;
             size_t u = start_node;
             EdgeIter edge_uv = start_edge;
 
