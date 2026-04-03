@@ -269,7 +269,11 @@ void handle_type_4(
                 node_id_2,
                 embedding.to_string()
             );
-            // TODO add edge and try to split with it
+            const size_t edge_id = graph.add_edge(node_id_1, node_id_2);
+            Path path;
+            path.push_back(graph, node_id_1, edge_id);
+            try_face_splits_with_path(graph, path, emb_cpy, face);
+            graph.remove_edge(edge_id);
         }
     }
 }
