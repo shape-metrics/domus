@@ -28,6 +28,8 @@ class Face {
     FaceType type() const;
     const graph::Path& path() const;
     const std::vector<graph::Path>& repeated_paths() const;
+    std::string to_string() const;
+    void print() const;
 };
 
 FaceType compute_type_of_face(const graph::Path& path);

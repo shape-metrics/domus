@@ -8,5 +8,5 @@ class Embedding;
 namespace domus::torus {
 class Face;
 
-void handle_type_4(const graph::Graph& graph, const graph::Embedding& embedding, const Face& face);
+void handle_type_4(graph::Graph& graph, const graph::Embedding& embedding, const Face& face);
 } // namespace domus::torus

@@ -192,17 +192,24 @@ std::vector<Path> compute_repeated_subpaths_of_face(
     const size_t last_id
 ) {
     std::vector<Path> repeated_paths;
+    if (first_id == last_id) {
+        repeated_paths.push_back(
+            path_from_cycle_incrementing_position(graph, cycle_1, first_id, last_id)
+        );
+        repeated_paths.push_back(
+            path_from_cycle_incrementing_position(graph, cycle_2, first_id, last_id)
+        );
+        return repeated_paths;
+    }
     repeated_paths.push_back(
         path_from_cycle_incrementing_position(graph, cycle_1, first_id, last_id)
     );
     repeated_paths.push_back(
-        path_from_cycle_incrementing_position(graph, cycle_2, first_id, last_id)
+        path_from_cycle_incrementing_position(graph, cycle_1, last_id, first_id)
     );
-    if (first_id == last_id)
-        return repeated_paths;
+    repeated_paths[1].reverse();
 
-    Path other_path = path_from_cycle_incrementing_position(graph, cycle_1, last_id, first_id);
-    other_path.reverse();
+    Path other_path = path_from_cycle_incrementing_position(graph, cycle_2, first_id, last_id);
 
     if (other_path == repeated_paths[0] || other_path == repeated_paths[1]) {
         other_path = path_from_cycle_incrementing_position(graph, cycle_2, last_id, first_id);
