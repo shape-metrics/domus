@@ -6,5 +6,7 @@ class Embedding;
 } // namespace domus::graph
 
 namespace domus::torus {
-void handle_type_4(const graph::Graph& graph, const graph::Embedding& embedding);
+class Face;
+
+void handle_type_4(const graph::Graph& graph, const graph::Embedding& embedding, const Face& face);
 } // namespace domus::torus

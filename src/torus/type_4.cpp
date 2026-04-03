@@ -1,10 +1,12 @@
 #include "domus/torus/type_4.hpp"
 
-// #include "domus/core/domus_debug.hpp"
+#include "domus/core/domus_debug.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/torus/bridge.hpp"
+
+#include "faces.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -69,22 +71,151 @@ auto candidate_face_splitting_paths(const Graph& graph, const Bridge& bridge) {
            });
 }
 
-void handle_type_4(const Graph& graph, const std::vector<Bridge>& bridges) {
+void augment_embedding_with_path(Embedding& embedding, const Path& path) {
+    for (size_t i = 1; i < path.number_of_edges() - 1; ++i) {
+        const size_t node_id_1 = path.node_id_at_position(i);
+        const size_t node_id_2 = path.node_id_at_position(i + 1);
+        const size_t edge_id = path.edge_id_at_position(i);
+        embedding.add_edge(node_id_1, node_id_2, edge_id);
+        embedding.add_edge(node_id_2, node_id_1, edge_id);
+    }
+    const size_t first_node_id = path.get_first_node_id();
+    const size_t second_node_id = path.node_id_at_position(1);
+    const size_t first_edge_id = path.edge_id_at_position(0);
+
+    embedding.add_edge(second_node_id, first_node_id, first_edge_id);
+
+    if (path.number_of_edges() > 1) {
+        const size_t last_node_id = path.get_last_node_id();
+        const size_t second_last_node_id = path.node_id_at_position(path.number_of_edges() - 1);
+        const size_t last_edge_id = path.edge_id_at_position(path.number_of_edges() - 1);
+        embedding.add_edge(second_last_node_id, last_node_id, last_edge_id);
+    }
+}
+
+void remove_augment_of_path_in_embedding(Embedding& embedding, const Path& path) {
+    for (size_t i = 1; i < path.number_of_edges() - 1; ++i) {
+        const size_t node_id_1 = path.node_id_at_position(i);
+        const size_t node_id_2 = path.node_id_at_position(i + 1);
+        const size_t edge_id = path.edge_id_at_position(i);
+        embedding.remove_edge(node_id_1, node_id_2, edge_id);
+        embedding.remove_edge(node_id_2, node_id_1, edge_id);
+    }
+    const size_t first_node_id = path.get_first_node_id();
+    const size_t second_node_id = path.node_id_at_position(1);
+    const size_t first_edge_id = path.edge_id_at_position(0);
+
+    embedding.remove_edge(second_node_id, first_node_id, first_edge_id);
+
+    if (path.number_of_edges() > 1) {
+        const size_t last_node_id = path.get_last_node_id();
+        const size_t second_last_node_id = path.node_id_at_position(path.number_of_edges() - 1);
+        const size_t last_edge_id = path.edge_id_at_position(path.number_of_edges() - 1);
+        embedding.remove_edge(second_last_node_id, last_node_id, last_edge_id);
+    }
+}
+
+bool did_path_split() {
+    // TODO: implement
+    return false;
+}
+
+void try_face_splits_with_path(
+    const Graph& graph, const Path& path, Embedding& embedding, const Face& face
+) {
+    const size_t first_id = path.get_first_node_id();
+    const size_t last_id = path.get_last_node_id();
+
+    const size_t n_edges = path.number_of_edges();
+    DOMUS_ASSERT(n_edges > 0, "try_face_splits_with_path: empty path");
+
+    DOMUS_ASSERT(
+        embedding.get_degree_of_node(first_id) > 1,
+        "try_face_splits: first node degree <= 1"
+    );
+    DOMUS_ASSERT(
+        embedding.get_degree_of_node(last_id) > 1,
+        "try_face_splits: last node degree <= 1"
+    );
+
+    std::vector<EdgeIter> first_edges;
+    for (const EdgeIter e : embedding.get_edges(first_id))
+        first_edges.push_back(e);
+
+    std::vector<EdgeIter> last_edges;
+    for (const EdgeIter e : embedding.get_edges(last_id))
+        last_edges.push_back(e);
+
+    if (n_edges == 1) {
+        const size_t edge_id = path.edge_id_at_position(0);
+        for (const EdgeIter edge1 : first_edges) {
+            for (const EdgeIter edge2 : last_edges) {
+                embedding.add_edge_after(first_id, last_id, edge_id, edge1.id);
+                embedding.add_edge_after(last_id, first_id, edge_id, edge2.id);
+
+                if (!did_path_split()) {
+                    embedding.remove_edge(first_id, last_id, edge_id);
+                    embedding.remove_edge(last_id, first_id, edge_id);
+                    continue;
+                }
+
+                // TODO: go on with type 3
+                embedding.remove_edge(first_id, last_id, edge_id);
+                embedding.remove_edge(last_id, first_id, edge_id);
+            }
+        }
+        return;
+    }
+
+    augment_embedding_with_path(embedding, path);
+
+    const size_t second_id = path.node_id_at_position(1);
+    const size_t second_last_id = path.node_id_at_position(n_edges - 1);
+    const size_t first_edge_id = path.edge_id_at_position(0);
+    const size_t last_edge_id = path.edge_id_at_position(n_edges - 1);
+
+    for (const EdgeIter edge1 : first_edges) {
+        for (const EdgeIter edge2 : last_edges) {
+            embedding.add_edge_after(first_id, second_id, first_edge_id, edge1.id);
+            embedding.add_edge_after(last_id, second_last_id, last_edge_id, edge2.id);
+            if (!did_path_split()) {
+                embedding.remove_edge(first_id, second_id, first_edge_id);
+                embedding.remove_edge(last_id, second_last_id, last_edge_id);
+                continue;
+            }
+
+            // TODO: go on with type 3
+            embedding.remove_edge(first_id, second_id, first_edge_id);
+            embedding.remove_edge(last_id, second_last_id, last_edge_id);
+        }
+    }
+
+    remove_augment_of_path_in_embedding(embedding, path);
+}
+
+void handle_type_4(
+    const Graph& graph,
+    const std::vector<Bridge>& bridges,
+    const Embedding& embedding,
+    const Face& face
+) {
+    Embedding emb_cpy = embedding;
     for (const Bridge& bridge : bridges) {
         bridge.print();
         if (bridge.get_bridge().get_number_of_nodes() == 2) {
             const Path path = path_of_chord(graph, bridge);
-            path.print();
+            try_face_splits_with_path(graph, path, emb_cpy, face);
         } else {
             auto paths = candidate_face_splitting_paths(graph, bridge);
-            for (const Path& path : paths)
-                path.print();
+            for (const Path& path : paths) {
+                try_face_splits_with_path(graph, path, emb_cpy, face);
+            }
         }
     }
 }
 
-void handle_type_4(const Graph& graph, const Embedding& embedding) {
-    handle_type_4(graph, Bridge::compute(graph, embedding));
+void handle_type_4(const Graph& graph, const Embedding& embedding, const Face& face) {
+    handle_type_4(graph, Bridge::compute(graph, embedding), embedding, face);
 }
 
 } // namespace domus::torus

@@ -15,14 +15,14 @@
 namespace domus::torus {
 using namespace domus::graph;
 
-std::optional<graph::Embedding> compute_toroidal_embedding(
+std::optional<Embedding> compute_toroidal_embedding(
     const Graph& graph, const Cycle& cycle_1, Cycle& cycle_2, const size_t intersection_node_id
 ) {
     auto [embedding, face] =
         compute_embedding_of_two_cycles(graph, cycle_1, cycle_2, intersection_node_id);
 
     if (face.type() == FaceType::TYPE_4) {
-        handle_type_4(graph, embedding);
+        handle_type_4(graph, embedding, face);
     } else {
         DOMUS_ASSERT(
             face.type() == FaceType::TYPE_3,
@@ -34,8 +34,8 @@ std::optional<graph::Embedding> compute_toroidal_embedding(
     return std::nullopt;
 }
 
-std::optional<graph::Embedding> compute_toroidal_embedding(const Graph& graph) {
-    auto cycle_basis = algorithms::compute_cycle_basis(graph);
+std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
+    std::vector<Cycle> cycle_basis = algorithms::compute_cycle_basis(graph);
     for (size_t i = 0; i < cycle_basis.size(); ++i) {
         Cycle& cycle_1 = cycle_basis[i];
         for (size_t j = i + 1; j < cycle_basis.size(); ++j) {
@@ -44,9 +44,9 @@ std::optional<graph::Embedding> compute_toroidal_embedding(const Graph& graph) {
                 algorithms::do_cycles_intersect(cycle_1, cycle_2);
             if (!intersection_node_id.has_value())
                 continue;
-            auto embedding =
+            std::optional<Embedding> embedding =
                 compute_toroidal_embedding(graph, cycle_1, cycle_2, *intersection_node_id);
-            if (embedding)
+            if (embedding.has_value())
                 return embedding;
         }
     }
