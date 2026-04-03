@@ -62,12 +62,12 @@ void toroidal_test(const graph::Graph& graph) {
 }
 
 int main() {
-    // std::string input_graph_filename = "graph.txt";
-    // const auto graph = loader::load_graph_from_txt_file(input_graph_filename);
-    // if (!graph) {
-    //     println("{}", graph.error());
-    //     return 1;
-    // }
+    std::string input_graph_filename = "graph.txt";
+    const auto graph = loader::load_graph_from_txt_file(input_graph_filename);
+    if (!graph) {
+        println("{}", graph.error());
+        return 1;
+    }
     // graph->print(true);
     // std::println("{}", generators::code_to_generate_graph(*graph));
     // return 0;
