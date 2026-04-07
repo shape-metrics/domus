@@ -9,7 +9,6 @@
 #include "domus/core/color.hpp"
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/graph.hpp"
-#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/drawing/linear_scale.hpp"
 #include "domus/drawing/polygon.hpp"
 #include "domus/drawing/svg_drawer.hpp"

@@ -9,8 +9,7 @@
 
 #include "embed_two_cycles.hpp"
 #include "faces.hpp"
-
-#include "domus/torus/type_4.hpp"
+#include "type_4.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;

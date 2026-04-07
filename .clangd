@@ -1,0 +1,8 @@
+If:
+  PathMatch: (src/nlohmann/.*|src/sat/glucose/.*|src/sat/kissat/.*)
+
+Index:
+  Background: Skip
+
+Diagnostics:
+  Suppress: '*'
