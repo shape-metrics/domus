@@ -8,6 +8,7 @@
 #include "domus/torus/bridge.hpp"
 
 #include "faces.hpp"
+#include "type_3.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -220,7 +221,7 @@ FaceType next_case_type(const Path& path, const Face& old_face, const std::vecto
 }
 
 void try_face_splits_with_path(
-    const Graph& graph, const Path& path, Embedding& embedding, const Face& face
+    Graph& graph, const Path& path, Embedding& embedding, const Face& face
 ) {
     const size_t first_id = path.get_first_node_id();
     const size_t last_id = path.get_last_node_id();
@@ -270,7 +271,19 @@ void try_face_splits_with_path(
 
             FaceType type = next_case_type(path, face, faces);
 
-            // TODO go on with next case
+            switch (type) {
+            case FaceType::TYPE_3:
+                handle_type_3(graph, embedding, faces);
+                break;
+            case FaceType::TYPE_2:
+                // TODO
+                break;
+            case FaceType::TYPE_1:
+                // TODO
+                break;
+            default:
+                DOMUS_ASSERT(false, "try_face_splits_with_path: error with resulting face type");
+            }
 
             embedding.remove_edge(first_id, second_id, first_edge_id);
             embedding.remove_edge(last_id, second_last_id, last_edge_id);

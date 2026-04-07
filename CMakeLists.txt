@@ -104,6 +104,7 @@ set(COMMON_SRCS
     src/torus/embed_two_cycles.cpp
     src/torus/bridge.cpp
     src/torus/type_4.cpp
+    src/torus/type_3.cpp
     src/torus/faces.cpp
     src/core/graph/test.cpp
 )
