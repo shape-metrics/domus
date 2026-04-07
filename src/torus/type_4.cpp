@@ -269,19 +269,17 @@ void try_face_splits_with_path(
 
             auto [type_1, type_2] = next_case_type(path, face, faces[0], faces[1]);
 
-            if (type_1 == FaceType::TYPE_3 || type_2 == FaceType::TYPE_3)
+            if (type_1 == FaceType::TYPE_3 || type_2 == FaceType::TYPE_3) {
                 handle_type_3(graph, embedding, faces[0], faces[1], type_1, type_2);
-
-            if (type_1 == FaceType::TYPE_2 || type_2 == FaceType::TYPE_2) {
+            } else if (type_1 == FaceType::TYPE_2 || type_2 == FaceType::TYPE_2) {
+                // TODO
+            } else {
+                DOMUS_ASSERT(
+                    (type_1 == FaceType::TYPE_1 && type_2 == FaceType::TYPE_1),
+                    "try_face_splits_with_path: outcome of faces types is invalid"
+                );
                 // TODO
             }
-
-            DOMUS_ASSERT(
-                (type_1 == FaceType::TYPE_1 && type_2 == FaceType::TYPE_1),
-                "try_face_splits_with_path: outcome of faces types is invalid"
-            );
-
-            // TODO both type 1
 
             embedding.remove_edge(first_id, second_id, first_edge_id);
             embedding.remove_edge(last_id, second_last_id, last_edge_id);

@@ -17,7 +17,10 @@ void handle_type_3(
     Graph& graph,
     const std::vector<Bridge>& bridges,
     Embedding& embedding,
-    const std::vector<Path>& faces
+    const graph::Path& face_1,
+    const graph::Path& face_2,
+    const FaceType face_1_type,
+    const FaceType face_2_type
 ) {
 
     // NodesLabels<size_t> face_nodes_pos_matrix(embedding);
@@ -94,10 +97,23 @@ void handle_type_3(
     // }
 }
 
-void handle_type_3(Graph& graph, Embedding& embedding, const std::vector<Path>& faces) {
-    // establish which of the two faces is of type 3
-
-    handle_type_3(graph, Bridge::compute(graph, embedding), embedding, faces);
+void handle_type_3(
+    graph::Graph& graph,
+    graph::Embedding& embedding,
+    const graph::Path& face_1,
+    const graph::Path& face_2,
+    const FaceType face_1_type,
+    const FaceType face_2_type
+) {
+    handle_type_3(
+        graph,
+        Bridge::compute(graph, embedding),
+        embedding,
+        face_1,
+        face_2,
+        face_1_type,
+        face_2_type
+    );
 }
 
 } // namespace domus::torus
