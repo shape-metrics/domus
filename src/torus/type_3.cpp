@@ -22,7 +22,6 @@ void handle_type_3(
     const FaceType face_1_type,
     const FaceType face_2_type
 ) {
-
     // NodesLabels<size_t> face_nodes_pos_matrix(embedding);
     // std::vector<size_t> face_nodes;
     // for (const size_t node_id : embedding.get_nodes_ids())

@@ -26,7 +26,7 @@ std::optional<Embedding> compute_toroidal_embedding(
             face.type() == FaceType::TYPE_3,
             "compute_toroidal_embedding: expected TYPE_3 face"
         );
-        // TODO: handle type 3
+        // TODO: handle starting type 3
     }
 
     return std::nullopt;

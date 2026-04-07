@@ -148,7 +148,7 @@ bool did_path_split(
 // - a type 2 face and a type 1 face
 // - two type 1 faces (easy to detect)
 std::pair<FaceType, FaceType>
-next_case_type(const Path& path, const Face& old_face, const Path& face_1, const Path& face_2) {
+compute_face_types(const Path& path, const Face& old_face, const Path& face_1, const Path& face_2) {
     const size_t first_node_id = path.get_first_node_id();
     const size_t last_node_id = path.get_last_node_id();
 
@@ -267,7 +267,7 @@ void try_face_splits_with_path(
                 continue;
             }
 
-            auto [type_1, type_2] = next_case_type(path, face, faces[0], faces[1]);
+            auto [type_1, type_2] = compute_face_types(path, face, faces[0], faces[1]);
 
             if (type_1 == FaceType::TYPE_3 || type_2 == FaceType::TYPE_3) {
                 handle_type_3(graph, embedding, faces[0], faces[1], type_1, type_2);
