@@ -34,4 +34,6 @@ class Face {
 
 FaceType compute_type_of_face(const graph::Path& path);
 
+size_t node_id_count_in_path(const graph::Path& path, size_t node_id);
+
 } // namespace domus::torus

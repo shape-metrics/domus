@@ -62,7 +62,12 @@ std::string Face::to_string() const {
 
 void Face::print() const { std::print("{}", to_string()); }
 
-// TODO
-// FaceType compute_type_of_face(const Path& path) {}
+size_t node_id_count_in_path(const graph::Path& path, const size_t node_id) {
+    size_t count = 0;
+    for (size_t i = 0; i < path.number_of_edges(); ++i)
+        if (path.node_id_at_position(i) == node_id)
+            count++;
+    return count;
+}
 
 } // namespace domus::torus

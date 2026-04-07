@@ -116,7 +116,9 @@ void remove_augment_of_path_in_embedding(Embedding& embedding, const Path& path)
     }
 }
 
-bool did_path_split(const Face& initial_face, const Path& path, const std::vector<Path>& faces) {
+bool did_path_split(
+    const Face& initial_face, const Path& path, const Path& face_1, const Path& face_2
+) {
     const size_t first_of_path = path.get_first_node_id();
     const size_t last_of_path = path.get_last_node_id();
 
@@ -127,19 +129,16 @@ bool did_path_split(const Face& initial_face, const Path& path, const std::vecto
         (first_of_path == last_repeated_id && last_of_path == first_repeated_id))
         return true;
 
-    for (const Path& face : faces) {
-        size_t first_count = 0;
-        size_t last_count = 0;
-        for (size_t i = 0; i < face.number_of_edges(); ++i) {
-            const size_t node_id = face.node_id_at_position(i);
-            if (first_repeated_id == node_id)
-                first_count++;
-            if (last_repeated_id == node_id)
-                last_count++;
-        }
-        if (first_count == 3 && last_count == 3)
-            return false;
-    }
+    const size_t first_count_1 = node_id_count_in_path(face_1, first_repeated_id);
+    const size_t last_count_1 = node_id_count_in_path(face_1, last_repeated_id);
+    if (first_count_1 == 3 && last_count_1 == 3)
+        return false;
+
+    const size_t first_count_2 = node_id_count_in_path(face_2, first_repeated_id);
+    const size_t last_count_2 = node_id_count_in_path(face_2, last_repeated_id);
+    if (first_count_2 == 3 && last_count_2 == 3)
+        return false;
+
     return true;
 }
 
@@ -148,12 +147,19 @@ bool did_path_split(const Face& initial_face, const Path& path, const std::vecto
 // - two type 2 faces
 // - a type 2 face and a type 1 face
 // - two type 1 faces (easy to detect)
-FaceType next_case_type(const Path& path, const Face& old_face, const std::vector<Path>& faces) {
+std::pair<FaceType, FaceType>
+next_case_type(const Path& path, const Face& old_face, const Path& face_1, const Path& face_2) {
     const size_t first_node_id = path.get_first_node_id();
     const size_t last_node_id = path.get_last_node_id();
 
     const size_t first_repeated_node_id = old_face.repeated_paths()[0].get_first_node_id();
     const size_t last_repeated_node_id = old_face.repeated_paths()[0].get_last_node_id();
+
+    const size_t first_count_1 = node_id_count_in_path(face_1, first_repeated_node_id);
+    const size_t last_count_1 = node_id_count_in_path(face_1, last_repeated_node_id);
+
+    const size_t first_count_2 = node_id_count_in_path(face_2, first_repeated_node_id);
+    const size_t last_count_2 = node_id_count_in_path(face_2, last_repeated_node_id);
 
     // both endpoints of splitting path coincide with endpoints of repeating paths
     if ((first_repeated_node_id == first_node_id && last_repeated_node_id == last_node_id) ||
@@ -161,63 +167,55 @@ FaceType next_case_type(const Path& path, const Face& old_face, const std::vecto
         // then result can either be:
         // - a type 3 face and a type 1 face (2 vertices repeated 3 times in one face)
         // - two type 1 faces (2 vertices repeated 2 times in both faces)
-        for (const Path& face : faces) {
-            size_t first_count = 0;
-            size_t last_count = 0;
-            for (size_t i = 0; i < face.number_of_edges(); ++i) {
-                const size_t node_id = face.node_id_at_position(i);
-                if (first_repeated_node_id == node_id)
-                    first_count++;
-                if (last_repeated_node_id == node_id)
-                    last_count++;
-            }
-            if (first_count == 3 && last_count == 3)
-                return FaceType::TYPE_3;
-        }
-        return FaceType::TYPE_1;
+
+        if (first_count_1 == 3 && last_count_1 == 3)
+            return std::make_pair(FaceType::TYPE_3, FaceType::TYPE_1);
+
+        if (first_count_2 == 3 && last_count_2 == 3)
+            return std::make_pair(FaceType::TYPE_1, FaceType::TYPE_3);
+
+        return {FaceType::TYPE_1, FaceType::TYPE_1};
     }
     // only one endpoint of splittingh path coincide with endpoints of repeating paths
     if (first_node_id == first_repeated_node_id || first_node_id == last_repeated_node_id ||
         last_node_id == last_repeated_node_id || last_node_id == first_repeated_node_id) {
         // if path is a "loop" one face is type 1 and the other is type 2
-        if (first_node_id == last_node_id)
-            return FaceType::TYPE_2;
+        if (first_node_id == last_node_id) {
+            if (first_count_1 == 1 && last_count_1 == 1)
+                return std::make_pair(FaceType::TYPE_1, FaceType::TYPE_2);
+
+            if (first_count_2 == 1 && last_count_2 == 1)
+                return std::make_pair(FaceType::TYPE_2, FaceType::TYPE_1);
+
+            DOMUS_ASSERT(false, "next_case_type: should have not ended up here");
+        }
         // otherwise result can either be:
         // - a type 3 face and a type 1 face (one vertex repeated 3 times in one face)
         // - a type 2 face and a type 1 face (no vertex repeated 3 times in any face)
-        for (const Path& face : faces) {
-            size_t first_count = 0;
-            size_t last_count = 0;
-            for (size_t i = 0; i < face.number_of_edges(); ++i) {
-                const size_t node_id = face.node_id_at_position(i);
-                if (first_repeated_node_id == node_id)
-                    first_count++;
-                if (last_repeated_node_id == node_id)
-                    last_count++;
-            }
-            if (first_count == 3 || last_count == 3)
-                return FaceType::TYPE_3;
-        }
-        return FaceType::TYPE_2;
+        if (first_count_1 == 3 || last_count_1 == 3)
+            return std::make_pair(FaceType::TYPE_3, FaceType::TYPE_1);
+        if (first_count_2 == 3 || last_count_2 == 3)
+            return std::make_pair(FaceType::TYPE_1, FaceType::TYPE_3);
+
+        if (first_count_1 == 2 || last_count_1 == 2)
+            return std::make_pair(FaceType::TYPE_2, FaceType::TYPE_1);
+        if (first_count_2 == 2 || last_count_2 == 2)
+            return std::make_pair(FaceType::TYPE_1, FaceType::TYPE_2);
+
+        DOMUS_ASSERT(false, "next_case_type: should have not ended up here");
     }
     // no endpoint of splittingh path coincide with endpoints of repeating paths
     // then result can either be:
-    // - a type 3 face and a type 1 face (only one face contain repeated vertices)
+    // - a type 3 face and a type 1 face (one face does not contain repeated vertices)
     // - two type 2 faces (both faces contain repeated vertices)
-    for (const Path& face : faces) {
-        size_t first_count = 0;
-        size_t last_count = 0;
-        for (size_t i = 0; i < face.number_of_edges(); ++i) {
-            const size_t node_id = face.node_id_at_position(i);
-            if (first_repeated_node_id == node_id)
-                first_count++;
-            if (last_repeated_node_id == node_id)
-                last_count++;
-        }
-        if (first_count == 1 && last_count == 1) // face is type 1 (other one is type 3)
-            return FaceType::TYPE_3;
-    }
-    return FaceType::TYPE_2;
+
+    if (first_count_1 == 1 && last_count_1 == 1)
+        return std::make_pair(FaceType::TYPE_1, FaceType::TYPE_3);
+
+    if (first_count_2 == 1 && last_count_2 == 1)
+        return std::make_pair(FaceType::TYPE_3, FaceType::TYPE_1);
+
+    return {FaceType::TYPE_2, FaceType::TYPE_2};
 }
 
 void try_face_splits_with_path(
@@ -263,27 +261,27 @@ void try_face_splits_with_path(
                 "did_path_split: embedding should have exactly 2 faces"
             );
 
-            if (!did_path_split(face, path, faces)) {
+            if (!did_path_split(face, path, faces[0], faces[1])) {
                 embedding.remove_edge(first_id, second_id, first_edge_id);
                 embedding.remove_edge(last_id, second_last_id, last_edge_id);
                 continue;
             }
 
-            FaceType type = next_case_type(path, face, faces);
+            auto [type_1, type_2] = next_case_type(path, face, faces[0], faces[1]);
 
-            switch (type) {
-            case FaceType::TYPE_3:
-                handle_type_3(graph, embedding, faces);
-                break;
-            case FaceType::TYPE_2:
+            if (type_1 == FaceType::TYPE_3 || type_2 == FaceType::TYPE_3)
+                handle_type_3(graph, embedding, faces[0], faces[1], type_1, type_2);
+
+            if (type_1 == FaceType::TYPE_2 || type_2 == FaceType::TYPE_2) {
                 // TODO
-                break;
-            case FaceType::TYPE_1:
-                // TODO
-                break;
-            default:
-                DOMUS_ASSERT(false, "try_face_splits_with_path: error with resulting face type");
             }
+
+            DOMUS_ASSERT(
+                (type_1 == FaceType::TYPE_1 && type_2 == FaceType::TYPE_1),
+                "try_face_splits_with_path: outcome of faces types is invalid"
+            );
+
+            // TODO both type 1
 
             embedding.remove_edge(first_id, second_id, first_edge_id);
             embedding.remove_edge(last_id, second_last_id, last_edge_id);

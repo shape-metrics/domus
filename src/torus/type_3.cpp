@@ -16,10 +16,9 @@ using graph::utilities::NodesLabels;
 void handle_type_3(
     Graph& graph,
     const std::vector<Bridge>& bridges,
-    const Embedding& embedding,
-    const std::vector<Path>&
+    Embedding& embedding,
+    const std::vector<Path>& faces
 ) {
-    // Embedding emb_cpy = embedding;
 
     // NodesLabels<size_t> face_nodes_pos_matrix(embedding);
     // std::vector<size_t> face_nodes;
@@ -96,6 +95,8 @@ void handle_type_3(
 }
 
 void handle_type_3(Graph& graph, Embedding& embedding, const std::vector<Path>& faces) {
+    // establish which of the two faces is of type 3
+
     handle_type_3(graph, Bridge::compute(graph, embedding), embedding, faces);
 }
 
