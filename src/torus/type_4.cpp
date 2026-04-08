@@ -8,6 +8,7 @@
 #include "domus/torus/bridge.hpp"
 
 #include "faces.hpp"
+#include "next_type_establisher.hpp"
 #include "type_3.hpp"
 
 namespace domus::torus {
@@ -119,6 +120,7 @@ void remove_augment_of_path_in_embedding(Embedding& embedding, const Path& path)
 bool did_path_split(
     const Face& initial_face, const Path& path, const Path& face_1, const Path& face_2
 ) {
+    std::println("did_path_split");
     const size_t first_of_path = path.get_first_node_id();
     const size_t last_of_path = path.get_last_node_id();
 
@@ -128,6 +130,8 @@ bool did_path_split(
     if ((first_of_path == first_repeated_id && last_of_path == last_repeated_id) ||
         (first_of_path == last_repeated_id && last_of_path == first_repeated_id))
         return true;
+
+    std::println("gne");
 
     const size_t first_count_1 = node_id_count_in_path(face_1, first_repeated_id);
     const size_t last_count_1 = node_id_count_in_path(face_1, last_repeated_id);
@@ -140,82 +144,6 @@ bool did_path_split(
         return false;
 
     return true;
-}
-
-// at this point we could end up with either:
-// - a type 3 face and a type 1 face
-// - two type 2 faces
-// - a type 2 face and a type 1 face
-// - two type 1 faces (easy to detect)
-std::pair<FaceType, FaceType>
-compute_face_types(const Path& path, const Face& old_face, const Path& face_1, const Path& face_2) {
-    const size_t first_node_id = path.get_first_node_id();
-    const size_t last_node_id = path.get_last_node_id();
-
-    const size_t first_repeated_node_id = old_face.repeated_paths()[0].get_first_node_id();
-    const size_t last_repeated_node_id = old_face.repeated_paths()[0].get_last_node_id();
-
-    const size_t first_count_1 = node_id_count_in_path(face_1, first_repeated_node_id);
-    const size_t last_count_1 = node_id_count_in_path(face_1, last_repeated_node_id);
-
-    const size_t first_count_2 = node_id_count_in_path(face_2, first_repeated_node_id);
-    const size_t last_count_2 = node_id_count_in_path(face_2, last_repeated_node_id);
-
-    // both endpoints of splitting path coincide with endpoints of repeating paths
-    if ((first_repeated_node_id == first_node_id && last_repeated_node_id == last_node_id) ||
-        (first_repeated_node_id == last_node_id && last_repeated_node_id == first_node_id)) {
-        // then result can either be:
-        // - a type 3 face and a type 1 face (2 vertices repeated 3 times in one face)
-        // - two type 1 faces (2 vertices repeated 2 times in both faces)
-
-        if (first_count_1 == 3 && last_count_1 == 3)
-            return std::make_pair(FaceType::TYPE_3, FaceType::TYPE_1);
-
-        if (first_count_2 == 3 && last_count_2 == 3)
-            return std::make_pair(FaceType::TYPE_1, FaceType::TYPE_3);
-
-        return {FaceType::TYPE_1, FaceType::TYPE_1};
-    }
-    // only one endpoint of splittingh path coincide with endpoints of repeating paths
-    if (first_node_id == first_repeated_node_id || first_node_id == last_repeated_node_id ||
-        last_node_id == last_repeated_node_id || last_node_id == first_repeated_node_id) {
-        // if path is a "loop" one face is type 1 and the other is type 2
-        if (first_node_id == last_node_id) {
-            if (first_count_1 == 1 && last_count_1 == 1)
-                return std::make_pair(FaceType::TYPE_1, FaceType::TYPE_2);
-
-            if (first_count_2 == 1 && last_count_2 == 1)
-                return std::make_pair(FaceType::TYPE_2, FaceType::TYPE_1);
-
-            DOMUS_ASSERT(false, "next_case_type: should have not ended up here");
-        }
-        // otherwise result can either be:
-        // - a type 3 face and a type 1 face (one vertex repeated 3 times in one face)
-        // - a type 2 face and a type 1 face (no vertex repeated 3 times in any face)
-        if (first_count_1 == 3 || last_count_1 == 3)
-            return std::make_pair(FaceType::TYPE_3, FaceType::TYPE_1);
-        if (first_count_2 == 3 || last_count_2 == 3)
-            return std::make_pair(FaceType::TYPE_1, FaceType::TYPE_3);
-
-        if (first_count_1 == 2 || last_count_1 == 2)
-            return std::make_pair(FaceType::TYPE_2, FaceType::TYPE_1);
-        if (first_count_2 == 2 || last_count_2 == 2)
-            return std::make_pair(FaceType::TYPE_1, FaceType::TYPE_2);
-
-        DOMUS_ASSERT(false, "next_case_type: should have not ended up here");
-    }
-    // no endpoint of splittingh path coincide with endpoints of repeating paths
-    // then result can either be:
-    // - a type 3 face and a type 1 face (one face does not contain repeated vertices)
-    // - two type 2 faces (both faces contain repeated vertices)
-
-    if (first_count_1 == 1 && last_count_1 == 1)
-        return std::make_pair(FaceType::TYPE_1, FaceType::TYPE_3);
-
-    if (first_count_2 == 1 && last_count_2 == 1)
-        return std::make_pair(FaceType::TYPE_3, FaceType::TYPE_1);
-
-    return {FaceType::TYPE_2, FaceType::TYPE_2};
 }
 
 void try_face_splits_with_path(
@@ -267,15 +195,16 @@ void try_face_splits_with_path(
                 continue;
             }
 
-            auto [type_1, type_2] = compute_face_types(path, face, faces[0], faces[1]);
+            auto [face_1, face_2] =
+                NextTypesEstablisher::compute_face_types(graph, path, face, faces[0], faces[1]);
 
-            if (type_1 == FaceType::TYPE_3 || type_2 == FaceType::TYPE_3) {
-                handle_type_3(graph, embedding, faces[0], faces[1], type_1, type_2);
-            } else if (type_1 == FaceType::TYPE_2 || type_2 == FaceType::TYPE_2) {
+            if (face_1.type() == FaceType::TYPE_3 || face_2.type() == FaceType::TYPE_3) {
+                handle_type_3(graph, embedding, face_1, face_2);
+            } else if (face_1.type() == FaceType::TYPE_2 || face_2.type() == FaceType::TYPE_2) {
                 // TODO
             } else {
                 DOMUS_ASSERT(
-                    (type_1 == FaceType::TYPE_1 && type_2 == FaceType::TYPE_1),
+                    (face_1.type() == FaceType::TYPE_1 && face_2.type() == FaceType::TYPE_1),
                     "try_face_splits_with_path: outcome of faces types is invalid"
                 );
                 // TODO

@@ -97,22 +97,7 @@ void handle_type_3(
 }
 
 void handle_type_3(
-    graph::Graph& graph,
-    graph::Embedding& embedding,
-    const graph::Path& face_1,
-    const graph::Path& face_2,
-    const FaceType face_1_type,
-    const FaceType face_2_type
-) {
-    handle_type_3(
-        graph,
-        Bridge::compute(graph, embedding),
-        embedding,
-        face_1,
-        face_2,
-        face_1_type,
-        face_2_type
-    );
-}
+    graph::Graph& graph, graph::Embedding& embedding, const Face& face_1, const Face& face_2
+) {}
 
 } // namespace domus::torus

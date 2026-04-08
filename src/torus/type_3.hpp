@@ -9,15 +9,9 @@ class Path;
 namespace domus::torus {
 
 class Face;
-enum class FaceType;
 
 void handle_type_3(
-    graph::Graph& graph,
-    graph::Embedding& embedding,
-    const graph::Path& face_1,
-    const graph::Path& face_2,
-    FaceType face_1_type,
-    FaceType face_2_type
+    graph::Graph& graph, graph::Embedding& embedding, const Face& face_1, const Face& face_2
 );
 
 } // namespace domus::torus

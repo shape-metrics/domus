@@ -13,6 +13,20 @@ size_t Path::get_first_node_id() const { return m_nodes_ids[0]; }
 
 size_t Path::get_last_node_id() const { return m_last_node_id.value(); }
 
+size_t Path::get_first_edge_id() const { return m_edges_ids[0]; }
+
+size_t Path::get_last_edge_id() const { return m_edges_ids[number_of_edges() - 1]; }
+
+bool Path::contains_node_id(size_t node_id) const {
+    if (get_last_node_id() == node_id)
+        return true;
+    return (std::ranges::find(m_nodes_ids, node_id) != m_nodes_ids.end());
+}
+
+bool Path::contains_edge_id(size_t edge_id) const {
+    return (std::ranges::find(m_edges_ids, edge_id) != m_edges_ids.end());
+}
+
 void Path::push_front(const Graph& graph, size_t next_node_id, size_t edge_id) {
     DOMUS_ASSERT(graph.has_node(next_node_id), "Path::insert: node does not exist");
     DOMUS_ASSERT(graph.has_edge_id(edge_id), "Path::insert: edge does not exist");

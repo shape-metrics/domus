@@ -17,10 +17,17 @@ class Path {
   public:
     size_t get_first_node_id() const;
     size_t get_last_node_id() const;
+
+    size_t get_first_edge_id() const;
+    size_t get_last_edge_id() const;
+
     size_t number_of_edges() const;
 
     size_t node_id_at_position(size_t position) const;
     size_t edge_id_at_position(size_t position) const;
+
+    bool contains_node_id(size_t node_id) const;
+    bool contains_edge_id(size_t edge_id) const;
 
     void push_front(const Graph& graph, size_t next_node_id, size_t edge_id);
     void push_back(const Graph& graph, size_t prev_node_id, size_t edge_id);

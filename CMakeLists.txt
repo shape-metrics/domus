@@ -106,6 +106,7 @@ set(COMMON_SRCS
     src/torus/type_4.cpp
     src/torus/type_3.cpp
     src/torus/faces.cpp
+    src/torus/next_type_establisher.cpp
     src/core/graph/test.cpp
 )
 
