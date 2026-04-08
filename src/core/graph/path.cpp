@@ -72,6 +72,12 @@ void Path::reverse() {
 
 size_t Path::number_of_edges() const { return m_nodes_ids.size(); }
 
+size_t Path::number_of_nodes() const {
+    if (number_of_edges() == 0)
+        return 0;
+    return number_of_edges() + 1;
+}
+
 size_t Path::node_id_at_position(size_t position) const {
     DOMUS_ASSERT(position <= number_of_edges(), "Path::node_id_at_position: out of range");
     if (position == number_of_edges())

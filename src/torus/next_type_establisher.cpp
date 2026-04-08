@@ -3,7 +3,6 @@
 #include "domus/core/domus_debug.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/path.hpp"
-#include <print>
 
 namespace domus::torus {
 using graph::Graph;
@@ -112,29 +111,19 @@ Path NextTypesEstablisher::repeated_path_one_common_endpoint_loop(const Path& ty
         if (old_repeated_path.get_first_edge_id() == edge_id[0] ||
             old_repeated_path.get_last_edge_id() == edge_id[0])
             continue;
-        if (old_repeated_path.get_first_edge_id() == edge_id[0] ||
-            old_repeated_path.get_last_edge_id() == edge_id[0])
+        if (old_repeated_path.get_first_edge_id() == edge_id[1] ||
+            old_repeated_path.get_last_edge_id() == edge_id[1])
             continue;
         repeated_paths.push_back(old_repeated_path);
     }
     DOMUS_ASSERT(
         repeated_paths.size() == 1,
-        "repeated_paths_both_common_endpoints: should have obtained 2 repeated paths"
+        "repeated_path_one_common_endpoint_loop: should have obtained 1 repeated path"
     );
     return repeated_paths[0];
 }
 
 std::vector<Path> NextTypesEstablisher::repeated_paths_double_cylinder() {
-    std::println("repeated_paths_double_cylinder");
-    std::println("old face");
-    m_old_type_4_face.print();
-    std::println("splitting path");
-    m_splitting_path.print();
-    std::println("new face 1");
-    m_face_1.print();
-    std::println("new face 2");
-    m_face_2.print();
-
     const size_t first_id = m_splitting_path.get_first_node_id();
     const size_t last_id = m_splitting_path.get_last_node_id();
 
@@ -178,6 +167,8 @@ std::vector<Path> NextTypesEstablisher::repeated_paths_double_cylinder() {
             } else
                 current = &paths[1];
         }
+
+        return paths;
     }
     DOMUS_ASSERT(false, "repeated_path_double_cylinder: did not find new repeated path");
     return {};
@@ -213,27 +204,19 @@ Path NextTypesEstablisher::repeated_path_one_common_endpoint_no_loop_type_2(
     const size_t first_id = m_splitting_path.get_first_node_id();
     const size_t last_id = m_splitting_path.get_last_node_id();
 
-    std::optional<size_t> in_between_of_repeated_path;
-    std::optional<const Path*> repeated_path;
-
-    for (const Path& rep_path : m_old_type_4_face.repeated_paths()) {
-        if (in_between_of_repeated_path.has_value())
-            break;
+    for (const Path& rep_path : m_old_type_4_face.repeated_paths())
         for (size_t i = 1; i < rep_path.number_of_edges(); i++) {
             const size_t node_id = rep_path.node_id_at_position(i);
-            if (first_id == node_id || last_id == node_id) {
-                in_between_of_repeated_path = node_id;
-                repeated_path = &rep_path;
-                break;
-            }
+            if (first_id == node_id || last_id == node_id)
+                return repeated_sub_path(type_1_face, rep_path, node_id);
         }
-    }
+
     DOMUS_ASSERT(
-        repeated_path.has_value(),
+        false,
         "repeated_paths_one_common_endpoint_no_loop_type_2: did not find in between node"
     );
 
-    return repeated_sub_path(type_1_face, *repeated_path.value(), *in_between_of_repeated_path);
+    return {};
 }
 
 std::vector<Path>
@@ -244,29 +227,18 @@ NextTypesEstablisher::repeated_paths_one_common_endpoint_no_loop_type_3(const Pa
     const size_t first_id = m_splitting_path.get_first_node_id();
     const size_t last_id = m_splitting_path.get_last_node_id();
 
-    std::optional<size_t> in_between_of_repeated_path;
-    std::optional<const Path*> old_repeated_path;
-
-    for (const Path& rep_path : m_old_type_4_face.repeated_paths()) {
-        if (in_between_of_repeated_path.has_value())
-            break;
+    for (const Path& rep_path : m_old_type_4_face.repeated_paths())
         for (size_t i = 1; i < rep_path.number_of_edges(); i++) {
             const size_t node_id = rep_path.node_id_at_position(i);
             if (first_id == node_id || last_id == node_id) {
-                in_between_of_repeated_path = node_id;
-                old_repeated_path = &rep_path;
+                repeated_paths.push_back(repeated_sub_path(type_1_face, rep_path, node_id));
                 break;
             }
         }
-    }
 
     DOMUS_ASSERT(
-        old_repeated_path.has_value(),
+        repeated_paths.size() == 1,
         "repeated_paths_one_common_endpoint_no_loop_type_3: did not find in between node"
-    );
-
-    repeated_paths.push_back(
-        repeated_sub_path(type_1_face, *old_repeated_path.value(), *in_between_of_repeated_path)
     );
 
     for (const Path& repeated_path : m_old_type_4_face.repeated_paths()) {
@@ -289,8 +261,28 @@ NextTypesEstablisher::repeated_paths_one_common_endpoint_no_loop_type_3(const Pa
 
 std::vector<Path>
 NextTypesEstablisher::repeated_paths_no_common_endpoint_type_3(const Path& type_1_face) {
-    return {};
-    // TODO
+    std::vector<Path> repeated_paths;
+    repeated_paths.reserve(2);
+
+    const size_t first_id = m_splitting_path.get_first_node_id();
+    const size_t last_id = m_splitting_path.get_last_node_id();
+
+    for (const Path& rep_path : m_old_type_4_face.repeated_paths()) {
+        for (size_t i = 1; i < rep_path.number_of_edges(); i++) {
+            const size_t node_id = rep_path.node_id_at_position(i);
+            if (first_id == node_id || last_id == node_id) {
+                repeated_paths.push_back(repeated_sub_path(type_1_face, rep_path, node_id));
+                break;
+            }
+        }
+    }
+
+    DOMUS_ASSERT(
+        repeated_paths.size() == 2,
+        "repeated_paths_one_common_endpoint_type_3: did not find in between nodes"
+    );
+
+    return repeated_paths;
 }
 
 // at this point we could end up with either:

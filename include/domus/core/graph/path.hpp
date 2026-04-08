@@ -22,6 +22,7 @@ class Path {
     size_t get_last_edge_id() const;
 
     size_t number_of_edges() const;
+    size_t number_of_nodes() const;
 
     size_t node_id_at_position(size_t position) const;
     size_t edge_id_at_position(size_t position) const;

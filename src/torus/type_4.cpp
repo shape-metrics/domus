@@ -120,7 +120,6 @@ void remove_augment_of_path_in_embedding(Embedding& embedding, const Path& path)
 bool did_path_split(
     const Face& initial_face, const Path& path, const Path& face_1, const Path& face_2
 ) {
-    std::println("did_path_split");
     const size_t first_of_path = path.get_first_node_id();
     const size_t last_of_path = path.get_last_node_id();
 
@@ -131,7 +130,8 @@ bool did_path_split(
         (first_of_path == last_repeated_id && last_of_path == first_repeated_id))
         return true;
 
-    std::println("gne");
+    if (first_of_path == last_of_path)
+        return true;
 
     const size_t first_count_1 = node_id_count_in_path(face_1, first_repeated_id);
     const size_t last_count_1 = node_id_count_in_path(face_1, last_repeated_id);
@@ -143,7 +143,15 @@ bool did_path_split(
     if (first_count_2 == 3 && last_count_2 == 3)
         return false;
 
-    return true;
+    if (first_count_1 < 3 && last_count_1 < 3 && first_count_2 < 3 && last_count_2 < 3)
+        return true;
+
+    if (first_of_path == first_repeated_id || first_of_path == last_repeated_id)
+        return true;
+    if (last_of_path == first_repeated_id || last_of_path == last_repeated_id)
+        return true;
+
+    return false;
 }
 
 void try_face_splits_with_path(
