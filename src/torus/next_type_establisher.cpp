@@ -47,10 +47,12 @@ NextTypesEstablisher::repeated_paths_both_common_endpoints(const Path& type_1_fa
             continue;
         repeated_paths.push_back(old_repeated_path);
     }
+
     DOMUS_ASSERT(
         repeated_paths.size() == 2,
         "repeated_paths_both_common_endpoints: should have obtained 2 repeated paths"
     );
+
     return repeated_paths;
 }
 
@@ -116,10 +118,12 @@ Path NextTypesEstablisher::repeated_path_one_common_endpoint_loop(const Path& ty
             continue;
         repeated_paths.push_back(old_repeated_path);
     }
+
     DOMUS_ASSERT(
         repeated_paths.size() == 1,
         "repeated_path_one_common_endpoint_loop: should have obtained 1 repeated path"
     );
+
     return repeated_paths[0];
 }
 
@@ -346,6 +350,7 @@ std::pair<Face, Face> NextTypesEstablisher::compute_face_types() {
             Face(FaceType::TYPE_1, Path(m_face_2), {})
         );
     }
+
     // only one endpoint of splittingh path coincide with endpoints of repeating paths
     if (first_node_id == first_repeated_node_id || first_node_id == last_repeated_node_id ||
         last_node_id == last_repeated_node_id || last_node_id == first_repeated_node_id) {
@@ -373,6 +378,7 @@ std::pair<Face, Face> NextTypesEstablisher::compute_face_types() {
 
             DOMUS_ASSERT(false, "next_case_type: should have not ended up here");
         }
+
         // otherwise result can either be:
         // - a type 3 face and a type 1 face (one vertex repeated 3 times in one face)
         // - a type 2 face and a type 1 face (no vertex repeated 3 times in any face)
@@ -416,6 +422,7 @@ std::pair<Face, Face> NextTypesEstablisher::compute_face_types() {
 
         DOMUS_ASSERT(false, "next_case_type: should have not ended up here");
     }
+
     // no endpoint of splittingh path coincide with endpoints of repeating paths
     // then result can either be:
     // - a type 3 face and a type 1 face (one face does not contain repeated vertices)
@@ -443,7 +450,7 @@ std::pair<Face, Face> NextTypesEstablisher::compute_face_types() {
 
     std::vector<Path> repeated_paths = repeated_paths_double_cylinder();
 
-    const size_t i = (m_face_1.contains_edge_id(repeated_paths[0].get_first_edge_id()));
+    const size_t i = m_face_1.contains_edge_id(repeated_paths[0].get_first_edge_id());
     return {
         Face(FaceType::TYPE_2, Path(m_face_1), {std::move(repeated_paths[!i])}),
         Face(FaceType::TYPE_2, Path(m_face_2), {std::move(repeated_paths[i])})

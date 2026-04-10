@@ -17,6 +17,7 @@ class NextTypesEstablisher {
     const Face& m_old_type_4_face;
     const graph::Path& m_face_1;
     const graph::Path& m_face_2;
+
     NextTypesEstablisher(
         const graph::Graph& graph,
         const graph::Path& splitting_path,
@@ -24,6 +25,7 @@ class NextTypesEstablisher {
         const graph::Path& face_1,
         const graph::Path& face_2
     );
+
     std::vector<graph::Path> repeated_paths_both_common_endpoints(const graph::Path& type_1_face);
     graph::Path repeated_path_one_common_endpoint_loop(const graph::Path& type_1_face);
     std::vector<graph::Path> repeated_paths_double_cylinder();
