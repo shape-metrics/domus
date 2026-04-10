@@ -4,11 +4,11 @@
 namespace domus::graph {
 class Graph;
 class Attributes;
-class Cycle;
+class Path;
 } // namespace domus::graph
 
 namespace domus::planarity {
 void compute_nodes_positions(
-    const graph::Graph& graph, graph::Attributes& attributes, const graph::Cycle& border
+    const graph::Graph& graph, graph::Attributes& attributes, const graph::Path& border
 );
 }
