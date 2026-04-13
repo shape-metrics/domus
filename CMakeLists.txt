@@ -13,6 +13,8 @@ include(GNUInstallDirs)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+find_package(Eigen3 REQUIRED)
+
 #====================================================
 # Options
 #====================================================
@@ -23,7 +25,7 @@ option(DOMUS_BUILD_EXECUTABLES "Build DOMUS executables" ON)
 # Detect Emscripten
 #====================================================
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     message(STATUS ">>> Building DOMUS for WebAssembly")
     set(BUILDING_WASM TRUE)
 else()
@@ -101,6 +103,7 @@ set(COMMON_SRCS
     src/planarity/tutte.cpp
     src/core/graph/embedding.cpp
     src/planarity/interlacement.cpp
+    src/planarity/drawing.cpp
     src/torus/embedder.cpp
     src/torus/embed_two_cycles.cpp
     src/torus/bridge.cpp
@@ -123,7 +126,7 @@ target_include_directories(core
 )
 
 target_link_libraries(core
-    PRIVATE kissat glucose Threads::Threads
+    PRIVATE kissat glucose Threads::Threads Eigen3::Eigen
 )
 
 #====================================================
@@ -131,7 +134,7 @@ target_link_libraries(core
 #====================================================
 
 function(apply_warnings target)
-    if (BUILDING_WASM)
+    if(BUILDING_WASM)
         target_compile_options(${target} PRIVATE
             -Wall -Wextra -Wpedantic
             -Wshadow
@@ -179,8 +182,8 @@ install(EXPORT DomusTargets
 # Executables
 #====================================================
 
-if (DOMUS_BUILD_EXECUTABLES)
-    if (BUILDING_WASM)
+if(DOMUS_BUILD_EXECUTABLES)
+    if(BUILDING_WASM)
         add_executable(domus src/domus-web.cpp)
         target_link_libraries(domus PRIVATE DOMUS::core)
         apply_warnings(domus)

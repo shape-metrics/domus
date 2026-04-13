@@ -150,6 +150,8 @@ int Attributes::get_position_y(size_t node_id) const {
 }
 
 bool Attributes::has_position(size_t node_id) const {
+    if (m_nodes_position->size() <= node_id)
+        return false;
     return m_nodes_position->at(node_id).has_value();
 }
 

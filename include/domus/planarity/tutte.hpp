@@ -8,7 +8,5 @@ class Path;
 } // namespace domus::graph
 
 namespace domus::planarity {
-void compute_nodes_positions(
-    const graph::Graph& graph, graph::Attributes& attributes, const graph::Path& border
-);
+void compute_nodes_positions(const graph::Graph& graph, graph::Attributes& attributes);
 }

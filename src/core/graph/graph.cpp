@@ -41,7 +41,12 @@ size_t Graph::get_degree_of_node(size_t node_id) const {
 
 size_t Graph::add_edge(size_t from_id, size_t to_id) {
     DOMUS_ASSERT(has_node(from_id) && has_node(to_id), "Graph::add_edge: node does not exist");
-    DOMUS_ASSERT(!has_edge(from_id, to_id), "Graph::add_edge: edge already exists");
+    DOMUS_ASSERT(
+        !has_edge(from_id, to_id),
+        "Graph::add_edge: edge {} {} already exists",
+        from_id,
+        to_id
+    );
     DOMUS_ASSERT(from_id != to_id, "graph::add_edge: from and to are equal");
     size_t edge_id;
     if (m_free_edges_ids.empty()) {
