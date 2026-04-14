@@ -10,4 +10,11 @@ compile_commands.json
 cnf_logs.txt
 
 todo.txt
-.codeiumignore
+
+/src/nlohmann/*
+/src/sat/glucose/*
+/src/sat/kissat/*
+build-web
+.clang-format
+/example-graphs/*
+LICENSE

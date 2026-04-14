@@ -6,6 +6,7 @@
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/file_loader.hpp"
+#include "domus/core/graph/flow.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/orthogonal/drawing.hpp"
 #include "domus/orthogonal/drawing_builder.hpp"
@@ -114,6 +115,16 @@ void test_tutte_layout() {
     auto res = make_svg(graph, attributes, "daje.svg");
     if (!res) {
         std::println("{}", res.error());
+    }
+    auto cycles = flow::max_vertex_disjoint_cycles(graph, 12);
+    std::println("Number of vertex-disjoint cycles: {}", cycles.size());
+    for (const auto& cycle : cycles) {
+        cycle.print();
+    }
+    auto paths = flow::max_vertex_disjoint_paths(graph, 0, 9);
+    std::println("Number of vertex-disjoint paths: {}", paths.size());
+    for (const auto& path : paths) {
+        path.print();
     }
 }
 
