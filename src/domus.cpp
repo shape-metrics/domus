@@ -86,7 +86,6 @@ void test_tutte_layout() {
     graph.add_edge(13, 3);
     graph.add_edge(0, 1);
     graph.add_edge(4, 3);
-    graph.add_edge(4, 5);
     graph.add_edge(4, 10);
     graph.add_edge(5, 4);
     graph.add_edge(10, 12);

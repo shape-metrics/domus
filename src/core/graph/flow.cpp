@@ -77,22 +77,17 @@ std::vector<Path> max_vertex_disjoint_paths(const Graph& graph, size_t sink_id, 
         size_t u = edge.edge.from_id;
         size_t v = edge.edge.to_id;
 
-        if (u == v)
-            continue;
-
         size_t u_out = 2 * u + 1;
         size_t v_in = 2 * v;
-        if (!flow_graph.has_edge(u_out, v_in)) {
-            size_t e1_fwd = add_flow_edge(u_out, v_in, 1);
-            map_edge(e1_fwd, edge.id);
-        }
+
+        size_t e1_fwd = add_flow_edge(u_out, v_in, 1);
+        map_edge(e1_fwd, edge.id);
 
         size_t v_out = 2 * v + 1;
         size_t u_in = 2 * u;
-        if (!flow_graph.has_edge(v_out, u_in)) {
-            size_t e2_fwd = add_flow_edge(v_out, u_in, 1);
-            map_edge(e2_fwd, edge.id);
-        }
+
+        size_t e2_fwd = add_flow_edge(v_out, u_in, 1);
+        map_edge(e2_fwd, edge.id);
     }
 
     size_t flow_source = 2 * source_id;
