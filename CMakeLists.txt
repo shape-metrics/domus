@@ -108,10 +108,8 @@ set(COMMON_SRCS
     src/torus/embedder.cpp
     src/torus/embed_two_cycles.cpp
     src/torus/bridge.cpp
-    src/torus/type_4.cpp
-    src/torus/type_3.cpp
     src/torus/faces.cpp
-    src/torus/next_type_establisher.cpp
+    src/torus/decrease_face_type.cpp
     src/core/graph/test.cpp
 )
 

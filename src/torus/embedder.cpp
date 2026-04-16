@@ -1,15 +1,13 @@
 #include "domus/torus/embedder.hpp"
 
-#include "domus/core/domus_debug.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
 
+#include "decrease_face_type.hpp"
 #include "embed_two_cycles.hpp"
-#include "faces.hpp"
-#include "type_4.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -19,16 +17,7 @@ std::optional<Embedding> compute_toroidal_embedding(
 ) {
     auto [embedding, face] =
         compute_embedding_of_two_cycles(graph, cycle_1, cycle_2, intersection_node_id);
-    if (face.type() == FaceType::TYPE_4) {
-        handle_type_4(graph, embedding, face);
-    } else {
-        DOMUS_ASSERT(
-            face.type() == FaceType::TYPE_3,
-            "compute_toroidal_embedding: expected TYPE_3 face"
-        );
-        // TODO: handle starting type 3
-    }
-
+    decrease_face_type(graph, embedding, face);
     return std::nullopt;
 }
 

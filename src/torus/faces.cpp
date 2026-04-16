@@ -1,5 +1,6 @@
 #include "faces.hpp"
 
+#include "domus/core/domus_debug.hpp"
 #include "domus/core/graph/path.hpp"
 
 #include <algorithm>
@@ -9,6 +10,7 @@
 #include <vector>
 
 namespace domus::torus {
+using graph::Graph;
 using graph::Path;
 
 std::string face_type_to_string(FaceType face_type) {
@@ -68,6 +70,90 @@ size_t node_id_count_in_path(const graph::Path& path, const size_t node_id) {
         if (path.node_id_at_position(i) == node_id)
             count++;
     return count;
+}
+
+Face compute_face_from_path(const graph::Path& path, const Graph& graph) {
+    DOMUS_ASSERT(
+        path.get_first_node_id() == path.get_last_node_id(),
+        "compute_face_from_path: input path is not a cycle (so neither a face)"
+    );
+    DOMUS_ASSERT(path.number_of_edges() > 1, "compute_face_from_path: input path has only 1 edge");
+
+    std::vector<std::pair<size_t, size_t>> edges_ids;
+    for (size_t i = 0; i < path.number_of_edges(); i++)
+        edges_ids.push_back({path.edge_id_at_position(i), i});
+    std::sort(edges_ids.begin(), edges_ids.end(), [](auto a, auto b) { return a.first < b.first; });
+
+    bool is_simple = true;
+    for (size_t i = 0; i < edges_ids.size() - 1; i++)
+        if (edges_ids[i].first == edges_ids[i + 1].first)
+            is_simple = false;
+    if (edges_ids.front() == edges_ids.back())
+        is_simple = false;
+
+    if (is_simple)
+        return Face(FaceType::TYPE_1, Path(path), {});
+
+    std::vector<bool> did_handle_repeated_edge_at_position(path.number_of_edges(), false);
+
+    std::vector<Path> repeated_paths;
+
+    while (edges_ids.size() > 1) {
+        size_t size = edges_ids.size();
+        const size_t last = edges_ids[size - 1].first;
+        const size_t prev = edges_ids[size - 2].first;
+        if (last != prev) {
+            edges_ids.pop_back();
+            continue;
+        }
+        const std::array<size_t, 2> positions = {
+            edges_ids[size - 1].second,
+            edges_ids[size - 2].second
+        };
+
+        size_t pos_1 = positions[0];
+        size_t pos_2 = positions[1];
+        if (did_handle_repeated_edge_at_position[pos_1]) {
+            edges_ids.pop_back();
+            edges_ids.pop_back();
+            continue;
+        }
+        repeated_paths.emplace_back();
+        Path& repeated_path = repeated_paths.back();
+        while (path.edge_id_at_position(pos_1) == path.edge_id_at_position(pos_2)) {
+            const size_t edge_id = path.edge_id_at_position(pos_1);
+            const size_t node_id = path.node_id_at_position(pos_1);
+            repeated_path.push_back(graph, node_id, edge_id);
+            did_handle_repeated_edge_at_position[pos_1] = true;
+            did_handle_repeated_edge_at_position[pos_2] = true;
+            pos_1 = (pos_1 + 1) % path.number_of_edges();
+            pos_2 = (pos_2 + path.number_of_edges() - 1) % path.number_of_edges();
+        }
+
+        pos_1 = (positions[0] + path.number_of_edges() - 1) % path.number_of_edges();
+        pos_2 = (positions[1] + 1) % path.number_of_edges();
+        while (path.edge_id_at_position(pos_1) == path.edge_id_at_position(pos_2)) {
+            const size_t edge_id = path.edge_id_at_position(pos_1);
+            const size_t node_id = path.node_id_at_position((pos_1 + 1) % path.number_of_edges());
+            repeated_path.push_front(graph, node_id, edge_id);
+            did_handle_repeated_edge_at_position[pos_1] = true;
+            did_handle_repeated_edge_at_position[pos_2] = true;
+            pos_1 = (pos_1 + path.number_of_edges() - 1) % path.number_of_edges();
+            pos_2 = (pos_2 + 1) % path.number_of_edges();
+        }
+        edges_ids.pop_back();
+        edges_ids.pop_back();
+    }
+
+    FaceType face_type;
+    if (repeated_paths.size() == 1)
+        face_type = FaceType::TYPE_2;
+    else if (repeated_paths.size() == 2)
+        face_type = FaceType::TYPE_3;
+    else
+        face_type = FaceType::TYPE_4;
+
+    return Face(face_type, Path(path), std::move(repeated_paths));
 }
 
 } // namespace domus::torus

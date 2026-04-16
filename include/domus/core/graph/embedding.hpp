@@ -25,6 +25,10 @@ class Embedding {
     void add_edge(size_t from_id, size_t to_id, size_t edge_id);
 
     void add_edge_after(size_t from_id, size_t to_id, size_t edge_id, size_t prev_edge_id);
+    // TODO
+    void add_edge_between(
+        size_t from_id, size_t to_id, size_t edge_id, size_t prev_edge_id, size_t next_edge_id
+    );
 
     void remove_edge(size_t from_id, size_t to_id, size_t edge_id);
 

@@ -18,6 +18,8 @@ Bridge::Bridge(const SubGraph&& bridge)
 
 const Graph& Bridge::get_bridge() const { return m_bridge.get_sub_graph(); }
 
+const std::vector<size_t> Bridge::get_attachments() const { return m_attachments; }
+
 size_t Bridge::number_of_attachments() const { return m_is_attachment.size(); }
 
 const NodesLabels<size_t>& Bridge::get_new_id_to_old_id() const {
@@ -82,6 +84,7 @@ void BridgeFactory::add_attachment(Bridge& bridge, const size_t attachment_id) {
     if (bridge.is_attachment(attachment_id))
         return;
     bridge.m_is_attachment.add_node(attachment_id);
+    bridge.m_attachments.push_back(attachment_id);
 }
 
 void dfs_find_bridges(
