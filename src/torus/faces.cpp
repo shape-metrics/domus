@@ -24,6 +24,8 @@ std::string face_type_to_string(FaceType face_type) {
     case FaceType::TYPE_4:
         return "Type 4";
     }
+    DOMUS_ASSERT(false, "face_type_to_string: invalid face type");
+    return "";
 }
 
 Face::Face(FaceType type, Path&& path, std::vector<Path>&& repeated_paths)
@@ -72,7 +74,7 @@ size_t node_id_count_in_path(const graph::Path& path, const size_t node_id) {
     return count;
 }
 
-Face compute_face_from_path(const graph::Path& path, const Graph& graph) {
+Face compute_face_from_path(Path&& path, const Graph& graph) {
     DOMUS_ASSERT(
         path.get_first_node_id() == path.get_last_node_id(),
         "compute_face_from_path: input path is not a cycle (so neither a face)"
@@ -80,6 +82,7 @@ Face compute_face_from_path(const graph::Path& path, const Graph& graph) {
     DOMUS_ASSERT(path.number_of_edges() > 1, "compute_face_from_path: input path has only 1 edge");
 
     std::vector<std::pair<size_t, size_t>> edges_ids;
+    edges_ids.reserve(path.number_of_edges());
     for (size_t i = 0; i < path.number_of_edges(); i++)
         edges_ids.push_back({path.edge_id_at_position(i), i});
     std::sort(edges_ids.begin(), edges_ids.end(), [](auto a, auto b) { return a.first < b.first; });
@@ -92,7 +95,7 @@ Face compute_face_from_path(const graph::Path& path, const Graph& graph) {
         is_simple = false;
 
     if (is_simple)
-        return Face(FaceType::TYPE_1, Path(path), {});
+        return Face(FaceType::TYPE_1, std::move(path), {});
 
     std::vector<bool> did_handle_repeated_edge_at_position(path.number_of_edges(), false);
 
@@ -153,7 +156,7 @@ Face compute_face_from_path(const graph::Path& path, const Graph& graph) {
     else
         face_type = FaceType::TYPE_4;
 
-    return Face(face_type, Path(path), std::move(repeated_paths));
+    return Face(face_type, std::move(path), std::move(repeated_paths));
 }
 
 } // namespace domus::torus

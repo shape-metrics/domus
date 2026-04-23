@@ -83,8 +83,8 @@ bool is_cycle_in_graph(const Graph& graph, const Cycle& cycle);
 std::optional<size_t> do_cycles_intersect(const Cycle& cycle_1, const Cycle& cycle_2);
 
 struct StrongConnectedComponents {
-    const std::vector<std::vector<size_t>> sccs;
-    const utilities::NodesLabels<size_t> node_to_scc_id;
+    const std::vector<std::vector<size_t>> m_sccs;
+    const utilities::NodesLabels<size_t> m_node_to_scc_id;
     static StrongConnectedComponents compute(const Graph& graph);
 
   private:

@@ -63,8 +63,8 @@ SatSolverResult solve_2_sat(const cnf::Cnf& cnf) {
         size_t pos_node = variable_to_node_id(static_cast<int>(i + 1));
         size_t neg_node = variable_to_node_id(-static_cast<int>(i + 1));
 
-        size_t scc_pos = scc.node_to_scc_id.get_label(pos_node);
-        size_t scc_neg = scc.node_to_scc_id.get_label(neg_node);
+        size_t scc_pos = scc.m_node_to_scc_id.get_label(pos_node);
+        size_t scc_neg = scc.m_node_to_scc_id.get_label(neg_node);
 
         // if x e !x are in the same SCC, there is no solution
         if (scc_pos == scc_neg) {

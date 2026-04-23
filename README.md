@@ -2,7 +2,7 @@
 
 <!-- ## Update
 - [09/2026] Added ... -->
- 
+
 ## Overview
 
 This code implements the methodology described in "**A Walk on the Wild Side: a Shape-First Methodology for Orthogonal Drawings**" (accepted at [GD2025](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.GD.2025.35), [arXiv](https://arxiv.org/abs/2508.19416)) to generate orthogonal drawings of small-to-medium size graphs. It works by repeatedly subdividing edges until a rectilinear drawing is found. Therefore, the approach instead of minimizating the number of crossings opts to minimize the number of bends.
@@ -49,7 +49,9 @@ void make_svg(
 In the paper [A Walk on the Wild Side: a Shape-First Methodology for Orthogonal Drawings](www.https://arxiv.org/abs/2508.19416) we described extensive experiments we performed to evaluate our approach against the state-of-the-art approaches, in particular we compared the **shape-metrics** implementation in DOMUS against the **topology-shape-metrics** implementation in OGDF, using widely adopted graph drawing metrics.
 
 The two sets of experiments are:
-  - **in vitro**: dataset of unformily at random generated connected graphs with max degree 4;
-  - **in the wild**: rome graphs dataset (without disconnected graphs).
+
+- **in vitro**: dataset of unformily at random generated connected graphs with max degree 4;
+- **in the wild**: rome graphs dataset (without disconnected graphs).
 
 Please refer to the [experiments repository](https://github.com/shape-metrics/experiments) for the code used to run the experiments.
+

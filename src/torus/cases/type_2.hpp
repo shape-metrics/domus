@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef>
+#include <vector>
 
 namespace domus::graph {
 class Graph;
@@ -10,12 +10,8 @@ class Embedding;
 namespace domus::torus {
 class Face;
 
-void decrease_face_type(
-    graph::Graph& graph,
-    graph::Embedding& embedding,
-    const Face& face,
-    size_t jolly_id_1,
-    size_t jolly_id_2
+void handle_type_2(
+    graph::Graph& graph, graph::Embedding& embedding, const std::vector<Face>& faces
 );
 
 } // namespace domus::torus

@@ -208,7 +208,7 @@ std::vector<bool> are_embeddings_inside_clockwise_cycle(
         size_t next = (attachment_id + 1) % cycle.size();
         size_t prev = (attachment_id + cycle.size() - 1) % cycle.size();
         DOMUS_ASSERT(
-            0 <= prev && prev < cycle.size(),
+            prev < cycle.size(),
             "are_embeddings_inside_clockwise_cycle: prev should belong to the cycle"
         );
         is_inside[i] =

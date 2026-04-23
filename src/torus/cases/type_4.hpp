@@ -5,17 +5,15 @@
 namespace domus::graph {
 class Graph;
 class Embedding;
+class Path;
 } // namespace domus::graph
 
 namespace domus::torus {
 class Face;
+class Bridge;
 
-void decrease_face_type(
-    graph::Graph& graph,
-    graph::Embedding& embedding,
-    const Face& face,
-    size_t jolly_id_1,
-    size_t jolly_id_2
+void handle_type_4(
+    graph::Graph& graph, graph::Embedding& embedding, const Face& face, size_t jolly_id
 );
 
 } // namespace domus::torus

@@ -15,12 +15,12 @@ namespace domus::graph {
 Embedding::Embedding(const Graph& graph)
     : m_next_in_adjacency_list(graph), m_prev_in_adjacency_list(graph) {
     DOMUS_ASSERT(
-        [](const Graph& graph) {
+        [](const Graph& g) {
             std::vector<size_t> nodes;
-            nodes.reserve(graph.get_number_of_nodes());
-            for (size_t node_id : graph.get_nodes_ids())
+            nodes.reserve(g.get_number_of_nodes());
+            for (size_t node_id : g.get_nodes_ids())
                 nodes.push_back(node_id);
-            for (size_t node_id = 0; node_id < graph.get_number_of_nodes(); ++node_id)
+            for (size_t node_id = 0; node_id < g.get_number_of_nodes(); ++node_id)
                 if (std::ranges::find(nodes, node_id) == nodes.end())
                     return false;
             return true;
@@ -85,6 +85,10 @@ void Embedding::add_edge(size_t from_id, size_t to_id, size_t edge_id) {
 }
 
 void Embedding::add_edge_after(size_t from_id, size_t to_id, size_t edge_id, size_t prev_edge_id) {
+    DOMUS_ASSERT(
+        get_degree_of_node(from_id) > 1,
+        "Embedding::add_edge_after: from_id has degree <= 1"
+    );
     DOMUS_ASSERT(from_id != to_id, "Embedding::add_edge_after: from_id and to_id are equal");
     DOMUS_ASSERT(
         has_node(from_id) && has_node(to_id),
@@ -127,6 +131,56 @@ void Embedding::add_edge_after(size_t from_id, size_t to_id, size_t edge_id, siz
 
     // insert new edge after prev_it in the adjacency list
     adj.insert(prev_it + 1, new_edge);
+    m_number_of_edges++;
+}
+
+void Embedding::add_edge_before(size_t from_id, size_t to_id, size_t edge_id, size_t next_edge_id) {
+    DOMUS_ASSERT(
+        get_degree_of_node(from_id) > 1,
+        "Embedding::add_edge_after: from_id has degree <= 1"
+    );
+    DOMUS_ASSERT(from_id != to_id, "Embedding::add_edge_before: from_id and to_id are equal");
+    DOMUS_ASSERT(
+        has_node(from_id) && has_node(to_id),
+        "Embedding::add_edge_before: node does not exist"
+    );
+
+    m_next_in_adjacency_list.update_size(edge_id);
+    m_prev_in_adjacency_list.update_size(edge_id);
+
+    auto& adj = m_adjacency_list.at(from_id);
+
+    // find the position of next_edge_id in the adjacency list
+    auto next_it = std::ranges::find_if(adj, [next_edge_id](const EdgeIter& e) {
+        return e.id == next_edge_id;
+    });
+    DOMUS_ASSERT(next_it != adj.end(), "Embedding::add_edge_before: next_edge_id not found");
+
+    size_t next_to_id = next_it->neighbor_id;
+
+    // get the prev edge before next_edge
+    DOMUS_ASSERT(
+        m_prev_in_adjacency_list.has_label(from_id, next_to_id, next_edge_id),
+        "Embedding::add_edge_before: next_edge_id does not exist"
+    );
+    EdgeIter prev_edge = m_next_in_adjacency_list.get_label(from_id, next_to_id, next_edge_id);
+    size_t prev_edge_id = prev_edge.id;
+    size_t prev_to_id = prev_edge.neighbor_id;
+
+    EdgeIter new_edge{edge_id, to_id};
+
+    // update prev's next to point to new edge
+    m_next_in_adjacency_list.update_label(from_id, prev_to_id, prev_edge_id, new_edge);
+
+    // update next's prev to point to new edge
+    m_prev_in_adjacency_list.update_label(from_id, next_to_id, next_edge_id, new_edge);
+
+    // set new edge's prev and next
+    m_prev_in_adjacency_list.add_label(from_id, to_id, edge_id, {prev_edge_id, prev_to_id});
+    m_next_in_adjacency_list.add_label(from_id, to_id, edge_id, {next_edge_id, next_to_id});
+
+    // insert new edge after prev_it in the adjacency list
+    adj.insert(next_it - 1, new_edge);
     m_number_of_edges++;
 }
 
@@ -225,7 +279,9 @@ std::vector<Path> compute_faces_in_embedding(const Graph& graph, const Embedding
             if (visited_edges.has_edge(start_node, start_edge.neighbor_id, start_edge.id))
                 continue;
 
-            Path current_face;
+            faces.emplace_back();
+            Path& current_face = faces.back();
+
             size_t u = start_node;
             EdgeIter edge_uv = start_edge;
 
@@ -240,8 +296,6 @@ std::vector<Path> compute_faces_in_embedding(const Graph& graph, const Embedding
                 u = v;
                 edge_uv = next_edge;
             }
-
-            faces.push_back(std::move(current_face));
         }
     }
 

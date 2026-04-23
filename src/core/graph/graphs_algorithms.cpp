@@ -689,7 +689,7 @@ StrongConnectedComponents StrongConnectedComponents::compute(const Graph& graph)
 StrongConnectedComponents::StrongConnectedComponents(
     const std::vector<std::vector<size_t>>&& sccs, const NodesLabels<size_t>&& node_to_scc_id
 )
-    : sccs(sccs), node_to_scc_id(node_to_scc_id) {}
+    : m_sccs(sccs), m_node_to_scc_id(node_to_scc_id) {}
 
 std::optional<Path> find_shortest_path_between_nodes(
     const Graph& graph, const size_t node_id_1, const size_t node_id_2
