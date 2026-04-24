@@ -23,8 +23,6 @@ void NodesContainer::erase(size_t node_id) {
     m_number_of_nodes--;
 }
 
-
-
 EdgesContainer::EdgesContainer(size_t number_of_edges_ids)
     : m_has_edge(number_of_edges_ids, false) {}
 
@@ -39,6 +37,11 @@ bool EdgesContainer::has_edge(size_t edge_id) const { return m_has_edge.at(edge_
 size_t EdgesContainer::size() const { return m_number_of_edges; }
 
 bool EdgesContainer::empty() const { return size() == 0; }
+
+void EdgesContainer::update_size(size_t edge_id) {
+    while (m_has_edge.size() <= edge_id)
+        m_has_edge.push_back(false);
+}
 
 void EdgesContainer::erase(size_t edge_id) {
     DOMUS_ASSERT(has_edge(edge_id), "EdgesContainer::erase: edge does not exist");
@@ -74,7 +77,11 @@ size_t OrientedEdgesContainer::size() const {
     return m_visited_edges_1.size() + m_visited_edges_2.size();
 }
 
-bool OrientedEdgesContainer::empty() const { return size() == 0; }
+void OrientedEdgesContainer::update_size(size_t edge_id) {
+    m_visited_edges_1.update_size(edge_id);
+    m_visited_edges_2.update_size(edge_id);
+}
 
+bool OrientedEdgesContainer::empty() const { return size() == 0; }
 
 } // namespace domus::graph::utilities

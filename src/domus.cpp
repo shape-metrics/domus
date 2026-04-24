@@ -80,27 +80,27 @@ void test_tutte_layout() {
     Graph graph;
     for (int i = 0; i < 14; i++)
         graph.add_node();
+    graph.add_edge(0, 1);
     graph.add_edge(0, 13);
     graph.add_edge(0, 2);
     graph.add_edge(0, 3);
-    graph.add_edge(13, 3);
-    graph.add_edge(0, 1);
-    graph.add_edge(4, 3);
-    graph.add_edge(4, 10);
-    graph.add_edge(5, 4);
-    graph.add_edge(10, 12);
-    graph.add_edge(11, 10);
-    graph.add_edge(5, 6);
-    graph.add_edge(6, 7);
-    graph.add_edge(8, 6);
-    graph.add_edge(8, 9);
-    graph.add_edge(13, 1);
-    graph.add_edge(1, 12);
     graph.add_edge(1, 9);
-    graph.add_edge(12, 11);
+    graph.add_edge(1, 12);
+    graph.add_edge(1, 13);
+    graph.add_edge(2, 5);
+    graph.add_edge(3, 4);
+    graph.add_edge(3, 13);
+    graph.add_edge(4, 5);
+    graph.add_edge(4, 10);
+    graph.add_edge(5, 6);
     graph.add_edge(5, 11);
-    graph.add_edge(12, 9);
-    graph.add_edge(5, 2);
+    graph.add_edge(6, 7);
+    graph.add_edge(6, 8);
+    graph.add_edge(8, 9);
+    graph.add_edge(9, 12);
+    graph.add_edge(10, 11);
+    graph.add_edge(10, 12);
+    graph.add_edge(11, 12);
     graph.add_edge(8, 7);
     graph.add_edge(7, 2);
     graph.add_edge(9, 2);
@@ -128,7 +128,7 @@ void test_tutte_layout() {
 }
 
 int main() {
-    test_tutte_layout();
+    // test_tutte_layout();
     // graph->print(true);
     // std::println("{}", generators::code_to_generate_graph(*graph));
 

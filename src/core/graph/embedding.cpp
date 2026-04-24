@@ -53,6 +53,15 @@ Embedding::next_in_adjacency_list(size_t node_id, size_t neighbor_id, size_t edg
     return m_next_in_adjacency_list.get_label(node_id, neighbor_id, edge_id);
 }
 
+EdgeIter
+Embedding::prev_in_adjacency_list(size_t node_id, size_t neighbor_id, size_t edge_id) const {
+    DOMUS_ASSERT(
+        m_prev_in_adjacency_list.has_label(node_id, neighbor_id, edge_id),
+        "Embedding::prev_in_adjacency_list: edge does not exist"
+    );
+    return m_prev_in_adjacency_list.get_label(node_id, neighbor_id, edge_id);
+}
+
 size_t Embedding::get_degree_of_node(size_t node_id) const {
     return m_adjacency_list.at(node_id).size();
 }
@@ -137,7 +146,7 @@ void Embedding::add_edge_after(size_t from_id, size_t to_id, size_t edge_id, siz
 void Embedding::add_edge_before(size_t from_id, size_t to_id, size_t edge_id, size_t next_edge_id) {
     DOMUS_ASSERT(
         get_degree_of_node(from_id) > 1,
-        "Embedding::add_edge_after: from_id has degree <= 1"
+        "Embedding::add_edge_before: from_id has degree <= 1"
     );
     DOMUS_ASSERT(from_id != to_id, "Embedding::add_edge_before: from_id and to_id are equal");
     DOMUS_ASSERT(
@@ -163,7 +172,7 @@ void Embedding::add_edge_before(size_t from_id, size_t to_id, size_t edge_id, si
         m_prev_in_adjacency_list.has_label(from_id, next_to_id, next_edge_id),
         "Embedding::add_edge_before: next_edge_id does not exist"
     );
-    EdgeIter prev_edge = m_next_in_adjacency_list.get_label(from_id, next_to_id, next_edge_id);
+    EdgeIter prev_edge = m_prev_in_adjacency_list.get_label(from_id, next_to_id, next_edge_id);
     size_t prev_edge_id = prev_edge.id;
     size_t prev_to_id = prev_edge.neighbor_id;
 
@@ -179,8 +188,8 @@ void Embedding::add_edge_before(size_t from_id, size_t to_id, size_t edge_id, si
     m_prev_in_adjacency_list.add_label(from_id, to_id, edge_id, {prev_edge_id, prev_to_id});
     m_next_in_adjacency_list.add_label(from_id, to_id, edge_id, {next_edge_id, next_to_id});
 
-    // insert new edge after prev_it in the adjacency list
-    adj.insert(next_it - 1, new_edge);
+    // insert new edge before next_it in the adjacency list
+    adj.insert(next_it, new_edge);
     m_number_of_edges++;
 }
 
@@ -312,6 +321,7 @@ bool Embedding::is_consistent() const {
     utilities::OrientedEdgesContainer edges(get_number_of_edges());
     for (const size_t node_id : get_nodes_ids()) {
         for (const EdgeIter edge : get_edges(node_id)) {
+            edges.update_size(edge.id);
             if (edges.has_edge(edge.neighbor_id, node_id, edge.id))
                 edges.erase(edge.neighbor_id, node_id, edge.id);
             else

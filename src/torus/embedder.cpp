@@ -44,7 +44,8 @@ std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
 
     Graph graph_copy = graph;
     std::vector<Cycle> cycle_basis = algorithms::compute_cycle_basis(graph_copy);
-    // adding jolly nodes used to insert new paths to split faces
+
+    // adding jolly node used to insert new paths to split faces
     size_t jolly_id = graph_copy.add_node();
 
     // TODO replace cycle basis of the whole graph with cycle basis of k5/k33 subdivision

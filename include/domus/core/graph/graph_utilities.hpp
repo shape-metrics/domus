@@ -63,6 +63,7 @@ class EdgesContainer {
     EdgesContainer(size_t number_of_edges_ids);
     void add_edge(size_t edge_id);
     bool has_edge(size_t edge_id) const;
+    void update_size(size_t edge_id);
     size_t size() const;
     bool empty() const;
     void erase(size_t edge_id);
@@ -79,6 +80,7 @@ class OrientedEdgesContainer {
     void add_edge(size_t from_id, size_t to_id, size_t edge_id);
     void erase(size_t from_id, size_t to_id, size_t edge_id);
     size_t size() const;
+    void update_size(size_t edge_id);
     bool empty() const;
 };
 
