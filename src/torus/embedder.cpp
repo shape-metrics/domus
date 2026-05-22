@@ -9,8 +9,8 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
 
-#include "cases/type_3.hpp"
-#include "cases/type_4.hpp"
+#include "cases/3/type_3.hpp"
+#include "cases/4/type_4.hpp"
 #include "embed_two_cycles.hpp"
 
 namespace domus::torus {
@@ -25,16 +25,18 @@ std::optional<Embedding> compute_toroidal_embedding(
 ) {
     auto [embedding, face] =
         compute_embedding_of_two_cycles(graph, cycle_1, cycle_2, intersection_node_id);
-    if (face.type() == FaceType::TYPE_4)
-        handle_type_4(graph, embedding, face, jolly_id);
-    else {
-        DOMUS_ASSERT(
-            face.type() == FaceType::TYPE_3,
-            "compute_toroidal_embedding: face is neither of type 3 or 4"
-        );
-        handle_type_3(graph, embedding, face, jolly_id);
+    if (face.type() == FaceType::TYPE_4) {
+        if (handle_type_4(graph, embedding, face, jolly_id)) {
+            return embedding;
+        }
+        return std::nullopt;
     }
-
+    DOMUS_ASSERT(
+        face.type() == FaceType::TYPE_3,
+        "compute_toroidal_embedding: face is neither of type 3 or 4"
+    );
+    if (handle_type_3(graph, embedding, face, jolly_id))
+        return embedding;
     return std::nullopt;
 }
 

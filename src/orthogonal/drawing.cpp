@@ -1,5 +1,6 @@
 #include "domus/orthogonal/drawing.hpp"
 
+#include <climits>
 #include <cstddef>
 #include <fstream>
 #include <map>

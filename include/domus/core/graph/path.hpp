@@ -4,6 +4,8 @@
 #include <ranges>
 #include <string>
 
+#include "domus/core/graph/graph_utilities.hpp"
+
 namespace domus::graph {
 
 class Graph;
@@ -34,6 +36,9 @@ class Path {
     void push_back(const Graph& graph, size_t prev_node_id, size_t edge_id);
     void reverse();
 
+    void pop_front();
+    void pop_back();
+
     auto get_edges() const; // edge_id, prev_node_id
 
     std::string to_string() const;
@@ -43,5 +48,12 @@ class Path {
 };
 
 inline auto Path::get_edges() const { return std::ranges::views::zip(m_edges_ids, m_nodes_ids); }
+
+Path convert_path(
+    const Path& path,
+    const utilities::NodesLabels<size_t>& node_labels,
+    const utilities::EdgesLabels<size_t>& edge_labels,
+    const Graph& graph
+);
 
 } // namespace domus::graph

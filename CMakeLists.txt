@@ -109,10 +109,11 @@ set(COMMON_SRCS
     src/torus/embed_two_cycles.cpp
     src/torus/bridge.cpp
     src/torus/faces.cpp
-    src/torus/cases/type_4.cpp
-    src/torus/cases/type_3.cpp
-    src/torus/cases/type_2.cpp
-    src/torus/cases/type_1.cpp
+    src/torus/cases/4/type_4.cpp
+    src/torus/cases/4/3_stars.cpp
+    src/torus/cases/3/type_3.cpp
+    src/torus/cases/2/type_2.cpp
+    src/torus/cases/1/type_1.cpp
     src/core/graph/test.cpp
 )
 

@@ -7,10 +7,9 @@
 #include "domus/core/graph/path.hpp"
 #include "domus/torus/bridge.hpp"
 
-#include "../faces.hpp"
-#include "type_1.hpp"
-#include "type_2.hpp"
-#include "utils.hpp"
+#include "../../faces.hpp"
+#include "../utils.hpp"
+#include "3_stars.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -34,10 +33,10 @@ class Type4Handler {
     std::vector<Bridge> m_bridges;
     NodesLabels<std::bitset<3>> m_is_node_in_repeated_path;
 
-    void try_paths_inside_graph();
-    void try_edges_not_in_graph();
-    void try_3_stars();
-    void try_face_splits_with_path(const Path& path);
+    bool try_paths_inside_graph();
+    bool try_edges_not_in_graph();
+    bool try_3_stars();
+    bool try_face_splits_with_path(const Path& path);
     std::vector<std::pair<Insertion, Insertion>>
     case_path_is_loop(const size_t first_id, const size_t first_edge_id, const size_t last_edge_id);
     std::vector<std::pair<Insertion, Insertion>> case_two_corners_of_hexagon(
@@ -61,12 +60,11 @@ class Type4Handler {
         const size_t last_edge_id
     );
     std::vector<std::pair<Insertion, Insertion>> possible_insertions_of_path(const Path& path);
-    void next_case();
     auto candidate_face_splitting_paths_in_bridge(const Bridge& bridge);
 
   public:
     Type4Handler(Graph& graph, Embedding& embedding, const Face& face, size_t jolly_id);
-    void solve();
+    bool solve();
 };
 
 std::vector<std::pair<Insertion, Insertion>> Type4Handler::case_path_is_loop(
@@ -335,8 +333,10 @@ Type4Handler::possible_insertions_of_path(const Path& path) {
                 first_edge_id,
                 last_edge_id
             );
-    } else if (first_node_id == first_repeated_node_id || first_node_id == last_repeated_node_id ||
-               last_node_id == last_repeated_node_id || last_node_id == first_repeated_node_id) {
+    } else if (
+        first_node_id == first_repeated_node_id || first_node_id == last_repeated_node_id ||
+        last_node_id == last_repeated_node_id || last_node_id == first_repeated_node_id
+    ) {
         return case_one_corner_of_hexagon(
             first_node_id,
             last_node_id,
@@ -347,27 +347,6 @@ Type4Handler::possible_insertions_of_path(const Path& path) {
         );
     } else {
         return case_no_corner_of_hexagon(first_node_id, last_node_id, first_edge_id, last_edge_id);
-    }
-}
-
-void Type4Handler::next_case() {
-    DOMUS_ASSERT(
-        compute_embedding_genus(m_embedding) == 1,
-        "Type4Handler::next_case: genus of embedding after edge insertions is not 1"
-    );
-    std::vector<Face> faces;
-    for (Path path : compute_faces_in_embedding(m_graph, m_embedding))
-        faces.push_back(compute_face_from_path(std::move(path), m_graph));
-    for (Face& face : faces) {
-        if (face.type() == FaceType::TYPE_2)
-            handle_type_2(m_graph, m_embedding, faces);
-        else {
-            DOMUS_ASSERT(
-                face.type() == FaceType::TYPE_1,
-                "Type4Handler::next_case: face should be of at most type 2"
-            );
-            handle_type_1(m_graph, m_embedding, faces);
-        }
     }
 }
 
@@ -429,7 +408,7 @@ auto Type4Handler::candidate_face_splitting_paths_in_bridge(const Bridge& bridge
            });
 }
 
-void Type4Handler::try_face_splits_with_path(const Path& path) {
+bool Type4Handler::try_face_splits_with_path(const Path& path) {
     DOMUS_ASSERT(
         compute_embedding_genus(m_embedding) == 1,
         "Type4Handler::try_face_splits_with_path: initial genus of embedding is not 1"
@@ -488,16 +467,18 @@ void Type4Handler::try_face_splits_with_path(const Path& path) {
                 insertion_1.edge_id
             );
 
-        next_case();
+        if (next_case(m_embedding, m_graph))
+            return true;
 
         m_embedding.remove_edge(from_id_0, to_id_0, insertion_0.edge_id_to_insert);
         m_embedding.remove_edge(from_id_1, to_id_1, insertion_1.edge_id_to_insert);
     }
 
     remove_augment_of_path_in_embedding(m_embedding, path);
+    return false;
 }
 
-void Type4Handler::try_paths_inside_graph() {
+bool Type4Handler::try_paths_inside_graph() {
     for (const Bridge& bridge : m_bridges) {
         if (bridge.get_bridge().get_number_of_nodes() == 2) {
             const Path path = path_of_chord(m_graph, bridge);
@@ -508,15 +489,18 @@ void Type4Handler::try_paths_inside_graph() {
                     attachment_id_1,
                     attachment_id_2
                 ))
-                try_face_splits_with_path(path);
+                if (try_face_splits_with_path(path))
+                    return true;
         } else {
             for (const Path& path : candidate_face_splitting_paths_in_bridge(bridge))
-                try_face_splits_with_path(path);
+                if (try_face_splits_with_path(path))
+                    return true;
         }
     }
+    return false;
 }
 
-void Type4Handler::try_edges_not_in_graph() {
+bool Type4Handler::try_edges_not_in_graph() {
     NodesContainer is_attachments_in_face(m_graph);
     std::vector<size_t> attachments_in_face;
     attachments_in_face.reserve(m_bridges.size() * 2);
@@ -554,22 +538,28 @@ void Type4Handler::try_edges_not_in_graph() {
             Path path;
             path.push_back(m_graph, node_id_1, edge_id_1);
             path.push_back(m_graph, m_jolly_id, edge_id_2);
-            try_face_splits_with_path(path);
+            if (try_face_splits_with_path(path))
+                return true;
 
             m_graph.remove_edge(edge_id_1);
             m_graph.remove_edge(edge_id_2);
         }
     }
+    return false;
 }
 
-void Type4Handler::try_3_stars() {
-    // TODO
+bool Type4Handler::try_3_stars() {
+    return stars::try_3_stars(m_face, m_bridges, m_is_node_in_repeated_path, m_graph, m_embedding);
 }
 
-void Type4Handler::solve() {
-    try_paths_inside_graph();
-    try_edges_not_in_graph();
-    try_3_stars();
+bool Type4Handler::solve() {
+    if (try_paths_inside_graph())
+        return true;
+    if (try_edges_not_in_graph())
+        return true;
+    if (try_3_stars())
+        return true;
+    return false;
 }
 
 Type4Handler::Type4Handler(Graph& graph, Embedding& embedding, const Face& face, size_t jolly_id)
@@ -592,9 +582,9 @@ Type4Handler::Type4Handler(Graph& graph, Embedding& embedding, const Face& face,
     m_is_node_in_repeated_path.get_label(last_id).set();
 }
 
-void handle_type_4(Graph& graph, Embedding& embedding, const Face& face, size_t jolly_id) {
+bool handle_type_4(Graph& graph, Embedding& embedding, const Face& face, size_t jolly_id) {
     Type4Handler handler(graph, embedding, face, jolly_id);
-    handler.solve();
+    return handler.solve();
 }
 
 } // namespace domus::torus

@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include <cstddef>
@@ -12,7 +10,7 @@ class Embedding;
 namespace domus::torus {
 class Face;
 
-void handle_type_3(
+bool handle_type_3(
     graph::Graph& graph, graph::Embedding& embedding, const Face& face, size_t jolly_id
 );
 

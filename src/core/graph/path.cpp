@@ -70,6 +70,27 @@ void Path::reverse() {
     m_last_node_id = first;
 }
 
+void Path::pop_front() {
+    DOMUS_ASSERT(number_of_edges() > 0, "Path::pop_front: path is empty");
+    m_nodes_ids.pop_front();
+    m_edges_ids.pop_front();
+    if (number_of_edges() == 0)
+        m_last_node_id = std::nullopt;
+}
+
+void Path::pop_back() {
+    DOMUS_ASSERT(number_of_edges() > 0, "Path::pop_back: path is empty");
+    if (number_of_edges() == 1) {
+        m_nodes_ids.clear();
+        m_edges_ids.clear();
+        m_last_node_id = std::nullopt;
+    } else {
+        m_last_node_id = m_nodes_ids.back();
+        m_nodes_ids.pop_back();
+        m_edges_ids.pop_back();
+    }
+}
+
 size_t Path::number_of_edges() const { return m_nodes_ids.size(); }
 
 size_t Path::number_of_nodes() const {
@@ -108,6 +129,23 @@ void Path::print() const { std::print("{}", to_string()); }
 bool Path::operator==(const Path& other) const {
     return (m_nodes_ids == other.m_nodes_ids) && (m_edges_ids == other.m_edges_ids) &&
            (m_last_node_id == other.m_last_node_id);
+}
+
+Path convert_path(
+    const Path& path,
+    const utilities::NodesLabels<size_t>& node_labels,
+    const utilities::EdgesLabels<size_t>& edge_labels,
+    const Graph& graph
+) {
+    Path labeled_path;
+    for (size_t i = 0; i < path.number_of_edges(); ++i) {
+        const size_t node_1 = path.node_id_at_position(i);
+        const size_t edge = path.edge_id_at_position(i);
+        const size_t labeled_node_id = node_labels.get_label(node_1);
+        const size_t labeled_edge_id = edge_labels.get_label(edge);
+        labeled_path.push_back(graph, labeled_node_id, labeled_edge_id);
+    }
+    return labeled_path;
 }
 
 } // namespace domus::graph

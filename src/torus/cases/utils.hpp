@@ -1,6 +1,7 @@
 #pragma once
 
 #include <bitset>
+#include <fstream>
 #include <ranges>
 
 #include "domus/core/graph/embedding.hpp"
@@ -9,6 +10,10 @@
 #include "domus/core/graph/path.hpp"
 
 #include "domus/torus/bridge.hpp"
+
+#include "../faces.hpp"
+#include "1/type_1.hpp"
+#include "2/type_2.hpp"
 
 namespace domus::torus {
 
@@ -91,6 +96,36 @@ remove_augment_of_path_in_embedding(graph::Embedding& embedding, const graph::Pa
         const size_t second_last_node_id = path.node_id_at_position(path.number_of_edges() - 1);
         const size_t last_edge_id = path.edge_id_at_position(path.number_of_edges() - 1);
         embedding.remove_edge(second_last_node_id, last_node_id, last_edge_id);
+    }
+}
+
+inline bool next_case(graph::Embedding& embedding, graph::Graph& graph) {
+    DOMUS_ASSERT(
+        compute_embedding_genus(embedding) == 1,
+        "Type4Handler::next_case: genus of embedding after edge insertions is not 1"
+    );
+    std::vector<Face> faces;
+    for (graph::Path path : compute_faces_in_embedding(graph, embedding))
+        faces.push_back(compute_face_from_path(std::move(path), graph));
+    for (const Face& face : faces)
+        if (face.type() == FaceType::TYPE_2)
+            return handle_type_2(graph, embedding, faces);
+    return handle_type_1(graph, embedding, faces);
+}
+
+static std::ofstream log_final_configurations("log_final_configurations.txt");
+inline void add_log_final_configuration(const std::vector<domus::torus::Face>& faces) {
+    if (log_final_configurations.is_open()) {
+        std::vector<size_t> face_types;
+        face_types.reserve(faces.size());
+
+        for (auto& face : faces)
+            face_types.push_back(static_cast<size_t>(face.type()));
+        std::sort(face_types.begin(), face_types.end());
+
+        for (auto& type : face_types)
+            log_final_configurations << type << " ";
+        log_final_configurations << std::endl;
     }
 }
 

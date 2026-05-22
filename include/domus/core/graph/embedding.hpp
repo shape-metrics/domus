@@ -26,6 +26,7 @@ class Embedding {
 
     void add_edge_after(size_t from_id, size_t to_id, size_t edge_id, size_t prev_edge_id);
     void add_edge_before(size_t from_id, size_t to_id, size_t edge_id, size_t next_edge_id);
+    void reverse_circular_order(size_t node_id);
 
     void remove_edge(size_t from_id, size_t to_id, size_t edge_id);
 

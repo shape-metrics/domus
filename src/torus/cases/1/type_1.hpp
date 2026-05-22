@@ -10,7 +10,7 @@ class Embedding;
 namespace domus::torus {
 class Face;
 
-void handle_type_2(
+bool handle_type_1(
     graph::Graph& graph, graph::Embedding& embedding, const std::vector<Face>& faces
 );
 

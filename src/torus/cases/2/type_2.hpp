@@ -1,19 +1,17 @@
 #pragma once
 
-#include <cstddef>
+#include <vector>
 
 namespace domus::graph {
 class Graph;
 class Embedding;
-class Path;
 } // namespace domus::graph
 
 namespace domus::torus {
 class Face;
-class Bridge;
 
-void handle_type_4(
-    graph::Graph& graph, graph::Embedding& embedding, const Face& face, size_t jolly_id
+bool handle_type_2(
+    graph::Graph& graph, graph::Embedding& embedding, const std::vector<Face>& faces
 );
 
 } // namespace domus::torus

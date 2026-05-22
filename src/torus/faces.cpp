@@ -29,7 +29,20 @@ std::string face_type_to_string(FaceType face_type) {
 }
 
 Face::Face(FaceType type, Path&& path, std::vector<Path>&& repeated_paths)
-    : m_type(type), m_path(path), m_repeated_paths(repeated_paths) {}
+    : m_type(type), m_path(path), m_repeated_paths(repeated_paths) {
+    const size_t first = m_repeated_paths[0].get_first_node_id();
+    if (m_repeated_paths[1].get_first_node_id() != first)
+        m_repeated_paths[1].reverse();
+    if (m_repeated_paths[2].get_first_node_id() != first)
+        m_repeated_paths[2].reverse();
+    DOMUS_ASSERT(
+        m_repeated_paths[0].get_first_node_id() == m_repeated_paths[1].get_first_node_id() &&
+            m_repeated_paths[0].get_first_node_id() == m_repeated_paths[2].get_first_node_id() &&
+            m_repeated_paths[0].get_last_node_id() == m_repeated_paths[1].get_last_node_id() &&
+            m_repeated_paths[0].get_last_node_id() == m_repeated_paths[2].get_last_node_id(),
+        "Face::Face: nodes ids in repeated paths do not match correctly"
+    );
+}
 
 FaceType Face::type() const { return m_type; }
 
