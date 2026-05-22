@@ -1,5 +1,6 @@
 #include "domus/core/graph/embedding.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <print>
 
@@ -191,6 +192,27 @@ void Embedding::add_edge_before(size_t from_id, size_t to_id, size_t edge_id, si
     // insert new edge before next_it in the adjacency list
     adj.insert(next_it, new_edge);
     m_number_of_edges++;
+}
+
+void Embedding::reverse_circular_order(size_t node_id) {
+    DOMUS_ASSERT(has_node(node_id), "Embedding::reverse_circular_order: node does not exist");
+
+    std::vector<domus::graph::EdgeIter>& adj = m_adjacency_list.at(node_id);
+    if (adj.size() <= 1)
+        return;
+
+    for (const EdgeIter& edge : adj) {
+        size_t neighbor_id = edge.neighbor_id;
+        size_t edge_id = edge.id;
+
+        EdgeIter next_edge = m_next_in_adjacency_list.get_label(node_id, neighbor_id, edge_id);
+        EdgeIter prev_edge = m_prev_in_adjacency_list.get_label(node_id, neighbor_id, edge_id);
+
+        m_next_in_adjacency_list.update_label(node_id, neighbor_id, edge_id, prev_edge);
+        m_prev_in_adjacency_list.update_label(node_id, neighbor_id, edge_id, next_edge);
+    }
+
+    std::ranges::reverse(adj);
 }
 
 void Embedding::remove_edge(size_t from_id, size_t to_id, size_t edge_id) {

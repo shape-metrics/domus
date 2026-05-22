@@ -19,8 +19,6 @@ using namespace domus::graph;
 using utilities::NodesLabels;
 
 class TrueThreeStar {
-    const Bridge& m_bridge;
-    const std::array<std::optional<size_t>, 3>& m_attachment_in_repeated_path;
     std::array<Path, 3> m_paths_to_center;
 
   public:
@@ -36,8 +34,7 @@ TrueThreeStar::TrueThreeStar(
     const Bridge& bridge,
     std::array<std::optional<size_t>, 3>& attachment_in_repeated_path,
     const Graph& graph
-)
-    : m_bridge(bridge), m_attachment_in_repeated_path(attachment_in_repeated_path) {
+) {
     // building 3-star from the bridge
     // find candidate center vertex (center of star)
     const size_t attachment_1 = *attachment_in_repeated_path[0];
@@ -80,6 +77,8 @@ TrueThreeStar::TrueThreeStar(
     }
 }
 
+const std::array<Path, 3>& TrueThreeStar::get_paths_to_center() const { return m_paths_to_center; }
+
 class FalseThreeStarBridge {
     Path m_path;
 
@@ -90,6 +89,7 @@ class FalseThreeStarBridge {
         const size_t attachment_id_2,
         const Graph& graph
     );
+    const Path& get_path() const;
 };
 
 FalseThreeStarBridge::FalseThreeStarBridge(
@@ -112,6 +112,8 @@ FalseThreeStarBridge::FalseThreeStarBridge(
     );
 }
 
+const Path& FalseThreeStarBridge::get_path() const { return m_path; }
+
 class ThreeStarsHandler {
     const Face& m_face;
     const NodesLabels<std::bitset<3>>& m_is_node_in_repeated_path;
@@ -129,8 +131,7 @@ class ThreeStarsHandler {
     void remove_true_star(const TrueThreeStar& star);
     void populate_spreaded_circular_order(size_t star_index);
     bool case_false_star();
-    bool case_zero_3_stars();
-    bool case_one_3_star();
+    bool case_zero_or_one_3_star();
     bool case_two_or_three_3_stars();
 
   public:
@@ -286,6 +287,30 @@ void ThreeStarsHandler::insert_spreaded_true_star(const TrueThreeStar& star) {
     }
 }
 
+bool ThreeStarsHandler::is_circular_order_of_center_spreaded(size_t star_index) {
+    std::array<size_t, 2> two_neighbors;
+    const TrueThreeStar& star = m_candidate_true_3_stars[star_index];
+    const size_t center_id = star.get_paths_to_center()[0].get_last_node_id();
+    size_t i = 0;
+    for (const EdgeIter edge : m_embedding.get_edges(center_id)) {
+        two_neighbors[i] = edge.id;
+        ++i;
+        if (i == 2)
+            break;
+    }
+    const std::array<size_t, 3>& spreaded_order =
+        m_spreaded_true_3_stars_center_circular_order_of_edge_ids[star_index].value();
+    for (i = 0; i < 3; ++i) {
+        if (spreaded_order[i] == two_neighbors[0])
+            return spreaded_order[(i + 1) % 3] == two_neighbors[1];
+    }
+    DOMUS_ASSERT(
+        false,
+        "ThreeStarsHandler::is_circular_order_of_center_spreaded: did not find expected edge"
+    );
+    return false;
+}
+
 void ThreeStarsHandler::remove_true_star(const TrueThreeStar& star) {
     for (size_t i = 0; i < 2; ++i) {
         const Path& path_to_center = star.get_paths_to_center()[i];
@@ -356,36 +381,144 @@ bool ThreeStarsHandler::case_true_star() {
 }
 
 bool ThreeStarsHandler::case_false_star() {
-    if (m_candidate_true_3_stars.size() == 4) // then one must be spreaded
-        return false;
-
-    // Checking if a false star can be built at all
-    if (m_bridges_0_1.size() == 0)
-        return false;
-    if (m_bridges_1_2.size() == 0)
-        return false;
-    if (m_bridges_0_2.size() == 0)
+    if (m_candidate_true_3_stars.size() == 4) // Then one must be spreaded
         return false;
 
     // Trying false stars
-    if (m_candidate_true_3_stars.size() == 0)
-        return case_zero_3_stars();
-    if (m_candidate_true_3_stars.size() == 1)
-        return case_one_3_star();
+    if (m_candidate_true_3_stars.size() <= 1)
+        return case_zero_or_one_3_star();
     return case_two_or_three_3_stars();
 }
 
-bool ThreeStarsHandler::case_zero_3_stars() {
-    // TODO find the two smallest of the three bridges sets and use those
+bool ThreeStarsHandler::case_zero_or_one_3_star() {
+    auto find_insertion_edge = [](const size_t node_id, const Path& path) -> size_t {
+        for (size_t i = 1; i < path.number_of_nodes() - 1; ++i)
+            if (path.node_id_at_position(i) == node_id)
+                return path.edge_id_at_position(i);
+        DOMUS_ASSERT(false, "ThreeStarsHandler::case_zero_3_stars: did not find node");
+        return 0ul;
+    };
+    auto prepare_path = [&](const Path& path, size_t i, size_t j) {
+        const size_t insertion_0 =
+            find_insertion_edge(path.get_first_node_id(), m_face.repeated_paths()[i]);
+        const size_t insertion_1 =
+            find_insertion_edge(path.get_last_node_id(), m_face.repeated_paths()[j]);
+        augment_embedding_with_path(m_embedding, path);
+        m_embedding.add_edge_after(
+            path.get_first_node_id(),
+            path.node_id_at_position(1),
+            path.get_first_edge_id(),
+            insertion_0
+        );
+        m_embedding.add_edge_after(
+            path.get_last_node_id(),
+            path.node_id_at_position(path.number_of_nodes() - 2),
+            path.get_last_edge_id(),
+            insertion_1
+        );
+    };
+    auto remove_path = [](const Path& path, Embedding& embedding) {
+        remove_augment_of_path_in_embedding(embedding, path);
+        embedding.remove_edge(
+            path.get_first_node_id(),
+            path.node_id_at_position(1),
+            path.get_first_edge_id()
+        );
+        embedding.remove_edge(
+            path.get_last_node_id(),
+            path.node_id_at_position(path.number_of_nodes() - 2),
+            path.get_last_edge_id()
+        );
+    };
 
-    // TODO
+    // Building pool of bridges to guess from
+    std::optional<std::tuple<std::vector<FalseThreeStarBridge>, size_t, size_t>> bridges_1;
+    std::optional<std::tuple<std::vector<FalseThreeStarBridge>, size_t, size_t>> bridges_2;
+    const size_t size_0_1 = m_bridges_0_1.size();
+    const size_t size_0_2 = m_bridges_0_2.size();
+    const size_t size_1_2 = m_bridges_1_2.size();
+    if (m_candidate_true_3_stars.size() == 0) {
+        // Checking if a false star can be built at all (we have zero true stars so we need
+        // all sets to be non empty)
+        if (size_0_1 == 0 || size_1_2 == 0 || size_0_2 == 0)
+            return false;
+
+        // Finding the two smallest sets of the three
+        if (size_0_1 >= size_0_2 && size_0_1 >= size_1_2) {
+            bridges_1 = std::make_tuple(m_bridges_0_2, 0, 2);
+            bridges_2 = std::make_tuple(m_bridges_1_2, 1, 2);
+        } else if (size_0_2 >= size_0_1 && size_0_2 >= size_1_2) {
+            bridges_1 = std::make_tuple(m_bridges_0_1, 0, 1);
+            bridges_2 = std::make_tuple(m_bridges_1_2, 1, 2);
+        } else {
+            bridges_1 = std::make_tuple(m_bridges_0_1, 0, 1);
+            bridges_2 = std::make_tuple(m_bridges_0_2, 0, 2);
+        }
+    } else {
+        // Checking if a false star can be built at all (we have one true star so we need at
+        // least two sets to be non empty)
+        if (size_0_1 + size_1_2 == 0 || size_0_1 == 0 + size_0_2 == 0 || size_0_2 + size_1_2 == 0)
+            return false;
+
+        // If one is empty, then must use the other two
+        if (size_0_1 == 0) {
+            bridges_1 = std::make_tuple(m_bridges_0_2, 0, 2);
+            bridges_2 = std::make_tuple(m_bridges_1_2, 1, 2);
+        } else if (size_0_2 == 0) {
+            bridges_1 = std::make_tuple(m_bridges_0_1, 0, 1);
+            bridges_2 = std::make_tuple(m_bridges_1_2, 1, 2);
+        } else if (size_1_2 == 0) {
+            bridges_1 = std::make_tuple(m_bridges_0_1, 0, 1);
+            bridges_2 = std::make_tuple(m_bridges_0_2, 0, 2);
+        }
+
+        // Otherwise, use the smallest two
+        if (size_0_1 >= size_0_2 && size_0_1 >= size_1_2) {
+            bridges_1 = std::make_tuple(m_bridges_0_2, 0, 2);
+            bridges_2 = std::make_tuple(m_bridges_1_2, 1, 2);
+        } else if (size_0_2 >= size_0_1 && size_0_2 >= size_1_2) {
+            bridges_1 = std::make_tuple(m_bridges_0_1, 0, 1);
+            bridges_2 = std::make_tuple(m_bridges_1_2, 1, 2);
+        } else {
+            bridges_1 = std::make_tuple(m_bridges_0_1, 0, 1);
+            bridges_2 = std::make_tuple(m_bridges_0_2, 0, 2);
+        }
+    }
+
+    // Trying insertions of paths (for false 3-stars)
+    for (const FalseThreeStarBridge& p_1 : std::get<0>(*bridges_1)) {
+        prepare_path(p_1.get_path(), std::get<1>(*bridges_1), std::get<2>(*bridges_1));
+        for (const FalseThreeStarBridge& p_2 : std::get<0>(*bridges_2)) {
+            prepare_path(p_2.get_path(), std::get<1>(*bridges_2), std::get<2>(*bridges_2));
+            // 0 0
+            if (compute_embedding_genus(m_embedding) == 1 && next_case(m_embedding, m_graph))
+                return true;
+            // 1 0
+            m_embedding.reverse_circular_order(p_1.get_path().get_first_node_id());
+            m_embedding.reverse_circular_order(p_1.get_path().get_last_node_id());
+            if (compute_embedding_genus(m_embedding) == 1 && next_case(m_embedding, m_graph))
+                return true;
+            // 1 1
+            m_embedding.reverse_circular_order(p_2.get_path().get_first_node_id());
+            m_embedding.reverse_circular_order(p_2.get_path().get_last_node_id());
+            if (compute_embedding_genus(m_embedding) == 1 && next_case(m_embedding, m_graph))
+                return true;
+            // 0 1
+            m_embedding.reverse_circular_order(p_1.get_path().get_first_node_id());
+            m_embedding.reverse_circular_order(p_1.get_path().get_last_node_id());
+            if (compute_embedding_genus(m_embedding) == 1 && next_case(m_embedding, m_graph))
+                return true;
+            remove_path(p_2.get_path(), m_embedding);
+        }
+        remove_path(p_1.get_path(), m_embedding);
+    }
+
+    return false;
 }
 
-bool ThreeStarsHandler::case_one_3_star() {
-    // TODO
-}
-
-// TODO can probably be made more efficient in discarding no-go cases
+// TODO can probably be made more efficient in discarding no-go cases?
+// some configurations can be discarded just by looking the attachments order in the face
+// but may be comparable to current approach
 bool ThreeStarsHandler::case_two_or_three_3_stars() {
     const size_t k = m_candidate_true_3_stars.size();
     DOMUS_ASSERT(
