@@ -19,7 +19,7 @@ class Bridge;
  *
  * @param graph The whole graph G.
  * @param embedding The current toroidal embedding to extend (2 cycles).
- * @param face The ONLY Type 4 face corresponding to the embedding.
+ * @param face The only face corresponding to the embedding, which has to be of Type 4.
  * @param jolly_id An id of a vertex (not in G) used to create artificial paths
                    inserted in G to split the face.
  * @return true Then @param embedding is extended a toroidal embedding of whole graph.

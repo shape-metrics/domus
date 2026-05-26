@@ -8,5 +8,6 @@ bool handle_type_2(
 ) {
     add_log_final_configuration(faces);
     // TODO
+    return false;
 }
 } // namespace domus::torus

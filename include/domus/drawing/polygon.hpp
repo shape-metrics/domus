@@ -51,7 +51,6 @@ class Circle2D {
     Point2D center_m;
     double radius_m;
     std::string label_m{};
-    std::string color_m{};
 
   public:
     Circle2D(const Point2D& center, const double radius);
@@ -59,10 +58,7 @@ class Circle2D {
     double getRadius() const;
     void setLabel(const std::string_view label);
     bool hasLabel() const;
-    const std::string_view getLabel() const;
-    void setColor(const std::string_view color);
-    bool hasColor() const;
-    const std::string_view getColor() const;
+    std::optional<std::string> getLabel() const;
 };
 
 class Square2D {

@@ -49,19 +49,7 @@ void Circle2D::setLabel(const std::string_view label) { label_m = label; }
 
 bool Circle2D::hasLabel() const { return !label_m.empty(); }
 
-const std::string_view Circle2D::getLabel() const {
-    DOMUS_ASSERT(hasLabel(), "Circle2D::getLabel: circle does not have a label");
-    return label_m;
-}
-
-void Circle2D::setColor(const std::string_view color) { color_m = color; }
-
-bool Circle2D::hasColor() const { return !color_m.empty(); }
-
-const std::string_view Circle2D::getColor() const {
-    DOMUS_ASSERT(hasColor(), "Circle2D::getColor: circle does not have a color");
-    return color_m;
-}
+std::optional<std::string> Circle2D::getLabel() const { return label_m; }
 
 Square2D::Square2D(const Point2D& center, const double side) : center_m(center), side_m(side) {}
 

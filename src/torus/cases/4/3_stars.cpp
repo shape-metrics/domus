@@ -114,7 +114,7 @@ FalseThreeStarBridge::FalseThreeStarBridge(
 
 const Path& FalseThreeStarBridge::get_path() const { return m_path; }
 
-class ThreeStarsHandler {
+class SplitterWithStar {
     const Face& m_face;
     const NodesLabels<std::bitset<3>>& m_is_node_in_repeated_path;
     Graph& m_graph;
@@ -133,9 +133,11 @@ class ThreeStarsHandler {
     bool case_false_star();
     bool case_zero_or_one_3_star();
     bool case_two_or_three_3_stars();
+    bool try_embedding_extension(const TrueThreeStar& star);
+    bool try_embedding_extension(); // TODO remove
 
   public:
-    ThreeStarsHandler(
+    SplitterWithStar(
         const Face& face,
         const std::vector<Bridge>& bridges,
         const NodesLabels<std::bitset<3>>& is_node_in_repeated_path,
@@ -145,7 +147,7 @@ class ThreeStarsHandler {
     bool solve();
 };
 
-ThreeStarsHandler::ThreeStarsHandler(
+SplitterWithStar::SplitterWithStar(
     const Face& face,
     const std::vector<Bridge>& bridges,
     const NodesLabels<std::bitset<3>>& is_node_in_repeated_path,
@@ -226,7 +228,7 @@ ThreeStarsHandler::ThreeStarsHandler(
  *
  * @param star The star to be inserted in the face.
  */
-void ThreeStarsHandler::insert_spreaded_true_star(const TrueThreeStar& star) {
+void SplitterWithStar::insert_spreaded_true_star(const TrueThreeStar& star) {
     std::array<size_t, 3> repeated_path_index_of_first_node{3, 3, 3};
     for (size_t i = 0; i < 2; ++i) {
         const Path& path_to_center = star.get_paths_to_center()[i];
@@ -287,7 +289,7 @@ void ThreeStarsHandler::insert_spreaded_true_star(const TrueThreeStar& star) {
     }
 }
 
-bool ThreeStarsHandler::is_circular_order_of_center_spreaded(size_t star_index) {
+bool SplitterWithStar::is_circular_order_of_center_spreaded(size_t star_index) {
     std::array<size_t, 2> two_neighbors;
     const TrueThreeStar& star = m_candidate_true_3_stars[star_index];
     const size_t center_id = star.get_paths_to_center()[0].get_last_node_id();
@@ -311,7 +313,7 @@ bool ThreeStarsHandler::is_circular_order_of_center_spreaded(size_t star_index) 
     return false;
 }
 
-void ThreeStarsHandler::remove_true_star(const TrueThreeStar& star) {
+void SplitterWithStar::remove_true_star(const TrueThreeStar& star) {
     for (size_t i = 0; i < 2; ++i) {
         const Path& path_to_center = star.get_paths_to_center()[i];
         for (size_t j = 0; j < path_to_center.number_of_edges(); ++j) {
@@ -334,7 +336,7 @@ void ThreeStarsHandler::remove_true_star(const TrueThreeStar& star) {
  * face). This is usefull to remember when we want to compute the possible "narrow" embeddings.
  * @param star_index Index of the star in m_candidate_true_3_stars array
  */
-void ThreeStarsHandler::populate_spreaded_circular_order(size_t star_index) {
+void SplitterWithStar::populate_spreaded_circular_order(size_t star_index) {
     const TrueThreeStar& star = m_candidate_true_3_stars[star_index];
     const size_t center_node_id = star.get_paths_to_center()[0].get_last_node_id();
     DOMUS_ASSERT(
@@ -355,7 +357,9 @@ void ThreeStarsHandler::populate_spreaded_circular_order(size_t star_index) {
     }
 }
 
-bool ThreeStarsHandler::case_true_star() {
+bool SplitterWithStar::try_embedding_extension() { return next_case(m_embedding, m_graph, m_face); }
+
+bool SplitterWithStar::case_true_star() {
     for (size_t i = 0; i < m_candidate_true_3_stars.size(); ++i) {
         const TrueThreeStar& candidate_3_star = m_candidate_true_3_stars[i];
         insert_spreaded_true_star(candidate_3_star);
@@ -365,7 +369,7 @@ bool ThreeStarsHandler::case_true_star() {
             m_embedding.reverse_circular_order(center_id);
         }
         populate_spreaded_circular_order(i);
-        if (next_case(m_embedding, m_graph))
+        if (try_embedding_extension())
             return true;
         /* A spreaded true star admits two embeddings, both with the same circular order of the
            center. What differs are the circular order of the legs of the star. Then, to obtain one
@@ -373,14 +377,14 @@ bool ThreeStarsHandler::case_true_star() {
            legs. */
         for (const Path& path : candidate_3_star.get_paths_to_center())
             m_embedding.reverse_circular_order(path.get_first_node_id());
-        if (next_case(m_embedding, m_graph))
+        if (try_embedding_extension())
             return true;
         remove_true_star(candidate_3_star);
     }
     return false;
 }
 
-bool ThreeStarsHandler::case_false_star() {
+bool SplitterWithStar::case_false_star() {
     if (m_candidate_true_3_stars.size() == 4) // Then one must be spreaded
         return false;
 
@@ -390,7 +394,7 @@ bool ThreeStarsHandler::case_false_star() {
     return case_two_or_three_3_stars();
 }
 
-bool ThreeStarsHandler::case_zero_or_one_3_star() {
+bool SplitterWithStar::case_zero_or_one_3_star() {
     auto find_insertion_edge = [](const size_t node_id, const Path& path) -> size_t {
         for (size_t i = 1; i < path.number_of_nodes() - 1; ++i)
             if (path.node_id_at_position(i) == node_id)
@@ -491,22 +495,22 @@ bool ThreeStarsHandler::case_zero_or_one_3_star() {
         for (const FalseThreeStarBridge& p_2 : std::get<0>(*bridges_2)) {
             prepare_path(p_2.get_path(), std::get<1>(*bridges_2), std::get<2>(*bridges_2));
             // 0 0
-            if (compute_embedding_genus(m_embedding) == 1 && next_case(m_embedding, m_graph))
+            if (compute_embedding_genus(m_embedding) == 1 && try_embedding_extension())
                 return true;
             // 1 0
             m_embedding.reverse_circular_order(p_1.get_path().get_first_node_id());
             m_embedding.reverse_circular_order(p_1.get_path().get_last_node_id());
-            if (compute_embedding_genus(m_embedding) == 1 && next_case(m_embedding, m_graph))
+            if (compute_embedding_genus(m_embedding) == 1 && try_embedding_extension())
                 return true;
             // 1 1
             m_embedding.reverse_circular_order(p_2.get_path().get_first_node_id());
             m_embedding.reverse_circular_order(p_2.get_path().get_last_node_id());
-            if (compute_embedding_genus(m_embedding) == 1 && next_case(m_embedding, m_graph))
+            if (compute_embedding_genus(m_embedding) == 1 && try_embedding_extension())
                 return true;
             // 0 1
             m_embedding.reverse_circular_order(p_1.get_path().get_first_node_id());
             m_embedding.reverse_circular_order(p_1.get_path().get_last_node_id());
-            if (compute_embedding_genus(m_embedding) == 1 && next_case(m_embedding, m_graph))
+            if (compute_embedding_genus(m_embedding) == 1 && try_embedding_extension())
                 return true;
             remove_path(p_2.get_path(), m_embedding);
         }
@@ -519,7 +523,7 @@ bool ThreeStarsHandler::case_zero_or_one_3_star() {
 // TODO can probably be made more efficient in discarding no-go cases?
 // some configurations can be discarded just by looking the attachments order in the face
 // but may be comparable to current approach
-bool ThreeStarsHandler::case_two_or_three_3_stars() {
+bool SplitterWithStar::case_two_or_three_3_stars() {
     const size_t k = m_candidate_true_3_stars.size();
     DOMUS_ASSERT(
         k == 2 || k == 3,
@@ -556,7 +560,7 @@ bool ThreeStarsHandler::case_two_or_three_3_stars() {
         // Base case: all 'k' stars have been configured
         if (star_idx == k) {
             if (compute_embedding_genus(m_embedding) == 1) // TODO check how many times happens
-                if (next_case(m_embedding, m_graph))
+                if (try_embedding_extension())
                     return true;
             return false;
         }
@@ -577,7 +581,7 @@ bool ThreeStarsHandler::case_two_or_three_3_stars() {
     return explore_configurations(explore_configurations, 0);
 }
 
-bool ThreeStarsHandler::solve() {
+bool SplitterWithStar::solve() {
     if (m_candidate_true_3_stars.size() > 4)
         return false;
     if (case_true_star())
@@ -594,7 +598,7 @@ bool try_3_stars(
     Graph& graph,
     Embedding& embedding
 ) {
-    ThreeStarsHandler handler(face, bridges, is_node_in_repeated_path, graph, embedding);
+    SplitterWithStar handler(face, bridges, is_node_in_repeated_path, graph, embedding);
     return handler.solve();
 }
 

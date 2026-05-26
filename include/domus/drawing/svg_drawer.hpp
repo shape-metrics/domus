@@ -24,8 +24,8 @@ class SvgDrawer {
   public:
     SvgDrawer(int width, int height);
     void add(Square2D& square, double corner_radious = 0);
-    void add(Circle2D& circle);
-    void add(Line2D& line, const std::string_view color = "black");
+    void add(const Circle2D& circle, const std::string_view color = "black");
+    void add(const Line2D& line, const std::string_view color = "black");
     void add(Polygon2D& polygon, const std::string_view color = "black");
     void add(const Path2D& path, const std::string_view color);
     void add_and_smooth(Path2D& path, const std::string_view color = "black");

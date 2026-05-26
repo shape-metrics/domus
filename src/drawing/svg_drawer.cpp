@@ -39,7 +39,21 @@ void SvgDrawer::add(Square2D& square, double corner_radious) {
     }
 }
 
-void SvgDrawer::add(Line2D& line, const std::string_view color) {
+void SvgDrawer::add(const Circle2D& circle, const std::string_view color) {
+    m_svg << "<circle cx=\"" << circle.getCenter().x_m << "\" cy=\""
+          << m_scale_y.map(circle.getCenter().y_m) << "\" ";
+    m_svg << "r=\"" << circle.getRadius() << "\" fill=\"" << color << "\" />" << std::endl;
+    if (circle.hasLabel()) {
+        double centerX = circle.getCenter().x_m;
+        double centerY = circle.getCenter().y_m;
+        m_svg << "<text x=\"" << centerX << "\" y=\"" << m_scale_y.map(centerY) << "\" ";
+        m_svg << "font-family=\"Verdana\" font-size=\"16\" fill=\"white\" ";
+        m_svg << "text-anchor=\"middle\" dominant-baseline=\"central\">"
+              << circle.getLabel().value() << "</text>" << std::endl;
+    }
+}
+
+void SvgDrawer::add(const Line2D& line, const std::string_view color) {
     m_svg << "<line x1=\"" << line.p1_m.x_m << "\" y1=\"" << m_scale_y.map(line.p1_m.y_m) << "\" ";
     m_svg << "x2=\"" << line.p2_m.x_m << "\" y2=\"" << m_scale_y.map(line.p2_m.y_m) << "\" ";
     m_svg << "style=\"stroke:" << color << ";stroke-width:2\" />" << std::endl;
