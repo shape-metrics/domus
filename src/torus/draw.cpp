@@ -20,6 +20,8 @@ get_hexagon_vertices(double h, double k, double r, bool flat_topped = false);
 /*
     CONSTANTS
 */
+
+const double PI = std::acos(-1.0);
 constexpr double CENTER_X = 540.0;
 constexpr double CENTER_Y = 360.0;
 constexpr double HEXAGON_RADIUS = 200.0;
@@ -51,7 +53,6 @@ constexpr const char* NODE_COLOR = "black";
 constexpr double NODE_RADIUS = 10.0;
 constexpr size_t SVG_WIDTH = 1080;
 constexpr size_t SVG_HEIGHT = 720;
-const double PI = std::acos(-1.0);
 
 // Function to calculate hexagon vertices
 // flat_topped = true: Flat top and bottom (vertices on Y-axis if centered)
@@ -275,7 +276,6 @@ void draw_path_inside(
 void draw_type_4_with_path(
     const Embedding& embedding, const Face& original_face, const Path& path
 ) {
-    return;
     SvgDrawer drawer(SVG_WIDTH, SVG_HEIGHT);
     draw_path_inside(drawer, path, embedding, original_face);
 
@@ -287,8 +287,8 @@ void draw_type_4_with_path(
     std::println("inserted path:");
     path.print();
     embedding.print();
-    // char c;
-    // std::cin >> c;
+    char c;
+    std::cin >> c;
 }
 
 void draw_type_3_with_path(
