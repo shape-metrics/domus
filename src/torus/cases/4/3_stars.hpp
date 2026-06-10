@@ -1,9 +1,6 @@
 #pragma once
 
-#include <bitset>
 #include <vector>
-
-#include "domus/core/graph/graph_utilities.hpp"
 
 namespace domus::graph {
 class Graph;
@@ -24,8 +21,6 @@ namespace stars {
  *
  * @param face The Type 4 face.
  * @param bridges The bridges of the face.
- * @param is_node_in_repeated_path Labels to check in O(1) whether a node belongs in
-          any of the repeated paths of the face.
  * @param graph The whole graph G.
  * @param embedding The embedding of the two cycles we're trying to extend.
  * @return true Then @param embedding is extended a toroidal embedding of whole graph.
@@ -35,7 +30,6 @@ namespace stars {
 bool try_3_stars(
     const Face& face,
     const std::vector<Bridge>& bridges,
-    const graph::utilities::NodesLabels<std::bitset<3>>& is_node_in_repeated_path,
     graph::Graph& graph,
     graph::Embedding& embedding
 );

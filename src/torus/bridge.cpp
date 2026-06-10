@@ -121,11 +121,13 @@ void BridgeFactory::find_bridges(
     NodesLabels<size_t>& old_id_to_new_id
 ) {
     NodesContainer is_node_visited(graph);
-    for (size_t node_id : graph.get_nodes_ids())
+    for (const size_t node_id : graph.get_nodes_ids())
         if (nodes_in_subgraph.has_node(node_id))
             is_node_visited.add_node(node_id);
 
-    for (size_t node_id : graph.get_nodes_ids())
+    for (const size_t node_id : graph.get_nodes_ids()) {
+        if (graph.get_degree_of_node(node_id) == 0) // In case jolly id is not used
+            continue;
         if (!is_node_visited.has_node(node_id)) {
             std::vector<graph::EdgeId> edges_in_bridge;
             dfs_find_bridges(graph, node_id, is_node_visited, edges_in_bridge, nodes_in_subgraph);
@@ -133,6 +135,7 @@ void BridgeFactory::find_bridges(
                 BridgeFactory::build_bridge(edges_in_bridge, nodes_in_subgraph, old_id_to_new_id)
             );
         }
+    }
 }
 
 Bridge BridgeFactory::build_bridge(
@@ -219,6 +222,7 @@ Bridge BridgeFactory::build_chord(
     Bridge result(SubGraph(std::move(chord), std::move(new_id_to_old_id), std::move(edges_labels)));
     add_attachment(result, new_node_1_id);
     add_attachment(result, new_node_2_id);
+
     return result;
 }
 

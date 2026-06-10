@@ -9,14 +9,14 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
 #include "domus/torus/bridge.hpp"
+#include "domus/torus/faces.hpp"
 
-#include "../../faces.hpp"
+#include "../../draw.hpp"
+#include "../insertions.hpp"
 #include "../utils.hpp"
 
 namespace domus::torus::stars {
-
 using namespace domus::graph;
-using utilities::NodesLabels;
 
 class TrueThreeStar {
     std::array<Path, 3> m_paths_to_center;
@@ -24,7 +24,7 @@ class TrueThreeStar {
   public:
     TrueThreeStar(
         const Bridge& bridge,
-        std::array<std::optional<size_t>, 3>& attachment_in_repeated_path,
+        const std::array<std::optional<size_t>, 3>& attachment_in_repeated_path,
         const Graph& graph
     );
     const std::array<Path, 3>& get_paths_to_center() const;
@@ -32,7 +32,7 @@ class TrueThreeStar {
 
 TrueThreeStar::TrueThreeStar(
     const Bridge& bridge,
-    std::array<std::optional<size_t>, 3>& attachment_in_repeated_path,
+    const std::array<std::optional<size_t>, 3>& attachment_in_repeated_path,
     const Graph& graph
 ) {
     // building 3-star from the bridge
@@ -116,7 +116,6 @@ const Path& FalseThreeStarBridge::get_path() const { return m_path; }
 
 class SplitterWithStar {
     const Face& m_face;
-    const NodesLabels<std::bitset<3>>& m_is_node_in_repeated_path;
     Graph& m_graph;
     Embedding& m_embedding;
     std::vector<TrueThreeStar> m_candidate_true_3_stars;
@@ -134,28 +133,20 @@ class SplitterWithStar {
     bool case_zero_or_one_3_star();
     bool case_two_or_three_3_stars();
     bool try_embedding_extension(const TrueThreeStar& star);
-    bool try_embedding_extension(); // TODO remove
+    bool try_embedding_extension(const FalseThreeStarBridge& p_1, const FalseThreeStarBridge& p_2);
+    bool try_embedding_extension();
 
   public:
     SplitterWithStar(
-        const Face& face,
-        const std::vector<Bridge>& bridges,
-        const NodesLabels<std::bitset<3>>& is_node_in_repeated_path,
-        Graph& graph,
-        Embedding& embedding
+        const Face& face, const std::vector<Bridge>& bridges, Graph& graph, Embedding& embedding
     );
     bool solve();
 };
 
 SplitterWithStar::SplitterWithStar(
-    const Face& face,
-    const std::vector<Bridge>& bridges,
-    const NodesLabels<std::bitset<3>>& is_node_in_repeated_path,
-    Graph& graph,
-    Embedding& embedding
+    const Face& face, const std::vector<Bridge>& bridges, Graph& graph, Embedding& embedding
 )
-    : m_face(face), m_is_node_in_repeated_path(is_node_in_repeated_path), m_graph(graph),
-      m_embedding(embedding) {
+    : m_face(face), m_graph(graph), m_embedding(embedding) {
     const size_t first_node_id = face.repeated_paths()[0].get_first_node_id();
     const size_t last_node_id = face.repeated_paths()[0].get_last_node_id();
     for (const Bridge& bridge : bridges) {
@@ -169,7 +160,7 @@ SplitterWithStar::SplitterWithStar(
             if (old_attachment_id == first_node_id || old_attachment_id == last_node_id)
                 continue;
             const std::bitset<3>& is_in_repeated_path =
-                is_node_in_repeated_path.get_label(old_attachment_id);
+                m_face.is_node_in_repeated_path().get_label(old_attachment_id);
             for (size_t i = 0; i < 3; i++)
                 if (is_in_repeated_path.test(i))
                     attachment_in_repeated_path[i] = attachment_id;
@@ -233,17 +224,23 @@ void SplitterWithStar::insert_spreaded_true_star(const TrueThreeStar& star) {
     for (size_t i = 0; i < 2; ++i) {
         const Path& path_to_center = star.get_paths_to_center()[i];
         DOMUS_ASSERT(
-            (m_is_node_in_repeated_path.get_label(path_to_center.get_first_node_id()).test(0) +
-             m_is_node_in_repeated_path.get_label(path_to_center.get_first_node_id()).test(1) +
-             m_is_node_in_repeated_path.get_label(path_to_center.get_first_node_id()).test(2)) == 1,
+            (m_face.is_node_in_repeated_path()
+                 .get_label(path_to_center.get_first_node_id())
+                 .test(0) +
+             m_face.is_node_in_repeated_path()
+                 .get_label(path_to_center.get_first_node_id())
+                 .test(1) +
+             m_face.is_node_in_repeated_path()
+                 .get_label(path_to_center.get_first_node_id())
+                 .test(2)) == 1,
             "ThreeStarsHandler::insert_spreaded_true_star: initial node should be in exactly one "
             "repeated path"
         );
-        if (m_is_node_in_repeated_path.get_label(path_to_center.get_first_node_id()).test(0))
+        if (m_face.is_node_in_repeated_path().get_label(path_to_center.get_first_node_id()).test(0))
             repeated_path_index_of_first_node[0] = 0;
-        if (m_is_node_in_repeated_path.get_label(path_to_center.get_first_node_id()).test(1))
+        if (m_face.is_node_in_repeated_path().get_label(path_to_center.get_first_node_id()).test(1))
             repeated_path_index_of_first_node[0] = 1;
-        if (m_is_node_in_repeated_path.get_label(path_to_center.get_first_node_id()).test(2))
+        if (m_face.is_node_in_repeated_path().get_label(path_to_center.get_first_node_id()).test(2))
             repeated_path_index_of_first_node[0] = 2;
     }
     DOMUS_ASSERT(
@@ -357,10 +354,26 @@ void SplitterWithStar::populate_spreaded_circular_order(size_t star_index) {
     }
 }
 
-bool SplitterWithStar::try_embedding_extension() { return next_case(m_embedding, m_graph, m_face); }
+bool SplitterWithStar::try_embedding_extension(
+    const FalseThreeStarBridge& p_1, const FalseThreeStarBridge& p_2
+) {
+    draw_face_with_2_paths_path(m_embedding, m_face, p_1.get_path(), p_2.get_path());
+    return next_case(m_embedding, m_graph, m_face);
+}
+
+bool SplitterWithStar::try_embedding_extension(const TrueThreeStar& star) {
+    // TODO
+    return next_case(m_embedding, m_graph, m_face);
+}
+
+bool SplitterWithStar::try_embedding_extension() {
+    // TODO
+    return next_case(m_embedding, m_graph, m_face);
+}
 
 bool SplitterWithStar::case_true_star() {
     for (size_t i = 0; i < m_candidate_true_3_stars.size(); ++i) {
+        std::println("case true star");
         const TrueThreeStar& candidate_3_star = m_candidate_true_3_stars[i];
         insert_spreaded_true_star(candidate_3_star);
         // Check if center of star had bad circular order
@@ -369,7 +382,7 @@ bool SplitterWithStar::case_true_star() {
             m_embedding.reverse_circular_order(center_id);
         }
         populate_spreaded_circular_order(i);
-        if (try_embedding_extension())
+        if (try_embedding_extension(candidate_3_star))
             return true;
         /* A spreaded true star admits two embeddings, both with the same circular order of the
            center. What differs are the circular order of the legs of the star. Then, to obtain one
@@ -377,7 +390,7 @@ bool SplitterWithStar::case_true_star() {
            legs. */
         for (const Path& path : candidate_3_star.get_paths_to_center())
             m_embedding.reverse_circular_order(path.get_first_node_id());
-        if (try_embedding_extension())
+        if (try_embedding_extension(candidate_3_star))
             return true;
         remove_true_star(candidate_3_star);
     }
@@ -394,45 +407,59 @@ bool SplitterWithStar::case_false_star() {
     return case_two_or_three_3_stars();
 }
 
+// TODO may be worth it to use a three star in case there is one
 bool SplitterWithStar::case_zero_or_one_3_star() {
-    auto find_insertion_edge = [](const size_t node_id, const Path& path) -> size_t {
+    auto find_node_position = [](const size_t node_id, const Path& path) -> size_t {
         for (size_t i = 1; i < path.number_of_nodes() - 1; ++i)
             if (path.node_id_at_position(i) == node_id)
-                return path.edge_id_at_position(i);
+                return i;
         DOMUS_ASSERT(false, "ThreeStarsHandler::case_zero_3_stars: did not find node");
         return 0ul;
     };
-    auto prepare_path = [&](const Path& path, size_t i, size_t j) {
-        const size_t insertion_0 =
-            find_insertion_edge(path.get_first_node_id(), m_face.repeated_paths()[i]);
-        const size_t insertion_1 =
-            find_insertion_edge(path.get_last_node_id(), m_face.repeated_paths()[j]);
-        augment_embedding_with_path(m_embedding, path);
-        m_embedding.add_edge_after(
-            path.get_first_node_id(),
-            path.node_id_at_position(1),
-            path.get_first_edge_id(),
-            insertion_0
-        );
-        m_embedding.add_edge_after(
-            path.get_last_node_id(),
-            path.node_id_at_position(path.number_of_nodes() - 2),
-            path.get_last_edge_id(),
-            insertion_1
-        );
-    };
-    auto remove_path = [](const Path& path, Embedding& embedding) {
-        remove_augment_of_path_in_embedding(embedding, path);
-        embedding.remove_edge(
-            path.get_first_node_id(),
-            path.node_id_at_position(1),
-            path.get_first_edge_id()
-        );
-        embedding.remove_edge(
-            path.get_last_node_id(),
-            path.node_id_at_position(path.number_of_nodes() - 2),
-            path.get_last_edge_id()
-        );
+    auto compute_path_insertions = [&](const Path& path, size_t i, size_t j) {
+        const size_t first_node_position =
+            find_node_position(path.get_first_node_id(), m_face.repeated_paths()[i]);
+        const size_t last_node_position =
+            find_node_position(path.get_last_node_id(), m_face.repeated_paths()[j]);
+
+        size_t i_0, i_1, i_2, i_3;
+        InsertionType t_0, t_1;
+
+        if (i == 0 && j == 2) {
+            t_0 = InsertionType::BEFORE;
+            t_1 = InsertionType::AFTER;
+            i_0 = m_face.repeated_paths()[i].edge_id_at_position(first_node_position - 1);
+            i_1 = m_face.repeated_paths()[j].edge_id_at_position(last_node_position);
+            i_2 = m_face.repeated_paths()[i].edge_id_at_position(first_node_position);
+            i_3 = m_face.repeated_paths()[j].edge_id_at_position(last_node_position - 1);
+        } else if (i == 1 && j == 2) {
+            t_0 = InsertionType::AFTER;
+            t_1 = InsertionType::BEFORE;
+            i_0 = m_face.repeated_paths()[i].edge_id_at_position(first_node_position);
+            i_1 = m_face.repeated_paths()[j].edge_id_at_position(last_node_position - 1);
+            i_2 = m_face.repeated_paths()[i].edge_id_at_position(first_node_position - 1);
+            i_3 = m_face.repeated_paths()[j].edge_id_at_position(last_node_position);
+        } else if (i == 0 && j == 1) {
+            t_0 = InsertionType::AFTER;
+            t_1 = InsertionType::BEFORE;
+            i_0 = m_face.repeated_paths()[i].edge_id_at_position(first_node_position - 1);
+            i_1 = m_face.repeated_paths()[j].edge_id_at_position(last_node_position);
+            i_2 = m_face.repeated_paths()[i].edge_id_at_position(first_node_position);
+            i_3 = m_face.repeated_paths()[j].edge_id_at_position(last_node_position - 1);
+        } else {
+            DOMUS_ASSERT(false, "SplitterWithStar::case_zero_or_one_3_star: wrong case");
+        }
+
+        return std::array<PathInsertions, 2>{
+            {PathInsertions{
+                 Insertion{path.get_first_node_id(), t_0, i_0, path.get_first_edge_id()},
+                 Insertion{path.get_last_node_id(), t_1, i_1, path.get_last_edge_id()}
+             },
+             PathInsertions{
+                 Insertion{path.get_first_node_id(), t_0, i_2, path.get_first_edge_id()},
+                 Insertion{path.get_last_node_id(), t_1, i_3, path.get_last_edge_id()}
+             }}
+        };
     };
 
     // Building pool of bridges to guess from
@@ -491,39 +518,51 @@ bool SplitterWithStar::case_zero_or_one_3_star() {
 
     // Trying insertions of paths (for false 3-stars)
     for (const FalseThreeStarBridge& p_1 : std::get<0>(*bridges_1)) {
-        prepare_path(p_1.get_path(), std::get<1>(*bridges_1), std::get<2>(*bridges_1));
+        augment_embedding_with_path(m_embedding, p_1.get_path());
+        auto insertions_0 = compute_path_insertions(
+            p_1.get_path(),
+            std::get<1>(*bridges_1),
+            std::get<2>(*bridges_1)
+        );
         for (const FalseThreeStarBridge& p_2 : std::get<0>(*bridges_2)) {
-            prepare_path(p_2.get_path(), std::get<1>(*bridges_2), std::get<2>(*bridges_2));
-            // 0 0
-            if (compute_embedding_genus(m_embedding) == 1 && try_embedding_extension())
-                return true;
-            // 1 0
-            m_embedding.reverse_circular_order(p_1.get_path().get_first_node_id());
-            m_embedding.reverse_circular_order(p_1.get_path().get_last_node_id());
-            if (compute_embedding_genus(m_embedding) == 1 && try_embedding_extension())
-                return true;
-            // 1 1
-            m_embedding.reverse_circular_order(p_2.get_path().get_first_node_id());
-            m_embedding.reverse_circular_order(p_2.get_path().get_last_node_id());
-            if (compute_embedding_genus(m_embedding) == 1 && try_embedding_extension())
-                return true;
-            // 0 1
-            m_embedding.reverse_circular_order(p_1.get_path().get_first_node_id());
-            m_embedding.reverse_circular_order(p_1.get_path().get_last_node_id());
-            if (compute_embedding_genus(m_embedding) == 1 && try_embedding_extension())
-                return true;
-            remove_path(p_2.get_path(), m_embedding);
+            augment_embedding_with_path(m_embedding, p_2.get_path());
+            auto insertions_1 = compute_path_insertions(
+                p_2.get_path(),
+                std::get<1>(*bridges_2),
+                std::get<2>(*bridges_2)
+            );
+            for (size_t i = 0; i < 2; ++i) {
+                auto inser_0 = insertions_0[i];
+                make_insertion(m_graph, m_embedding, inser_0.head_insertion);
+                make_insertion(m_graph, m_embedding, inser_0.tail_insertion);
+                for (size_t j = 0; j < 2; ++j) {
+                    auto inser_1 = insertions_1[j];
+                    make_insertion(m_graph, m_embedding, inser_1.head_insertion);
+                    make_insertion(m_graph, m_embedding, inser_1.tail_insertion);
+                    if (compute_embedding_genus(m_embedding) == 1 &&
+                        try_embedding_extension(p_1, p_2))
+                        return true;
+                    remove_insertion(m_graph, m_embedding, inser_1.head_insertion);
+                    remove_insertion(m_graph, m_embedding, inser_1.tail_insertion);
+                }
+                remove_insertion(m_graph, m_embedding, inser_0.head_insertion);
+                remove_insertion(m_graph, m_embedding, inser_0.tail_insertion);
+            }
+            remove_augment_of_path_in_embedding(m_embedding, p_2.get_path());
         }
-        remove_path(p_1.get_path(), m_embedding);
+        remove_augment_of_path_in_embedding(m_embedding, p_1.get_path());
     }
 
     return false;
 }
 
-// TODO can probably be made more efficient in discarding no-go cases?
-// some configurations can be discarded just by looking the attachments order in the face
-// but may be comparable to current approach
+//  - TODO OPTIMIZE can probably be made more efficient in discarding no-go cases?
+//    some configurations can be discarded just by looking the attachments order in the face
+//    but may be comparable to current approach
+//  - TODO BUGFIX the approach of reversing the circular order BREAKS in case the 3-stars share a
+//    leg attachment
 bool SplitterWithStar::case_two_or_three_3_stars() {
+    std::println("case_two_or_three_3_stars");
     const size_t k = m_candidate_true_3_stars.size();
     DOMUS_ASSERT(
         k == 2 || k == 3,
@@ -592,13 +631,9 @@ bool SplitterWithStar::solve() {
 }
 
 bool try_3_stars(
-    const Face& face,
-    const std::vector<Bridge>& bridges,
-    const NodesLabels<std::bitset<3>>& is_node_in_repeated_path,
-    Graph& graph,
-    Embedding& embedding
+    const Face& face, const std::vector<Bridge>& bridges, Graph& graph, Embedding& embedding
 ) {
-    SplitterWithStar handler(face, bridges, is_node_in_repeated_path, graph, embedding);
+    SplitterWithStar handler(face, bridges, graph, embedding);
     return handler.solve();
 }
 

@@ -47,10 +47,9 @@ make_svg(const Graph& graph, const Attributes& attributes, std::filesystem::path
         drawer.add(line);
     }
     for (const size_t node_id : graph.get_nodes_ids()) {
-        Square2D square{*points.at(node_id), 20};
-        square.setColor("cornflowerblue");
-        square.setLabel(std::to_string(node_id));
-        drawer.add(square, 4);
+        RoundSquare2D square{*points.at(node_id), 20, 4};
+        drawer.add(square, "cornflowerblue");
+        drawer.add(std::to_string(node_id), square.get_center());
     }
     return drawer.save_to_file(path);
 }

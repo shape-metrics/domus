@@ -89,4 +89,15 @@ Graph subdivided_k_5 = []() {
         k_5.subdivide_edge(edge_id);
     return k_5;
 }();
+
+Graph subdivided_k_3_3 = []() {
+    Graph k_3_3 = generators::generate_k_n_m(3, 3);
+    const auto edges_ids = k_3_3.get_all_edges() |
+                           std::views::transform([](const EdgeId& edge) { return edge.id; }) |
+                           std::ranges::to<std::vector<size_t>>();
+    for (const size_t edge_id : edges_ids)
+        k_3_3.subdivide_edge(edge_id);
+    return k_3_3;
+}();
+
 } // namespace domus::graph::test

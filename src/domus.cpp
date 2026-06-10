@@ -8,6 +8,7 @@
 #include "domus/core/graph/file_loader.hpp"
 #include "domus/core/graph/flow.hpp"
 #include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/test.hpp"
 #include "domus/orthogonal/drawing.hpp"
 #include "domus/orthogonal/drawing_builder.hpp"
 #include "domus/orthogonal/drawing_stats.hpp"
@@ -15,13 +16,15 @@
 #include "domus/planarity/drawing.hpp"
 #include "domus/planarity/tutte.hpp"
 #include "domus/torus/embedder.hpp"
-
-#include "domus/core/graph/test.hpp"
+#include "domus/torus/faces.hpp"
+#include "domus/torus/mapping.hpp"
 
 using namespace domus;
 using namespace domus::graph;
 using namespace domus::planarity;
 using namespace domus::orthogonal;
+using namespace domus::torus;
+using namespace domus::torus::mapper;
 
 void planarity_test(const graph::Graph& graph) {
     const std::optional<Embedding> embedding = compute_planar_embedding(graph);
@@ -127,6 +130,115 @@ void test_tutte_layout() {
     }
 }
 
+void test_all_possible_embeddings(const Graph& graph) {
+    std::vector<Embedding> embeddings = compute_all_possible_embeddings(graph);
+    std::println("Number of embeddings: {}", embeddings.size());
+    std::vector<size_t> genuses;
+    std::vector<size_t> max_face_types;
+    for (const Embedding& embedding : embeddings) {
+        const std::vector<Path> faces = compute_faces_in_embedding(graph, embedding);
+        const size_t g = compute_embedding_genus(
+            graph.get_number_of_nodes(),
+            graph.get_number_of_edges(),
+            faces.size(),
+            1
+        );
+        if (genuses.size() <= g)
+            genuses.resize(g + 1);
+        ++genuses[g];
+        if (g == 1) {
+            size_t max_face_type = 0;
+            for (FaceType type : std::views::transform(faces, [&](const Path& path) {
+                     return compute_face_from_path(Path(path), graph).type();
+                 })) {
+                if (static_cast<size_t>(type) > max_face_type)
+                    max_face_type = static_cast<size_t>(type);
+            }
+
+            if (max_face_types.size() <= static_cast<size_t>(max_face_type))
+                max_face_types.resize(static_cast<size_t>(max_face_type) + 1);
+            ++max_face_types[static_cast<size_t>(max_face_type)];
+        }
+    }
+
+    for (size_t i = 1; i < genuses.size(); ++i) {
+        std::println("Genus: [{:>2}] Quantity: [{:>4}]", i, genuses[i]);
+    }
+
+    for (size_t i = 1; i < max_face_types.size(); ++i) {
+        std::println("Case: [{:>2}] Quantity: [{:>4}]", i, max_face_types[i]);
+    }
+}
+
+void visualize_torus() {
+    TorusMapping mapping;
+
+    mapping.add_point({0.1f, 0.5f}); // 0
+    mapping.add_point({0.4f, 0.5f});
+    mapping.add_point({0.6f, 0.5f}); // 2
+    mapping.add_point({0.9f, 0.5f});
+    mapping.add_point({0.25f, 0.8f}); // 4
+    mapping.add_point({0.75f, 0.8f});
+    mapping.add_point({0.5f, 0.8f}); // 6
+    mapping.add_point({0.0f, 0.8f});
+    mapping.add_point({1.0f, 0.8f}); // 8
+    mapping.add_point({0.0f, 0.5f});
+    mapping.add_point({1.0f, 0.5f}); // 10
+    mapping.add_point({0.3f, 0.2f});
+    mapping.add_point({0.7f, 0.2f}); // 12
+    mapping.add_point({0.0f, 0.2f});
+    mapping.add_point({1.0f, 0.2f}); // 14
+    float a = 0.275f;
+    float b = 1.0f - a;
+    mapping.add_point({a, 0.0f});
+    mapping.add_point({b, 0.0f}); // 16
+    mapping.add_point({a, 1.0f});
+    mapping.add_point({b, 1.0f}); // 18
+    mapping.add_point({0.1f, 0.8f});
+    mapping.add_point({0.9f, 0.8f}); // 20
+    mapping.add_point({0.1f, 1.0f});
+    mapping.add_point({0.9f, 1.0f}); // 22
+    mapping.add_point({0.1f, 0.2f});
+    mapping.add_point({0.9f, 0.2f}); // 24
+    mapping.add_point({0.1f, 0.0f});
+    mapping.add_point({0.9f, 0.0f}); // 26
+
+    mapping.add_line(0, 1);
+    mapping.add_line(1, 2);
+    mapping.add_line(2, 3);
+    mapping.add_line(3, 5);
+    mapping.add_line(2, 5);
+    mapping.add_line(4, 1);
+    mapping.add_line(4, 0);
+    mapping.add_line(6, 5);
+    mapping.add_line(19, 4);
+    mapping.add_line(9, 0);
+    mapping.add_line(4, 6);
+    mapping.add_line(4, 17);
+    mapping.add_line(0, 11);
+    mapping.add_line(23, 11);
+    mapping.add_line(1, 12);
+    mapping.add_line(2, 11);
+    mapping.add_line(3, 12);
+    mapping.add_line(3, 10);
+    mapping.add_line(5, 20);
+    mapping.add_line(5, 18);
+    mapping.add_line(12, 24);
+    mapping.add_line(11, 12);
+    mapping.add_line(11, 15);
+    mapping.add_line(12, 16);
+    mapping.add_line(7, 19);
+    mapping.add_line(8, 20);
+    mapping.add_line(19, 21);
+    mapping.add_line(20, 22);
+    mapping.add_line(13, 23);
+    mapping.add_line(14, 24);
+    mapping.add_line(25, 23);
+    mapping.add_line(26, 24);
+
+    mapping.visualize();
+}
+
 int main() {
     // test_tutte_layout();
     // graph->print(true);
@@ -139,9 +251,18 @@ int main() {
     // make_orthogonal(*graph);
     // toroidal_test(test::two_cycle_graphs[2]);
 
-    std::println("k5");
-    test::subdivided_k_5.print(true);
+    // std::println("k5");
+    // test::subdivided_k_5.print(true);
 
-    toroidal_test(test::subdivided_k_5);
+    // toroidal_test(test::subdivided_k_5);
+
+    // std::println("CASE ----- K_5 -------");
+    // test_all_possible_embeddings(test::subdivided_k_5);
+
+    // std::println("\n\nCASE ----- K_3_3 -----");
+    // test_all_possible_embeddings(test::subdivided_k_3_3);
+
+    visualize_torus();
+
     return 0;
 }

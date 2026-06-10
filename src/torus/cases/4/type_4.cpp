@@ -5,54 +5,41 @@
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/path.hpp"
 #include "domus/torus/bridge.hpp"
+#include "domus/torus/faces.hpp"
 
-#include "../../faces.hpp"
 #include "../splitter.hpp"
 #include "../utils.hpp"
 #include "3_stars.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
-using graph::utilities::NodesLabels;
 
 class PathInsertionsCase4 {
     const Face& m_face;
-    const NodesLabels<std::bitset<3>>& m_is_node_in_repeated_path;
 
     std::vector<PathInsertions>
-    case_path_is_loop(const size_t node_id, const size_t first_edge_id, const size_t last_edge_id);
+    case_path_is_loop(size_t node_id, size_t first_edge_id, size_t last_edge_id);
     std::vector<PathInsertions> case_two_corners_of_hexagon(
-        const size_t first_node_id,
-        const size_t last_node_id,
-        const size_t first_edge_id,
-        const size_t last_edge_id
+        size_t first_node_id, size_t last_node_id, size_t first_edge_id, size_t last_edge_id
     );
     std::vector<PathInsertions> case_one_corner_of_hexagon(
-        const size_t first_node_id,
-        const size_t last_node_id,
-        const size_t first_edge_id,
-        const size_t last_edge_id,
-        const size_t first_repeated_node_id,
-        const size_t last_repeated_node_id
+        size_t first_node_id,
+        size_t last_node_id,
+        size_t first_edge_id,
+        size_t last_edge_id,
+        size_t first_repeated_node_id,
+        size_t last_repeated_node_id
     );
     std::vector<PathInsertions> case_no_corner_of_hexagon(
-        const size_t first_node_id,
-        const size_t last_node_id,
-        const size_t first_edge_id,
-        const size_t last_edge_id
+        size_t first_node_id, size_t last_node_id, size_t first_edge_id, size_t last_edge_id
     );
 
   public:
-    PathInsertionsCase4(
-        const Face& face, const NodesLabels<std::bitset<3>>& is_node_in_repeated_path
-    );
+    PathInsertionsCase4(const Face& face);
     std::vector<PathInsertions> possible_insertions_of_path(const Path& path);
 };
 
-PathInsertionsCase4::PathInsertionsCase4(
-    const Face& face, const NodesLabels<std::bitset<3>>& is_node_in_repeated_path
-)
-    : m_face(face), m_is_node_in_repeated_path(is_node_in_repeated_path) {}
+PathInsertionsCase4::PathInsertionsCase4(const Face& face) : m_face(face) {}
 
 std::vector<PathInsertions> PathInsertionsCase4::case_path_is_loop(
     const size_t node_id, const size_t first_edge_id, const size_t last_edge_id
@@ -184,7 +171,7 @@ std::vector<PathInsertions> PathInsertionsCase4::case_one_corner_of_hexagon(
 
     const Path* repeated_path = nullptr;
     for (size_t i = 0; i < 3; i++)
-        if (m_is_node_in_repeated_path.get_label(internal_node_id).test(i)) {
+        if (m_face.is_node_in_repeated_path().get_label(internal_node_id).test(i)) {
             repeated_path = &m_face.repeated_paths()[i];
             break;
         }
@@ -239,10 +226,10 @@ std::vector<PathInsertions> PathInsertionsCase4::case_no_corner_of_hexagon(
 
     const Path* repeated_path = nullptr;
     for (size_t i = 0; i < 3; i++)
-        if (m_is_node_in_repeated_path.get_label(first_node_id).test(i)) {
+        if (m_face.is_node_in_repeated_path().get_label(first_node_id).test(i)) {
             repeated_path = &m_face.repeated_paths()[i];
             DOMUS_ASSERT(
-                m_is_node_in_repeated_path.get_label(last_node_id).test(i),
+                m_face.is_node_in_repeated_path().get_label(last_node_id).test(i),
                 "PathInsertionsCase4::case_no_corner_of_hexagon: last node not in same repeated "
                 "path"
             );
@@ -315,12 +302,10 @@ std::vector<PathInsertions> PathInsertionsCase4::possible_insertions_of_path(con
     }
 }
 
-bool handle_type_4(Graph& graph, Embedding& embedding, const Face& face, size_t jolly_id) {
+bool handle_type_4(Graph& graph, Embedding& embedding, const Face& face, const size_t jolly_id) {
     DOMUS_ASSERT(is_initial_face_valid(face), "handle_type_4: initial face is not valid");
     const std::vector<Bridge> bridges = Bridge::compute(graph, embedding);
-    const NodesLabels<std::bitset<3>> is_node_in_repeated_path =
-        compute_nodes_in_repeated_paths(graph, face);
-    PathInsertionsCase4 paths_insertions_computer(face, is_node_in_repeated_path);
+    PathInsertionsCase4 paths_insertions_computer(face);
 
     SplitterWithPath splitter(
         graph,
@@ -328,7 +313,6 @@ bool handle_type_4(Graph& graph, Embedding& embedding, const Face& face, size_t 
         face,
         jolly_id,
         bridges,
-        is_node_in_repeated_path,
         [&paths_insertions_computer](const Path& path) -> std::vector<PathInsertions> {
             return paths_insertions_computer.possible_insertions_of_path(path);
         }
@@ -338,7 +322,7 @@ bool handle_type_4(Graph& graph, Embedding& embedding, const Face& face, size_t 
         return true;
     if (splitter.try_edges_not_in_graph())
         return true;
-    if (stars::try_3_stars(face, bridges, is_node_in_repeated_path, graph, embedding))
+    if (stars::try_3_stars(face, bridges, graph, embedding))
         return true;
 
     return false;

@@ -61,6 +61,8 @@ size_t compute_embedding_genus(const Embedding& embedding);
 
 bool is_embedding_planar(const Embedding& embedding);
 
+std::vector<Embedding> compute_all_possible_embeddings(const Graph& graph);
+
 inline auto Embedding::get_nodes_ids() const {
     return std::views::iota(size_t{0}, get_number_of_nodes());
 }

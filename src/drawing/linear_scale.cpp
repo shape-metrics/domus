@@ -3,23 +3,24 @@
 namespace domus::drawing {
 
 ScaleLinear::ScaleLinear(
-    double domainMin, double domainMax, double rangeMin, double rangeMax, bool clamp
+    double domain_min, double domain_max, double range_min, double range_max, bool clamp
 )
-    : m_domainMin(domainMin), m_rangeMin(rangeMin), m_rangeMax(rangeMax), m_clampEnabled(clamp) {
-    m_scaleFactor = (rangeMax - rangeMin) / (domainMax - domainMin);
+    : m_domain_min(domain_min), m_range_min(range_min), m_range_max(range_max),
+      m_scale_factor((range_max - range_min) / (domain_max - domain_min)), m_clamp_enabled(clamp) {
+    ;
 }
 
-double ScaleLinear::map(double x) const {
-    double y = m_rangeMin + m_scaleFactor * (x - m_domainMin);
-    if (m_clampEnabled) {
-        y = y < m_rangeMax ? y : m_rangeMax;
-        y = y > m_rangeMin ? y : m_rangeMin;
+double ScaleLinear::map(const double x) const {
+    double y = m_range_min + m_scale_factor * (x - m_domain_min);
+    if (m_clamp_enabled) {
+        y = y < m_range_max ? y : m_range_max;
+        y = y > m_range_min ? y : m_range_min;
     }
     return y;
 }
 
-double ScaleLinear::invert(double y) const {
-    return m_domainMin + (y - m_rangeMin) / m_scaleFactor;
+double ScaleLinear::invert(const double y) const {
+    return m_domain_min + (y - m_range_min) / m_scale_factor;
 }
 
 } // namespace domus::drawing

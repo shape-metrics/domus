@@ -4,14 +4,15 @@ namespace domus::drawing {
 
 class ScaleLinear {
   private:
-    double m_domainMin;
-    double m_rangeMin, m_rangeMax;
-    double m_scaleFactor;
-    bool m_clampEnabled;
+    const double m_domain_min;
+    const double m_range_min;
+    const double m_range_max;
+    const double m_scale_factor;
+    const bool m_clamp_enabled;
 
   public:
     ScaleLinear(
-        double domainMin, double domainMax, double rangeMin, double rangeMax, bool clamp = false
+        double domain_min, double domain_max, double range_min, double range_max, bool clamp = false
     );
     double map(double x) const;
     double invert(double y) const;

@@ -220,11 +220,9 @@ std::expected<void, std::string> make_svg(
             continue;
         if (color == Color::GREEN_DARK)
             continue;
-        Square2D square{*points.at(node_id), side};
-        square.setColor(color_to_string(color));
-        square.setColor("cornflowerblue");
-        square.setLabel(std::to_string(node_id));
-        drawer.add(square, side / 4);
+        RoundSquare2D square{*points.at(node_id), side, side / 4};
+        drawer.add(square, "cornflowerblue");
+        drawer.add(std::to_string(node_id), square.get_center());
     }
     return drawer.save_to_file(path);
 }

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <bitset>
 #include <vector>
 
+#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/path.hpp"
 
 namespace domus::graph {
@@ -21,13 +23,20 @@ class Face {
     FaceType m_type;
     graph::Path m_path;
     std::vector<graph::Path> m_repeated_paths;
+    graph::utilities::NodesLabels<std::bitset<3>> m_is_node_in_repeated_path;
 
   public:
-    Face(FaceType type, graph::Path&& path, std::vector<graph::Path>&& repeated_paths);
+    Face(
+        const graph::Graph& graph,
+        FaceType type,
+        graph::Path&& path,
+        std::vector<graph::Path>&& repeated_paths
+    );
 
     FaceType type() const;
     const graph::Path& path() const;
     const std::vector<graph::Path>& repeated_paths() const;
+    const graph::utilities::NodesLabels<std::bitset<3>>& is_node_in_repeated_path() const;
     std::string to_string() const;
     void print() const;
 };

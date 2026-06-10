@@ -6,8 +6,7 @@
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/path.hpp"
-
-#include "faces.hpp"
+#include "domus/torus/faces.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -260,7 +259,7 @@ std::pair<Embedding, Face> compute_embedding_of_two_cycles(
             (repeated_paths.size() == 3 && face_type == FaceType::TYPE_4),
         "compute_embedding_of_two_cycles: repeated paths do not match face type"
     );
-    return {embedding, Face(face_type, std::move(faces[0]), std::move(repeated_paths))};
+    return {embedding, Face(graph, face_type, std::move(faces[0]), std::move(repeated_paths))};
 }
 
 } // namespace domus::torus

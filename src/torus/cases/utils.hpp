@@ -1,16 +1,13 @@
 #pragma once
 
-#include <bitset>
 #include <ranges>
 
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/path.hpp"
-
 #include "domus/torus/bridge.hpp"
-
-#include "../faces.hpp"
+#include "domus/torus/faces.hpp"
 
 namespace domus::torus {
 
@@ -50,8 +47,5 @@ void add_log_final_configuration(const std::vector<Face>& faces);
  * and this function checks that.
  */
 bool is_initial_face_valid(const Face& face);
-
-graph::utilities::NodesLabels<std::bitset<3>>
-compute_nodes_in_repeated_paths(const graph::Graph& graph, const Face& face);
 
 } // namespace domus::torus

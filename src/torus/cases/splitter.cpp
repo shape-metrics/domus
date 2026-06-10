@@ -19,12 +19,10 @@ SplitterWithPath::SplitterWithPath(
     const Face& face,
     size_t jolly_id,
     const std::vector<Bridge>& bridges,
-    const NodesLabels<std::bitset<3>>& is_node_in_repeated_path,
     std::function<std::vector<PathInsertions>(const Path&)> compute_path_insertions
 )
     : m_graph(graph), m_embedding(embedding), m_face(face), m_jolly_id(jolly_id),
-      m_bridges(bridges), m_is_node_in_repeated_path(is_node_in_repeated_path),
-      m_compute_path_insertions(compute_path_insertions) {}
+      m_bridges(bridges), m_compute_path_insertions(compute_path_insertions) {}
 
 auto candidate_face_splitting_paths_in_bridge(
     const Bridge& bridge,
@@ -113,7 +111,7 @@ bool SplitterWithPath::try_edges_not_in_graph() {
             const size_t node_id_2 = attachments[j];
 
             if (!are_attachments_in_same_repeated_path(
-                    m_is_node_in_repeated_path,
+                    m_face.is_node_in_repeated_path(),
                     node_id_1,
                     node_id_2
                 )) {
@@ -152,7 +150,7 @@ bool SplitterWithPath::try_paths_inside_graph() {
         } else {
             for (const Path& path : candidate_face_splitting_paths_in_bridge(
                      bridge,
-                     m_is_node_in_repeated_path,
+                     m_face.is_node_in_repeated_path(),
                      m_graph
                  ))
                 if (try_face_splits_with_path(path))
@@ -233,12 +231,7 @@ bool SplitterWithPath::try_face_splits_with_path(const Path& path) {
 }
 
 bool SplitterWithPath::try_embedding_extension(const Path& path) {
-    if (m_face.type() == FaceType::TYPE_4)
-        draw_type_4_with_path(m_embedding, m_face, path);
-
-    if (m_face.type() == FaceType::TYPE_3)
-        draw_type_3_with_path(m_embedding, m_face, path);
-
+    draw_face_with_path(m_embedding, m_face, path);
     return next_case(m_embedding, m_graph, m_face);
 }
 

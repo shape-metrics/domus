@@ -1,7 +1,4 @@
-#include "faces.hpp"
-
-#include "domus/core/domus_debug.hpp"
-#include "domus/core/graph/path.hpp"
+#include "domus/torus/faces.hpp"
 
 #include <algorithm>
 #include <format>
@@ -9,9 +6,14 @@
 #include <print>
 #include <vector>
 
+#include "domus/core/domus_debug.hpp"
+#include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/path.hpp"
+
 namespace domus::torus {
 using graph::Graph;
 using graph::Path;
+using namespace domus::graph::utilities;
 
 std::string face_type_to_string(FaceType face_type) {
     switch (face_type) {
@@ -28,19 +30,24 @@ std::string face_type_to_string(FaceType face_type) {
     return "";
 }
 
-Face::Face(FaceType type, Path&& path, std::vector<Path>&& repeated_paths)
-    : m_type(type), m_path(path), m_repeated_paths(repeated_paths) {
+Face::Face(const Graph& graph, FaceType type, Path&& path, std::vector<Path>&& repeated_paths)
+    : m_type(type), m_path(path), m_repeated_paths(repeated_paths),
+      m_is_node_in_repeated_path(graph) {
     if (m_repeated_paths.empty())
         return;
-
-    const size_t first = m_repeated_paths[0].get_first_node_id();
-    const size_t last = m_repeated_paths[0].get_last_node_id();
-
-    for (size_t i = 1; i < m_repeated_paths.size(); i++)
-        if (m_repeated_paths[i].get_last_node_id() == first &&
-            m_repeated_paths[i].get_first_node_id() == last) {
-            m_repeated_paths[i].reverse();
+    for (const size_t node_id : graph.get_nodes_ids())
+        m_is_node_in_repeated_path.add_label(node_id, {});
+    for (size_t i = 0; i < m_repeated_paths.size(); i++) {
+        const Path& repeated_path = m_repeated_paths[i];
+        for (size_t j = 1; j < repeated_path.number_of_nodes() - 1; j++) {
+            const size_t node_id = repeated_path.node_id_at_position(j);
+            m_is_node_in_repeated_path.get_label(node_id).set(i);
         }
+    }
+    const size_t first_id = m_repeated_paths[0].get_first_node_id();
+    const size_t last_id = m_repeated_paths[0].get_last_node_id();
+    m_is_node_in_repeated_path.get_label(first_id).set();
+    m_is_node_in_repeated_path.get_label(last_id).set();
 }
 
 FaceType Face::type() const { return m_type; }
@@ -48,6 +55,10 @@ FaceType Face::type() const { return m_type; }
 const Path& Face::path() const { return m_path; }
 
 const std::vector<Path>& Face::repeated_paths() const { return m_repeated_paths; }
+
+const graph::utilities::NodesLabels<std::bitset<3>>& Face::is_node_in_repeated_path() const {
+    return m_is_node_in_repeated_path;
+}
 
 std::optional<size_t> is_face_simple(const Path& path) {
     std::vector<size_t> nodes_in_path;
@@ -89,7 +100,7 @@ size_t node_id_count_in_path(const graph::Path& path, const size_t node_id) {
 Face compute_face_from_path(Path&& path, const Graph& graph) {
     DOMUS_ASSERT(
         path.get_first_node_id() == path.get_last_node_id(),
-        "compute_face_from_path: input path is not a cycle (so neither a face)"
+        "compute_face_from_path: input path is not a cycle"
     );
     DOMUS_ASSERT(path.number_of_edges() > 1, "compute_face_from_path: input path has only 1 edge");
 
@@ -107,7 +118,7 @@ Face compute_face_from_path(Path&& path, const Graph& graph) {
         is_simple = false;
 
     if (is_simple)
-        return Face(FaceType::TYPE_1, std::move(path), {});
+        return Face(graph, FaceType::TYPE_1, std::move(path), {});
 
     std::vector<bool> did_handle_repeated_edge_at_position(path.number_of_edges(), false);
 
@@ -168,7 +179,26 @@ Face compute_face_from_path(Path&& path, const Graph& graph) {
     else
         face_type = FaceType::TYPE_4;
 
-    return Face(face_type, std::move(path), std::move(repeated_paths));
+    if (repeated_paths.size() >= 2)
+        repeated_paths[1].reverse();
+
+    DOMUS_ASSERT(
+        [&]() {
+            const size_t first = repeated_paths[0].get_first_node_id();
+            const size_t last = repeated_paths[0].get_last_node_id();
+
+            for (size_t i = 1; i < repeated_paths.size(); i++)
+                if (repeated_paths[i].get_last_node_id() != last ||
+                    repeated_paths[i].get_first_node_id() != first) {
+                    return false;
+                }
+
+            return true;
+        }(),
+        "compute_face_from_path: invalid endpoints of repeated paths"
+    );
+
+    return Face(graph, face_type, std::move(path), std::move(repeated_paths));
 }
 
 } // namespace domus::torus

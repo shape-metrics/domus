@@ -8,8 +8,6 @@
 #include "domus/drawing/polygon.hpp"
 #include "domus/drawing/svg_drawer.hpp"
 
-#include "faces.hpp"
-
 namespace domus::torus {
 using namespace domus::graph;
 using namespace domus::drawing;
@@ -80,11 +78,12 @@ void draw_nodes_of_path(
     const size_t num_nodes = path.number_of_nodes();
     for (size_t k = 0; k < num_nodes; ++k) {
         const double fraction = static_cast<double>(k) / static_cast<double>(num_nodes - 1);
-        const double x = first_position.x_m + fraction * (last_position.x_m - first_position.x_m);
-        const double y = first_position.y_m + fraction * (last_position.y_m - first_position.y_m);
+        const double x = first_position.x + fraction * (last_position.x - first_position.x);
+        const double y = first_position.y + fraction * (last_position.y - first_position.y);
         Circle2D circle(Point2D(x, y), NODE_RADIUS);
-        circle.setLabel(std::to_string(path.node_id_at_position(k)));
+
         drawer.add(circle, NODE_COLOR);
+        drawer.add(std::to_string(path.node_id_at_position(k)), circle.get_center());
     }
 }
 
@@ -155,32 +154,89 @@ void draw_the_square_border(SvgDrawer& drawer, const Face& original_face) {
 }
 
 void draw_path_inside(
-    SvgDrawer& drawer, const Path& path, const Embedding& embedding, const Face& original_face
+    SvgDrawer& drawer,
+    const Path& path,
+    const Embedding& embedding,
+    const Face& original_face,
+    const Point2D* positions,
+    const std::pair<size_t, size_t>* indexes_0,
+    const std::pair<size_t, size_t>* indexes_1
 ) {
     auto find_position = [&](const size_t node_id_to_find, const size_t corresponding_edge_id) {
         for (size_t j = 0; j < original_face.repeated_paths().size(); ++j) {
             const Path& repeated_path = original_face.repeated_paths()[j];
-            for (size_t i = 0; i < repeated_path.number_of_edges(); i++) {
+
+            const size_t first_node_id = repeated_path.get_first_node_id();
+            const size_t first_edge_id = repeated_path.get_first_edge_id();
+            if (first_node_id == node_id_to_find) {
+                if (embedding
+                        .next_in_adjacency_list(
+                            first_node_id,
+                            repeated_path.node_id_at_position(1),
+                            first_edge_id
+                        )
+                        .id == corresponding_edge_id) {
+                    const double x = positions[indexes_0[j].first].x;
+                    const double y = positions[indexes_0[j].first].y;
+                    return Point2D(x, y);
+                }
+                if (embedding
+                        .prev_in_adjacency_list(
+                            first_node_id,
+                            repeated_path.node_id_at_position(1),
+                            first_edge_id
+                        )
+                        .id == corresponding_edge_id) {
+                    const double x = positions[indexes_1[j].first].x;
+                    const double y = positions[indexes_1[j].first].y;
+                    return Point2D(x, y);
+                }
+            }
+
+            const size_t last_node_id = repeated_path.get_last_node_id();
+            const size_t last_edge_id = repeated_path.get_last_edge_id();
+            if (last_node_id == node_id_to_find) {
+                if (embedding
+                        .prev_in_adjacency_list(
+                            last_node_id,
+                            repeated_path.node_id_at_position(repeated_path.number_of_nodes() - 2),
+                            last_edge_id
+                        )
+                        .id == corresponding_edge_id) {
+                    const double x = positions[indexes_0[j].second].x;
+                    const double y = positions[indexes_0[j].second].y;
+                    return Point2D(x, y);
+                }
+                if (embedding
+                        .next_in_adjacency_list(
+                            last_node_id,
+                            repeated_path.node_id_at_position(repeated_path.number_of_nodes() - 2),
+                            last_edge_id
+                        )
+                        .id == corresponding_edge_id) {
+                    const double x = positions[indexes_1[j].second].x;
+                    const double y = positions[indexes_1[j].second].y;
+                    return Point2D(x, y);
+                }
+            }
+
+            for (size_t i = 1; i < repeated_path.number_of_edges(); i++) {
                 const size_t node_id = repeated_path.node_id_at_position(i);
-                const size_t edge_id = repeated_path.edge_id_at_position(i);
                 if (node_id != node_id_to_find)
                     continue;
+                const size_t next_edge_id = repeated_path.edge_id_at_position(i);
                 if (embedding
                         .next_in_adjacency_list(
                             node_id,
                             repeated_path.node_id_at_position(i + 1),
-                            edge_id
+                            next_edge_id
                         )
                         .id == corresponding_edge_id) {
 
-                    const double min_x =
-                        HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[j].first].x_m;
-                    const double max_x =
-                        HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[j].second].x_m;
-                    const double min_y =
-                        HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[j].first].y_m;
-                    const double max_y =
-                        HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[j].second].y_m;
+                    const double min_x = positions[indexes_0[j].first].x;
+                    const double max_x = positions[indexes_0[j].second].x;
+                    const double min_y = positions[indexes_0[j].first].y;
+                    const double max_y = positions[indexes_0[j].second].y;
 
                     const size_t num_nodes = repeated_path.number_of_nodes();
                     const double fraction =
@@ -193,17 +249,54 @@ void draw_path_inside(
                         .prev_in_adjacency_list(
                             node_id,
                             repeated_path.node_id_at_position(i + 1),
-                            edge_id
+                            next_edge_id
                         )
                         .id == corresponding_edge_id) {
-                    const double min_x =
-                        HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[j].first].x_m;
-                    const double max_x =
-                        HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[j].second].x_m;
-                    const double min_y =
-                        HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[j].first].y_m;
-                    const double max_y =
-                        HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[j].second].y_m;
+                    const double min_x = positions[indexes_1[j].first].x;
+                    const double max_x = positions[indexes_1[j].second].x;
+                    const double min_y = positions[indexes_1[j].first].y;
+                    const double max_y = positions[indexes_1[j].second].y;
+
+                    const size_t num_nodes = repeated_path.number_of_nodes();
+                    const double fraction =
+                        static_cast<double>(i) / static_cast<double>(num_nodes - 1);
+                    const double x = min_x + fraction * (max_x - min_x);
+                    const double y = min_y + fraction * (max_y - min_y);
+                    return Point2D(x, y);
+                }
+
+                const size_t prev_edge_id = repeated_path.edge_id_at_position(i - 1);
+                if (embedding
+                        .prev_in_adjacency_list(
+                            node_id,
+                            repeated_path.node_id_at_position(i - 1),
+                            prev_edge_id
+                        )
+                        .id == corresponding_edge_id) {
+
+                    const double min_x = positions[indexes_0[j].first].x;
+                    const double max_x = positions[indexes_0[j].second].x;
+                    const double min_y = positions[indexes_0[j].first].y;
+                    const double max_y = positions[indexes_0[j].second].y;
+
+                    const size_t num_nodes = repeated_path.number_of_nodes();
+                    const double fraction =
+                        static_cast<double>(i) / static_cast<double>(num_nodes - 1);
+                    const double x = min_x + fraction * (max_x - min_x);
+                    const double y = min_y + fraction * (max_y - min_y);
+                    return Point2D(x, y);
+                }
+                if (embedding
+                        .next_in_adjacency_list(
+                            node_id,
+                            repeated_path.node_id_at_position(i - 1),
+                            prev_edge_id
+                        )
+                        .id == corresponding_edge_id) {
+                    const double min_x = positions[indexes_1[j].first].x;
+                    const double max_x = positions[indexes_1[j].second].x;
+                    const double min_y = positions[indexes_1[j].first].y;
+                    const double max_y = positions[indexes_1[j].second].y;
 
                     const size_t num_nodes = repeated_path.number_of_nodes();
                     const double fraction =
@@ -213,52 +306,8 @@ void draw_path_inside(
                     return Point2D(x, y);
                 }
             }
-            const size_t node_id = repeated_path.get_last_node_id();
-            const size_t edge_id = repeated_path.get_last_edge_id();
-            if (node_id != node_id_to_find)
-                continue;
-            if (embedding
-                    .prev_in_adjacency_list(
-                        node_id,
-                        repeated_path.node_id_at_position(repeated_path.number_of_nodes() - 2),
-                        edge_id
-                    )
-                    .id == corresponding_edge_id) {
-                const double min_x =
-                    HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[j].first].x_m;
-                const double max_x =
-                    HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[j].second].x_m;
-                const double min_y =
-                    HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[j].first].y_m;
-                const double max_y =
-                    HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[j].second].y_m;
-
-                const double x = min_x + (max_x - min_x);
-                const double y = min_y + (max_y - min_y);
-                return Point2D(x, y);
-            }
-            if (embedding
-                    .next_in_adjacency_list(
-                        node_id,
-                        repeated_path.node_id_at_position(repeated_path.number_of_nodes() - 2),
-                        edge_id
-                    )
-                    .id == corresponding_edge_id) {
-                const double min_x =
-                    HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[j].first].x_m;
-                const double max_x =
-                    HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[j].second].x_m;
-                const double min_y =
-                    HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[j].first].y_m;
-                const double max_y =
-                    HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[j].second].y_m;
-
-                const double x = min_x + (max_x - min_x);
-                const double y = min_y + (max_y - min_y);
-                return Point2D(x, y);
-            }
         }
-        DOMUS_ASSERT(false, "draw_path_inside: did not find the position");
+        DOMUS_ASSERT(false, "draw_path_inside: did not find the position of {}", node_id_to_find);
         return Point2D(0, 0);
     };
 
@@ -273,38 +322,81 @@ void draw_path_inside(
     draw_nodes_of_path(drawer, first_position, last_position, path);
 }
 
-void draw_type_4_with_path(
-    const Embedding& embedding, const Face& original_face, const Path& path
-) {
-    SvgDrawer drawer(SVG_WIDTH, SVG_HEIGHT);
-    draw_path_inside(drawer, path, embedding, original_face);
-
-    draw_the_hexagon_border(drawer, original_face);
-
-    drawer.save_to_file("test.svg").value();
-
-    original_face.print();
-    std::println("inserted path:");
-    path.print();
-    embedding.print();
+void press_key_to_continue() {
     char c;
     std::cin >> c;
 }
 
-void draw_type_3_with_path(
+void draw_face_with_path(
     const graph::Embedding& embedding, const Face& original_face, const graph::Path& path
 ) {
     SvgDrawer drawer(SVG_WIDTH, SVG_HEIGHT);
-    draw_the_square_border(drawer, original_face);
+
+    switch (original_face.type()) {
+
+    case FaceType::TYPE_4:
+        draw_path_inside(
+            drawer,
+            path,
+            embedding,
+            original_face,
+            HEXAGON_VERTICES.data(),
+            HEXAGON_REPEATED_PATH_ENDPOINTS_0.data(),
+            HEXAGON_REPEATED_PATH_ENDPOINTS_1.data()
+        );
+        draw_the_hexagon_border(drawer, original_face);
+        break;
+
+    case FaceType::TYPE_3:
+        draw_path_inside(
+            drawer,
+            path,
+            embedding,
+            original_face,
+            SQUARE_VERTICES.data(),
+            SQUARE_REPEATED_PATH_ENDPOINTS_0.data(),
+            SQUARE_REPEATED_PATH_ENDPOINTS_1.data()
+        );
+        draw_the_square_border(drawer, original_face);
+        break;
+
+    default:
+        DOMUS_ASSERT(false, "draw_face_with_path: unexpected face type");
+    }
 
     drawer.save_to_file("test.svg").value();
 
-    original_face.print();
-    std::println("inserted path:");
-    path.print();
-    embedding.print();
-    // char c;
-    // std::cin >> c;
+    press_key_to_continue();
+}
+
+void draw_face_with_2_paths_path(
+    const Embedding& embedding, const Face& original_face, const Path& path_1, const Path& path_2
+) {
+    SvgDrawer drawer(SVG_WIDTH, SVG_HEIGHT);
+
+    draw_path_inside(
+        drawer,
+        path_1,
+        embedding,
+        original_face,
+        HEXAGON_VERTICES.data(),
+        HEXAGON_REPEATED_PATH_ENDPOINTS_0.data(),
+        HEXAGON_REPEATED_PATH_ENDPOINTS_1.data()
+    );
+    draw_path_inside(
+        drawer,
+        path_2,
+        embedding,
+        original_face,
+        HEXAGON_VERTICES.data(),
+        HEXAGON_REPEATED_PATH_ENDPOINTS_0.data(),
+        HEXAGON_REPEATED_PATH_ENDPOINTS_1.data()
+    );
+    draw_the_hexagon_border(drawer, original_face);
+
+    drawer.save_to_file("test.svg").value();
+
+    press_key_to_continue();
 }
 
 } // namespace domus::torus

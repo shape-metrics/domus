@@ -390,6 +390,62 @@ size_t compute_embedding_genus(const Embedding& embedding) {
     );
 }
 
+std::vector<Embedding> compute_all_possible_embeddings(const Graph& graph) {
+    std::vector<std::vector<std::vector<EdgeIter>>> all_permutations(graph.get_number_of_nodes());
+    for (size_t u : graph.get_nodes_ids()) {
+        auto edges_range = graph.get_edges(u);
+        std::vector<EdgeIter> edges;
+        for (const auto& edge : edges_range) {
+            edges.push_back(edge);
+        }
+        
+        if (edges.empty()) {
+            all_permutations[u].push_back({});
+            continue;
+        }
+
+        std::ranges::sort(edges, [](const EdgeIter& a, const EdgeIter& b) {
+            if (a.neighbor_id != b.neighbor_id) return a.neighbor_id < b.neighbor_id;
+            return a.id < b.id;
+        });
+        
+        do {
+            all_permutations[u].push_back(edges);
+        } while (std::next_permutation(edges.begin() + 1, edges.end(), [](const EdgeIter& a, const EdgeIter& b) {
+            if (a.neighbor_id != b.neighbor_id) return a.neighbor_id < b.neighbor_id;
+            return a.id < b.id;
+        }));
+    }
+
+    std::vector<Embedding> result;
+    std::vector<size_t> current_choice(graph.get_number_of_nodes(), 0);
+
+    auto construct_embedding = [&]() {
+        Embedding emb(graph);
+        for (size_t u = 0; u < graph.get_number_of_nodes(); ++u) {
+            for (const auto& edge : all_permutations[u][current_choice[u]]) {
+                emb.add_edge(u, edge.neighbor_id, edge.id);
+            }
+        }
+        result.push_back(std::move(emb));
+    };
+
+    auto generate = [&](auto& self, size_t node_id) -> void {
+        if (node_id == graph.get_number_of_nodes()) {
+            construct_embedding();
+            return;
+        }
+        for (size_t i = 0; i < all_permutations[node_id].size(); ++i) {
+            current_choice[node_id] = i;
+            self(self, node_id + 1);
+        }
+    };
+
+    generate(generate, 0);
+
+    return result;
+}
+
 static_assert(UndirectedGraphLike<Embedding>);
 
 } // namespace domus::graph

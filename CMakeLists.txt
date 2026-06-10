@@ -135,6 +135,11 @@ target_link_libraries(core
     PRIVATE kissat glucose Threads::Threads Eigen3::Eigen
 )
 
+if(NOT BUILDING_WASM)
+    target_sources(core PRIVATE src/torus/mapping.cpp)
+    target_link_libraries(core PRIVATE GL GLU glut)
+endif()
+
 #====================================================
 # Warning flags
 #====================================================

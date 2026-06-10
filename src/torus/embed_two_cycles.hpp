@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <utility>
 
-#include "faces.hpp"
+#include "domus/torus/faces.hpp"
 
 namespace domus::graph {
 class Cycle;

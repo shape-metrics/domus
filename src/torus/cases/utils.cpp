@@ -2,7 +2,6 @@
 
 #include <fstream>
 
-#include "../draw.hpp"
 #include "1/type_1.hpp"
 #include "2/type_2.hpp"
 
@@ -116,24 +115,6 @@ bool is_initial_face_valid(const Face& face) {
             return false;
     }
     return true;
-}
-
-NodesLabels<std::bitset<3>> compute_nodes_in_repeated_paths(const Graph& graph, const Face& face) {
-    NodesLabels<std::bitset<3>> is_node_in_repeated_path(graph);
-    for (const size_t node_id : graph.get_nodes_ids())
-        is_node_in_repeated_path.add_label(node_id, {});
-    for (size_t i = 0; i < face.repeated_paths().size(); i++) {
-        const Path& repeated_path = face.repeated_paths()[i];
-        for (size_t j = 1; j < repeated_path.number_of_nodes() - 1; j++) {
-            const size_t node_id = repeated_path.node_id_at_position(j);
-            is_node_in_repeated_path.get_label(node_id).set(i);
-        }
-    }
-    const size_t first_id = face.repeated_paths()[0].get_first_node_id();
-    const size_t last_id = face.repeated_paths()[0].get_last_node_id();
-    is_node_in_repeated_path.get_label(first_id).set();
-    is_node_in_repeated_path.get_label(last_id).set();
-    return is_node_in_repeated_path;
 }
 
 } // namespace domus::torus

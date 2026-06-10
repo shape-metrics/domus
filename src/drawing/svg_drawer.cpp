@@ -16,53 +16,47 @@ SvgDrawer::SvgDrawer(int width, int height)
     m_svg << "x=\"0\" y=\"0\" fill=\"white\" />";
 }
 
-void SvgDrawer::add(Square2D& square, double corner_radious) {
-    std::string color;
-    if (square.hasColor())
-        color = square.getColor().value();
-    else
-        color = "black";
-    double side = square.getSide();
-    double x = square.getCenter().x_m - side / 2;
-    double y = square.getCenter().y_m + side / 2;
+void SvgDrawer::add(const std::string_view text, const Point2D& center) {
+    m_svg << "<text x=\"" << center.x << "\" y=\"" << m_scale_y.map(center.y) << "\" ";
+    m_svg << "font-family=\"Verdana\" font-size=\"18\" fill=\"white\" ";
+    m_svg << "text-anchor=\"middle\" dominant-baseline=\"central\">" << text << "</text>\n";
+}
+
+void SvgDrawer::add(const Square2D& square, const std::string_view color) {
+    const double side = square.get_side();
+    const double x = square.get_center().x - side / 2;
+    const double y = square.get_center().y + side / 2;
     m_svg << "<rect x=\"" << x << "\" y=\"" << m_scale_y.map(y) << "\" ";
-    m_svg << "rx=\"" << corner_radious << "\" ";
     m_svg << "width=\"" << side << "\" height=\"" << side << "\" fill=\"" << color << "\" />"
           << std::endl;
-    if (square.hasLabel()) {
-        double centerX = square.getCenter().x_m;
-        double centerY = square.getCenter().y_m;
-        m_svg << "<text x=\"" << centerX << "\" y=\"" << m_scale_y.map(centerY) << "\" ";
-        m_svg << "font-family=\"Verdana\" font-size=\"18\" fill=\"white\" ";
-        m_svg << "text-anchor=\"middle\" dominant-baseline=\"central\">"
-              << square.getLabel().value() << "</text>" << std::endl;
-    }
+}
+
+void SvgDrawer::add(const RoundSquare2D& square, const std::string_view color) {
+    const double side = square.get_side();
+    const double x = square.get_center().x - side / 2;
+    const double y = square.get_center().y + side / 2;
+    m_svg << "<rect x=\"" << x << "\" y=\"" << m_scale_y.map(y) << "\" ";
+    m_svg << "rx=\"" << square.get_corner_radious() << "\" ";
+    m_svg << "width=\"" << side << "\" height=\"" << side << "\" fill=\"" << color << "\" />"
+          << std::endl;
 }
 
 void SvgDrawer::add(const Circle2D& circle, const std::string_view color) {
-    m_svg << "<circle cx=\"" << circle.getCenter().x_m << "\" cy=\""
-          << m_scale_y.map(circle.getCenter().y_m) << "\" ";
-    m_svg << "r=\"" << circle.getRadius() << "\" fill=\"" << color << "\" />" << std::endl;
-    if (circle.hasLabel()) {
-        double centerX = circle.getCenter().x_m;
-        double centerY = circle.getCenter().y_m;
-        m_svg << "<text x=\"" << centerX << "\" y=\"" << m_scale_y.map(centerY) << "\" ";
-        m_svg << "font-family=\"Verdana\" font-size=\"16\" fill=\"white\" ";
-        m_svg << "text-anchor=\"middle\" dominant-baseline=\"central\">"
-              << circle.getLabel().value() << "</text>" << std::endl;
-    }
+    m_svg << "<circle cx=\"" << circle.get_center().x << "\" cy=\""
+          << m_scale_y.map(circle.get_center().y) << "\" ";
+    m_svg << "r=\"" << circle.get_radius() << "\" fill=\"" << color << "\" />\n";
 }
 
 void SvgDrawer::add(const Line2D& line, const std::string_view color) {
-    m_svg << "<line x1=\"" << line.p1_m.x_m << "\" y1=\"" << m_scale_y.map(line.p1_m.y_m) << "\" ";
-    m_svg << "x2=\"" << line.p2_m.x_m << "\" y2=\"" << m_scale_y.map(line.p2_m.y_m) << "\" ";
+    m_svg << "<line x1=\"" << line.m_p1.x << "\" y1=\"" << m_scale_y.map(line.m_p1.y) << "\" ";
+    m_svg << "x2=\"" << line.m_p2.x << "\" y2=\"" << m_scale_y.map(line.m_p2.y) << "\" ";
     m_svg << "style=\"stroke:" << color << ";stroke-width:2\" />" << std::endl;
 }
 
-void SvgDrawer::add(Polygon2D& polygon, const std::string_view color) {
+void SvgDrawer::add(const Polygon2D& polygon, const std::string_view color) {
     m_svg << "<polygon points=\"";
-    for (const Point2D& point : polygon.getPoints())
-        m_svg << point.x_m << "," << m_scale_y.map(point.y_m) << " ";
+    for (const Point2D& point : polygon.get_points())
+        m_svg << point.x << "," << m_scale_y.map(point.y) << " ";
     m_svg << "\" style=\"fill:white;stroke:" << color << ";stroke-width:2\" />" << std::endl;
 }
 
@@ -70,9 +64,9 @@ void SvgDrawer::add(const Path2D& path, const std::string_view color) {
     m_svg << "<path d=\"";
     for (size_t i = 0; i < path.points.size(); i++) {
         if (i == 0)
-            m_svg << "M" << path.points[i].x_m << "," << m_scale_y.map(path.points[i].y_m) << " ";
+            m_svg << "M" << path.points[i].x << "," << m_scale_y.map(path.points[i].y) << " ";
         else
-            m_svg << "L" << path.points[i].x_m << "," << m_scale_y.map(path.points[i].y_m) << " ";
+            m_svg << "L" << path.points[i].x << "," << m_scale_y.map(path.points[i].y) << " ";
     }
     m_svg << "\" style=\"fill:none;stroke:" << color << ";stroke-width:1\" />" << std::endl;
 }
@@ -81,22 +75,22 @@ void SvgDrawer::add_and_smooth(Path2D& path, const std::string_view color) {
     m_svg << "<path d=\"";
     for (size_t i = 0; i < path.points.size(); i++) {
         if (i == 0)
-            m_svg << "M" << path.points[i].x_m << "," << m_scale_y.map(path.points[i].y_m) << " ";
+            m_svg << "M" << path.points[i].x << "," << m_scale_y.map(path.points[i].y) << " ";
         else
-            m_svg << "T" << path.points[i].x_m << "," << m_scale_y.map(path.points[i].y_m) << " ";
+            m_svg << "T" << path.points[i].x << "," << m_scale_y.map(path.points[i].y) << " ";
     }
     m_svg << "\" style=\"fill:none;stroke:" << color << ";stroke-width:1\" />" << std::endl;
 }
 
 std::expected<void, std::string> SvgDrawer::save_to_file(std::filesystem::path path) {
-    std::ofstream svgFile(path);
-    if (!svgFile.is_open()) {
+    std::ofstream svg_file(path);
+    if (!svg_file.is_open()) {
         return std::unexpected(
             std::format("SvgDrawer::save_to_file: could not open file {}", path.string())
         );
     }
-    svgFile << m_svg.str();
-    svgFile << "</svg>" << std::endl;
+    svg_file << m_svg.str();
+    svg_file << "</svg>" << std::endl;
     return {};
 }
 

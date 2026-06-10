@@ -8,25 +8,59 @@
 
 namespace domus::graph::utilities {
 
+/**
+ * @brief A container of nodes of a graph. After instantiation of this class, the corresponding
+ * graph is assumed to not be growing (i.e. do NOT add nodes to the graph). Can add and check nodes
+ * in the container in O(1).
+ */
 class NodesContainer {
     size_t m_number_of_nodes = 0;
     std::vector<bool> m_has_node;
 
   public:
     template <UndirectedGraphLike G> NodesContainer(const G& graph);
+    /**
+     * @brief Adds a node to the container in O(1). Assumes the node is NOT already inside.
+     * @param node_id The id of the node to be added.
+     */
     void add_node(size_t node_id);
+    /**
+     * @brief Checks if a node is in the container in O(1).
+     * @param node_id The id of the node to be checked.
+     */
     bool has_node(size_t node_id) const;
+    /**
+     * @brief Returns the number of nodes currently in the container in O(1).
+     */
     size_t size() const;
+    /**
+     * @brief Returns if the container is empty in O(1).
+     */
     bool empty() const;
+    /**
+     * @brief Removes a node from the container in O(1). Assumes the node is inside.
+     * @param node_id The id of the node to be removed .
+     */
     void erase(size_t node_id);
 };
 
+/**
+ * @brief A class which associates labels with the nodes of a graph. After instantiation of this
+ * class, the corresponding graph is assumed to not be growing (i.e. do NOT add nodes to the graph).
+ * Can add and retrieve labels of nodes in O(1).
+ * @tparam T The type of the labels.
+ */
 template <typename T> class NodesLabels {
     std::vector<std::optional<T>> m_labels;
     size_t m_number_of_labels = 0;
 
   public:
     template <UndirectedGraphLike G> NodesLabels(const G& graph);
+    /**
+     * @brief Adds a label to a node in O(1). The node is assumed to NOT already have a label.
+     * @param node_id The id of the node that will receive the label.
+     * @param label The label to add to the node.
+     */
     void add_label(size_t node_id, T label);
     bool has_label(size_t node_id) const;
     const T& get_label(size_t node_id) const;
