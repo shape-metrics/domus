@@ -23,6 +23,7 @@ class TorusMapping {
     std::vector<drawing::Polygon2D> m_rectangle_polygons;
     std::vector<ColorRGB> m_rectangle_polygons_color;
     std::vector<PolygonMesh> m_cached_polygon_meshes;
+    std::vector<ColorRGB> m_cached_polygon_meshes_color;
 
     void draw_rectangle() const;
     void display() const;
@@ -34,6 +35,7 @@ class TorusMapping {
     void add_line(size_t start_index, size_t end_index);
     void set_line_color(size_t index, ColorRGB color);
     void add_polygon(drawing::Polygon2D polygon);
+    void set_polygon_color(size_t index, ColorRGB color);
     void visualize();
     friend void display_callback();
 };

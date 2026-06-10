@@ -425,8 +425,10 @@ void TorusMapping::draw_rectangle() const {
     // Draw polygon faces
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    for (const auto& mesh : m_cached_polygon_meshes) {
-        glColor4f(POLYGON_DEFAULT_COLOR.r, POLYGON_DEFAULT_COLOR.g, POLYGON_DEFAULT_COLOR.b, 0.5f);
+    for (size_t i = 0; i < m_cached_polygon_meshes.size(); i++) {
+        const auto& mesh = m_cached_polygon_meshes[i];
+        const auto& color = m_cached_polygon_meshes_color[i];
+        glColor4f(color.r, color.g, color.b, 0.5f);
         glBegin(GL_QUADS);
         for (const auto& p : mesh.quads_2d) {
             glVertex3f(static_cast<float>(p.x), static_cast<float>(p.y), 0.0f);
@@ -537,8 +539,10 @@ void TorusMapping::display() const {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
 
-    for (const auto& mesh : m_cached_polygon_meshes) {
-        glColor4f(POLYGON_DEFAULT_COLOR.r, POLYGON_DEFAULT_COLOR.g, POLYGON_DEFAULT_COLOR.b, 0.5f);
+    for (size_t i = 0; i < m_cached_polygon_meshes.size(); i++) {
+        const auto& mesh = m_cached_polygon_meshes[i];
+        const auto& color = m_cached_polygon_meshes_color[i];
+        glColor4f(color.r, color.g, color.b, 0.5f);
         glBegin(GL_QUADS);
         for (const auto& p : mesh.quads_3d) {
             glVertex3f(static_cast<float>(p.x), static_cast<float>(p.y), static_cast<float>(p.z));
@@ -665,16 +669,19 @@ void idle_rotate_camera() {
 
 void TorusMapping::precompute_polygons() {
     m_cached_polygon_meshes.clear();
-    for (const auto& poly : m_rectangle_polygons) {
+    m_cached_polygon_meshes_color.clear();
+    for (size_t index = 0; index < m_rectangle_polygons.size(); index++) {
+        const auto color = m_rectangle_polygons_color[index];
+        const auto& poly = m_rectangle_polygons[index];
         PolygonMesh mesh;
         for (int i = 0; i < POLYGON_GRID_RES_U; i++) {
             for (int j = 0; j < POLYGON_GRID_RES_V; j++) {
-                double u1 = static_cast<double>(i) / POLYGON_GRID_RES_U;
-                double v1 = static_cast<double>(j) / POLYGON_GRID_RES_V;
-                double u2 = static_cast<double>(i + 1) / POLYGON_GRID_RES_U;
-                double v2 = static_cast<double>(j + 1) / POLYGON_GRID_RES_V;
+                const double u1 = static_cast<double>(i) / POLYGON_GRID_RES_U;
+                const double v1 = static_cast<double>(j) / POLYGON_GRID_RES_V;
+                const double u2 = static_cast<double>(i + 1) / POLYGON_GRID_RES_U;
+                const double v2 = static_cast<double>(j + 1) / POLYGON_GRID_RES_V;
 
-                Point2D center{(u1 + u2) / 2.0, (v1 + v2) / 2.0};
+                const Point2D center{(u1 + u2) / 2.0, (v1 + v2) / 2.0};
                 if (poly.is_inside(center)) {
                     mesh.quads_3d.push_back(map_rectangle_to_torus({u1, v1}));
                     mesh.quads_3d.push_back(map_rectangle_to_torus({u2, v1}));
@@ -689,6 +696,7 @@ void TorusMapping::precompute_polygons() {
             }
         }
         m_cached_polygon_meshes.push_back(mesh);
+        m_cached_polygon_meshes_color.push_back(color);
     }
 }
 
@@ -750,6 +758,10 @@ void TorusMapping::set_line_color(size_t index, ColorRGB color) {
 void TorusMapping::add_polygon(drawing::Polygon2D polygon) {
     m_rectangle_polygons.push_back(polygon);
     m_rectangle_polygons_color.push_back(POLYGON_DEFAULT_COLOR);
+}
+
+void TorusMapping::set_polygon_color(size_t index, ColorRGB color) {
+    m_rectangle_polygons_color[index] = color;
 }
 
 void TorusMapping::visualize() {

@@ -10,6 +10,7 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/test.hpp"
 #include "domus/drawing/polygon.hpp"
+#include "domus/drawing/rgb_color.hpp"
 #include "domus/orthogonal/drawing.hpp"
 #include "domus/orthogonal/drawing_builder.hpp"
 #include "domus/orthogonal/drawing_stats.hpp"
@@ -175,20 +176,33 @@ void test_all_possible_embeddings(const Graph& graph) {
 void visualize_torus() {
     TorusMapping mapping;
 
-    mapping.add_point({0.0f, 0.5f}); // 0
-    mapping.add_point({0.3f, 0.5f});
-    mapping.add_point({0.7f, 0.5f}); // 2
-    mapping.add_point({1.0f, 0.5f});
-    mapping.add_point({0.5f, 0.0f}); // 4
-    mapping.add_point({0.5f, 1.0f});
+    mapping.add_point({0.0f, 0.0f});
+    mapping.add_point({0.4f, 0.0f});
+    mapping.add_point({0.6f, 0.0f});
+    mapping.add_point({1.0f, 0.0f});
+
+    mapping.add_point({0.0f, 1.0f});
+    mapping.add_point({0.4f, 1.0f});
+    mapping.add_point({0.6f, 1.0f});
+    mapping.add_point({1.0f, 1.0f});
 
     mapping.add_line(0, 1);
     mapping.add_line(1, 2);
     mapping.add_line(2, 3);
-    mapping.add_line(1, 5);
-    mapping.add_line(2, 4);
+    mapping.add_line(4, 5);
+    mapping.add_line(5, 6);
+    mapping.add_line(6, 7);
 
-    mapping.set_line_color(0, LAVENDER_RGB);
+    mapping.add_line(1, 6);
+
+    mapping.set_line_color(0, BLUE_RGB);
+    mapping.set_line_color(1, GREEN_RGB);
+    mapping.set_line_color(2, BLUE_RGB);
+    mapping.set_line_color(3, BLUE_RGB);
+    mapping.set_line_color(4, GREEN_RGB);
+    mapping.set_line_color(5, BLUE_RGB);
+
+    mapping.set_line_color(6, RED_RGB);
 
     std::vector<Point2D> polygon_points;
     polygon_points.emplace_back(0.2, 0.2);
