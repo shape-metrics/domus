@@ -175,68 +175,20 @@ void test_all_possible_embeddings(const Graph& graph) {
 void visualize_torus() {
     TorusMapping mapping;
 
-    mapping.add_point({0.1f, 0.5f}); // 0
-    mapping.add_point({0.4f, 0.5f});
-    mapping.add_point({0.6f, 0.5f}); // 2
-    mapping.add_point({0.9f, 0.5f});
-    mapping.add_point({0.25f, 0.8f}); // 4
-    mapping.add_point({0.75f, 0.8f});
-    mapping.add_point({0.5f, 0.8f}); // 6
-    mapping.add_point({0.0f, 0.8f});
-    mapping.add_point({1.0f, 0.8f}); // 8
-    mapping.add_point({0.0f, 0.5f});
-    mapping.add_point({1.0f, 0.5f}); // 10
-    mapping.add_point({0.3f, 0.2f});
-    mapping.add_point({0.7f, 0.2f}); // 12
-    mapping.add_point({0.0f, 0.2f});
-    mapping.add_point({1.0f, 0.2f}); // 14
-    float a = 0.275f;
-    float b = 1.0f - a;
-    mapping.add_point({a, 0.0f});
-    mapping.add_point({b, 0.0f}); // 16
-    mapping.add_point({a, 1.0f});
-    mapping.add_point({b, 1.0f}); // 18
-    mapping.add_point({0.1f, 0.8f});
-    mapping.add_point({0.9f, 0.8f}); // 20
-    mapping.add_point({0.1f, 1.0f});
-    mapping.add_point({0.9f, 1.0f}); // 22
-    mapping.add_point({0.1f, 0.2f});
-    mapping.add_point({0.9f, 0.2f}); // 24
-    mapping.add_point({0.1f, 0.0f});
-    mapping.add_point({0.9f, 0.0f}); // 26
+    mapping.add_point({0.0f, 0.5f}); // 0
+    mapping.add_point({0.3f, 0.5f});
+    mapping.add_point({0.7f, 0.5f}); // 2
+    mapping.add_point({1.0f, 0.5f});
+    mapping.add_point({0.5f, 0.0f}); // 4
+    mapping.add_point({0.5f, 1.0f});
 
     mapping.add_line(0, 1);
     mapping.add_line(1, 2);
     mapping.add_line(2, 3);
-    mapping.add_line(3, 5);
-    mapping.add_line(2, 5);
-    mapping.add_line(4, 1);
-    mapping.add_line(4, 0);
-    mapping.add_line(6, 5);
-    mapping.add_line(19, 4);
-    mapping.add_line(9, 0);
-    mapping.add_line(4, 6);
-    mapping.add_line(4, 17);
-    mapping.add_line(0, 11);
-    mapping.add_line(23, 11);
-    mapping.add_line(1, 12);
-    mapping.add_line(2, 11);
-    mapping.add_line(3, 12);
-    mapping.add_line(3, 10);
-    mapping.add_line(5, 20);
-    mapping.add_line(5, 18);
-    mapping.add_line(12, 24);
-    mapping.add_line(11, 12);
-    mapping.add_line(11, 15);
-    mapping.add_line(12, 16);
-    mapping.add_line(7, 19);
-    mapping.add_line(8, 20);
-    mapping.add_line(19, 21);
-    mapping.add_line(20, 22);
-    mapping.add_line(13, 23);
-    mapping.add_line(14, 24);
-    mapping.add_line(25, 23);
-    mapping.add_line(26, 24);
+    mapping.add_line(1, 5);
+    mapping.add_line(2, 4);
+
+    mapping.set_line_color(0, LAVENDER_RGB);
 
     std::vector<Point2D> polygon_points;
     polygon_points.emplace_back(0.2, 0.2);
