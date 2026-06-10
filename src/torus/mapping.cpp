@@ -26,16 +26,16 @@ const int TORUS_SEGMENTS_MAJOR = 128; // Resolution of the torus
 const int TORUS_SEGMENTS_MINOR = 64;  // Resolution of the torus
 const ColorRGB TORUS_COLOR = GRAY_RGB;
 
-// Sphere parameters
+// Sphere (drawn vertices on the torus) parameters
 const double SPHERE_RADIUS = 0.1;
 const int SPHERE_SLICES = 8; // Detail level of spheres
 const ColorRGB SPHERE_COLOR = RED_RGB;
 const ColorRGB HIGHLIGHT_SPHERE_COLOR = YELLOW_RGB;
 
-// Cylinder parameters
-const double CYLINDER_RADIUS = 0.02;
-const int CYLINDER_SLICES = 50; // Detail level of cylinders
-const ColorRGB CYLINDER_COLOR = NAVY_RGB;
+// Cylinder (drawn edges on the torus) parameters
+const ColorRGB EDGE_COLOR = NAVY_RGB;
+const double EDGE_RADIUS = 0.02;
+const int EDGE_SLICES = 50; // Detail level of cylinders
 
 // Labels parameters
 std::optional<size_t> hovered_point_index;
@@ -266,8 +266,8 @@ void draw_oriented_cylinder(
     // Draw cylinder
     glBegin(GL_TRIANGLE_STRIP);
 
-    for (size_t i = 0; i <= CYLINDER_SLICES; i++) {
-        double angle = static_cast<double>(i) * 2.0 * M_PI / CYLINDER_SLICES;
+    for (size_t i = 0; i <= EDGE_SLICES; i++) {
+        double angle = static_cast<double>(i) * 2.0 * M_PI / EDGE_SLICES;
         double ca = cos(angle);
         double sa = sin(angle);
 
@@ -297,20 +297,20 @@ void draw_oriented_cylinder(
 
 // Draw a line between two points on the torus
 void draw_torus_line(const Point2D& start, const Point2D& end, const ColorRGB& color) {
-    double ds = (end.x - start.x) / static_cast<double>(CYLINDER_SLICES);
-    double dt = (end.y - start.y) / static_cast<double>(CYLINDER_SLICES);
+    double ds = (end.x - start.x) / static_cast<double>(EDGE_SLICES);
+    double dt = (end.y - start.y) / static_cast<double>(EDGE_SLICES);
 
     double current_s = start.x;
     double current_t = start.y;
 
-    for (int i = 1; i <= CYLINDER_SLICES; i++) {
+    for (int i = 1; i <= EDGE_SLICES; i++) {
         double next_s = current_s + ds;
         double next_t = current_t + dt;
 
         Point3D p1 = map_rectangle_to_torus({current_s, current_t});
         Point3D p2 = map_rectangle_to_torus({next_s, next_t});
 
-        draw_oriented_cylinder(p1, p2, CYLINDER_RADIUS, color);
+        draw_oriented_cylinder(p1, p2, EDGE_RADIUS, color);
 
         current_s = next_s;
         current_t = next_t;
@@ -503,7 +503,7 @@ void display() {
     for (const auto& line : rectangle_lines_g) {
         const Point2D& p1 = rectangle_points_g[line.first];
         const Point2D& p2 = rectangle_points_g[line.second];
-        draw_torus_line(p1, p2, CYLINDER_COLOR);
+        draw_torus_line(p1, p2, EDGE_COLOR);
     }
     if (show_rectangle)
         draw_rectangle();                        // Draw the 2D rectangle representation
