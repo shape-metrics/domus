@@ -9,6 +9,7 @@
 #include "domus/core/graph/flow.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/test.hpp"
+#include "domus/drawing/polygon.hpp"
 #include "domus/orthogonal/drawing.hpp"
 #include "domus/orthogonal/drawing_builder.hpp"
 #include "domus/orthogonal/drawing_stats.hpp"
@@ -25,6 +26,7 @@ using namespace domus::planarity;
 using namespace domus::orthogonal;
 using namespace domus::torus;
 using namespace domus::torus::mapper;
+using namespace domus::drawing;
 
 void planarity_test(const graph::Graph& graph) {
     const std::optional<Embedding> embedding = compute_planar_embedding(graph);
@@ -236,6 +238,12 @@ void visualize_torus() {
     mapping.add_line(25, 23);
     mapping.add_line(26, 24);
 
+    std::vector<Point2D> polygon_points;
+    polygon_points.emplace_back(0.2, 0.2);
+    polygon_points.emplace_back(0.2, 0.8);
+    polygon_points.emplace_back(0.8, 0.8);
+    polygon_points.emplace_back(0.8, 0.2);
+    mapping.add_polygon(Polygon2D(polygon_points));
     mapping.visualize();
 }
 

@@ -65,6 +65,17 @@ std::vector<Point3D> torus_points;
 // Rectangle variables
 bool show_rectangle = true;
 
+// Polygons variables
+std::vector<drawing::Polygon2D> rectangle_polygons_g;
+const int POLYGON_GRID_RES_U = 512;
+const int POLYGON_GRID_RES_V = 256;
+const ColorRGB POLYGON_COLOR = TEAL_RGB;
+struct PolygonMesh {
+    std::vector<Point3D> quads_3d;
+    std::vector<Point2D> quads_2d;
+};
+std::vector<PolygonMesh> cached_polygon_meshes_g;
+
 void add_text_label(
     const std::string_view text, const Point2D& screen_coordinates, const ColorRGB& color
 ) {
@@ -421,6 +432,29 @@ void draw_rectangle() {
     glVertex3f(0.0f, 1.0f, 0.0f);
     glEnd();
 
+    // Draw polygon faces
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    for (const auto& mesh : cached_polygon_meshes_g) {
+        glColor4f(POLYGON_COLOR.r, POLYGON_COLOR.g, POLYGON_COLOR.b, 0.5f);
+        glBegin(GL_QUADS);
+        for (const auto& p : mesh.quads_2d) {
+            glVertex3f(static_cast<float>(p.x), static_cast<float>(p.y), 0.0f);
+        }
+        glEnd();
+    }
+    glDisable(GL_BLEND);
+
+    // Draw polygon outlines
+    for (const auto& poly : rectangle_polygons_g) {
+        glColor3f(POLYGON_COLOR.r, POLYGON_COLOR.g, POLYGON_COLOR.b);
+        glBegin(GL_LINE_LOOP);
+        for (const auto& p : poly.get_points()) {
+            glVertex3f(static_cast<float>(p.x), static_cast<float>(p.y), 0.0f);
+        }
+        glEnd();
+    }
+
     // Draw points
     glColor3f(1.0f, 0.0f, 0.0f);
     glPointSize(5.0f);
@@ -505,6 +539,24 @@ void display() {
         const Point2D& p2 = rectangle_points_g[line.second];
         draw_torus_line(p1, p2, EDGE_COLOR);
     }
+
+    // Draw polygons on the torus
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+
+    for (const auto& mesh : cached_polygon_meshes_g) {
+        glColor4f(POLYGON_COLOR.r, POLYGON_COLOR.g, POLYGON_COLOR.b, 0.5f);
+        glBegin(GL_QUADS);
+        for (const auto& p : mesh.quads_3d) {
+            glVertex3f(static_cast<float>(p.x), static_cast<float>(p.y), static_cast<float>(p.z));
+        }
+        glEnd();
+    }
+
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+
     if (show_rectangle)
         draw_rectangle();                        // Draw the 2D rectangle representation
     render_text_labels(LABELS_BACKGROUND_COLOR); // Render all text labels as 2D overlay
@@ -619,7 +671,37 @@ void idle_rotate_camera() {
     glutPostRedisplay();
 }
 
+void precompute_polygons() {
+    cached_polygon_meshes_g.clear();
+    for (const auto& poly : rectangle_polygons_g) {
+        PolygonMesh mesh;
+        for (int i = 0; i < POLYGON_GRID_RES_U; i++) {
+            for (int j = 0; j < POLYGON_GRID_RES_V; j++) {
+                double u1 = static_cast<double>(i) / POLYGON_GRID_RES_U;
+                double v1 = static_cast<double>(j) / POLYGON_GRID_RES_V;
+                double u2 = static_cast<double>(i + 1) / POLYGON_GRID_RES_U;
+                double v2 = static_cast<double>(j + 1) / POLYGON_GRID_RES_V;
+
+                Point2D center{(u1 + u2) / 2.0, (v1 + v2) / 2.0};
+                if (poly.is_inside(center)) {
+                    mesh.quads_3d.push_back(map_rectangle_to_torus({u1, v1}));
+                    mesh.quads_3d.push_back(map_rectangle_to_torus({u2, v1}));
+                    mesh.quads_3d.push_back(map_rectangle_to_torus({u2, v2}));
+                    mesh.quads_3d.push_back(map_rectangle_to_torus({u1, v2}));
+
+                    mesh.quads_2d.push_back({u1, v1});
+                    mesh.quads_2d.push_back({u2, v1});
+                    mesh.quads_2d.push_back({u2, v2});
+                    mesh.quads_2d.push_back({u1, v2});
+                }
+            }
+        }
+        cached_polygon_meshes_g.push_back(mesh);
+    }
+}
+
 void visualize_torus() {
+    precompute_polygons();
     // Map all points to the torus
     torus_points.clear();
     for (const auto& point : rectangle_points_g)
@@ -657,6 +739,10 @@ void TorusMapping::add_line(size_t start_index, size_t end_index) {
     m_rectangle_lines.emplace_back(start_index, end_index);
 }
 
+void TorusMapping::add_polygon(drawing::Polygon2D polygon) {
+    m_rectangle_polygons.push_back(polygon);
+}
+
 void TorusMapping::visualize() const {
     for (Point2D point : m_rectangle_points) {
         if (point.x > 1.0f || point.x < 0)
@@ -672,6 +758,17 @@ void TorusMapping::visualize() const {
             throw std::runtime_error("Line end index out of bounds");
     }
     rectangle_lines_g = m_rectangle_lines;
+
+    for (const auto& poly : m_rectangle_polygons) {
+        for (Point2D point : poly.get_points()) {
+            if (point.x > 1.0f || point.x < 0)
+                throw std::runtime_error("Polygon point x coordinate out of bounds");
+            if (point.y > 1.0f || point.y < 0)
+                throw std::runtime_error("Polygon point y coordinate out of bounds");
+        }
+    }
+    rectangle_polygons_g = m_rectangle_polygons;
+
     pid_t child_pid = fork();
     if (child_pid < 0) {
         perror("Parent: fork");
