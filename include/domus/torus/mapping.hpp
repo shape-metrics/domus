@@ -32,6 +32,10 @@ class TorusMapping {
 
   public:
     void add_point(drawing::Point2D point);
+    void update_point(size_t index, drawing::Point2D point);
+    void set_point_color(size_t index, ColorRGB color);
+    const std::vector<drawing::Point2D>& get_points() const { return m_rectangle_points; }
+
     void add_line(size_t start_index, size_t end_index);
     void set_line_color(size_t index, ColorRGB color);
     void add_polygon(drawing::Polygon2D polygon);

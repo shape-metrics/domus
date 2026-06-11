@@ -6,6 +6,8 @@
 #include <string_view>
 #include <sys/wait.h>
 
+#include "domus/core/domus_debug.hpp"
+
 namespace domus::torus::mapper {
 using namespace domus::drawing;
 
@@ -54,6 +56,15 @@ double camera_distance = 10.0f;
 double camera_angle_x = 0.0f;
 double camera_angle_y = 0.0f;
 bool idle_camera_rotation = false;
+
+// Interaction State
+enum class InteractionMode { VIEW, ADD_VERTEX, ADD_EDGE, MOVE_VERTEX };
+InteractionMode current_mode = InteractionMode::VIEW;
+std::optional<size_t> selected_point_index;
+std::optional<size_t> dragged_point_index;
+
+extern TorusMapping* g_current_mapping;
+void update_torus_points();
 
 // Points variables
 std::vector<Point3D> torus_points;
@@ -154,7 +165,7 @@ void render_text_labels(const ColorRGB& background_color) {
                                GLUT_BITMAP_HELVETICA_18,
                                reinterpret_cast<const unsigned char*>(label.text.c_str())
                            )) /
-                           static_cast<float>(glutGet(GLUT_WINDOW_WIDTH));
+                           static_cast<float>(glutGet(GLUT_WINDOW_WIDTH) / 2);
         float text_height = 0.03f;
 
         glColor4f(background_color.r, background_color.g, background_color.b, 0.7f);
@@ -408,10 +419,11 @@ void TorusMapping::draw_rectangle() const {
     // Save current transformation
     glPushMatrix();
 
-    // Position the rectangle to the right of the torus
-    glTranslatef(MAJOR_RADIUS * 2.5f, 0.0f, 0.0f);
-    glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
-    glScalef(MAJOR_RADIUS, MAJOR_RADIUS, 1.0f);
+    // Disable depth test for 2D drawing to prevent z-fighting
+    // where items at z=0.0 hide subsequently drawn items at z=0.0
+    glDisable(GL_DEPTH_TEST);
+
+    // We are in an orthographic projection from 0 to 1, no transform needed
 
     // Draw rectangle outline
     glColor3f(0.8f, 0.8f, 0.8f);
@@ -447,14 +459,6 @@ void TorusMapping::draw_rectangle() const {
         glEnd();
     }
 
-    // Draw points
-    glColor3f(1.0f, 0.0f, 0.0f);
-    glPointSize(5.0f);
-    glBegin(GL_POINTS);
-    for (const Point2D& point : m_rectangle_points)
-        glVertex3f(static_cast<float>(point.x), static_cast<float>(point.y), 0.0f);
-    glEnd();
-
     // Draw lines
     glColor3f(0.0f, 1.0f, 0.0f);
     glBegin(GL_LINES);
@@ -465,6 +469,17 @@ void TorusMapping::draw_rectangle() const {
         glVertex3f(static_cast<float>(p2.x), static_cast<float>(p2.y), 0.0f);
     }
     glEnd();
+
+    // Draw points (drawn last so they are on top)
+    glColor3f(1.0f, 0.0f, 0.0f);
+    glPointSize(5.0f);
+    glBegin(GL_POINTS);
+    for (const Point2D& point : m_rectangle_points)
+        glVertex3f(static_cast<float>(point.x), static_cast<float>(point.y), 0.0f);
+    glEnd();
+
+    // Restore 3D settings
+    glEnable(GL_DEPTH_TEST);
 
     // Restore transformation
     glPopMatrix();
@@ -477,7 +492,15 @@ void TorusMapping::display() const {
     // Clear any previous text labels
     text_labels.clear();
 
-    // Set up camera using spherical coordinates
+    int width = glutGet(GLUT_WINDOW_WIDTH);
+    int height = glutGet(GLUT_WINDOW_HEIGHT);
+
+    // --- LEFT VIEWPORT (3D Torus) ---
+    glViewport(0, 0, width / 2, height);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0f, (static_cast<double>(width) / 2.0) / height, 0.1f, 100.0f);
+    glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
     // Convert spherical to Cartesian coordinates
@@ -553,53 +576,161 @@ void TorusMapping::display() const {
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
 
+    glViewport(0, 0, width / 2, height);
+    render_text_labels(LABELS_BACKGROUND_COLOR);
+
+    // --- RIGHT VIEWPORT (2D Rectangle) ---
+    glViewport(width / 2, 0, width / 2, height);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
     if (show_rectangle)
-        draw_rectangle();                        // Draw the 2D rectangle representation
-    render_text_labels(LABELS_BACKGROUND_COLOR); // Render all text labels as 2D overlay
+        draw_rectangle(); // Draw the 2D rectangle representation
+
+    // Render mode text
+    std::string mode_str = "Mode: ";
+    switch (current_mode) {
+    case InteractionMode::VIEW:
+        mode_str += "VIEW";
+        break;
+    case InteractionMode::ADD_VERTEX:
+        mode_str += "ADD VERTEX";
+        break;
+    case InteractionMode::ADD_EDGE:
+        mode_str += "ADD EDGE";
+        break;
+    case InteractionMode::MOVE_VERTEX:
+        mode_str += "MOVE VERTEX";
+        break;
+    }
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glRasterPos2f(0.05f, 0.95f);
+    for (char c : mode_str)
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+
     glutSwapBuffers();
 }
 
 // Reshape callback
 void reshape(int width, int height) {
-    glViewport(0, 0, width, height);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(45.0f, static_cast<double>(width) / height, 0.1f, 100.0f);
-    glMatrixMode(GL_MODELVIEW);
+    // We handle viewports and projections in display() now
 }
 
 // Mouse button callback
 void mouse_button(int button, int state, int x, int y) {
-    if (button == GLUT_LEFT_BUTTON) {
-        left_mouse_button_down = (state == GLUT_DOWN);
-        prev_mouse_x = x;
-        prev_mouse_y = y;
+    int width = glutGet(GLUT_WINDOW_WIDTH);
+    int height = glutGet(GLUT_WINDOW_HEIGHT);
+
+    if (x < width / 2) {
+        // Left viewport interaction
+        if (button == GLUT_LEFT_BUTTON) {
+            left_mouse_button_down = (state == GLUT_DOWN);
+            prev_mouse_x = x;
+            prev_mouse_y = y;
+        }
+    } else {
+        // Right viewport interaction
+        if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && g_current_mapping) {
+            // Map pixel to [0, 1] rectangle space
+            double rect_x = static_cast<double>(x - width / 2) / (width / 2.0);
+            double rect_y = 1.0 - static_cast<double>(y) / height;
+
+            if (current_mode == InteractionMode::ADD_VERTEX) {
+                g_current_mapping->add_point({rect_x, rect_y});
+                update_torus_points();
+                glutPostRedisplay();
+            } else if (current_mode == InteractionMode::ADD_EDGE) {
+                // Find closest vertex
+                std::optional<size_t> closest;
+                double min_dist = 0.05 * 0.05; // Hit radius squared
+                const auto& pts = g_current_mapping->get_points();
+                for (size_t i = 0; i < pts.size(); ++i) {
+                    double dx = pts[i].x - rect_x;
+                    double dy = pts[i].y - rect_y;
+                    double d2 = dx * dx + dy * dy;
+                    if (d2 < min_dist) {
+                        min_dist = d2;
+                        closest = i;
+                    }
+                }
+
+                if (closest.has_value()) {
+                    if (!selected_point_index.has_value()) {
+                        selected_point_index = closest;
+                        g_current_mapping->set_point_color(*closest, HIGHLIGHT_SPHERE_COLOR);
+                    } else if (*selected_point_index != *closest) {
+                        g_current_mapping->add_line(*selected_point_index, *closest);
+                        g_current_mapping->set_point_color(
+                            *selected_point_index,
+                            SPHERE_DEFAULT_COLOR
+                        );
+                        selected_point_index = std::nullopt;
+                    }
+                }
+                glutPostRedisplay();
+            } else if (current_mode == InteractionMode::MOVE_VERTEX) {
+                // Find closest vertex to drag
+                std::optional<size_t> closest;
+                double min_dist = 0.05 * 0.05;
+                const auto& pts = g_current_mapping->get_points();
+                for (size_t i = 0; i < pts.size(); ++i) {
+                    double dx = pts[i].x - rect_x;
+                    double dy = pts[i].y - rect_y;
+                    double d2 = dx * dx + dy * dy;
+                    if (d2 < min_dist) {
+                        min_dist = d2;
+                        closest = i;
+                    }
+                }
+                if (closest.has_value()) {
+                    dragged_point_index = closest;
+                }
+            }
+        } else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+            dragged_point_index = std::nullopt;
+        }
     }
 }
 
 // Mouse motion callback
 void mouse_motion(int x, int y) {
-    // Store mouse position for hover checks
+    int width = glutGet(GLUT_WINDOW_WIDTH);
+    int height = glutGet(GLUT_WINDOW_HEIGHT);
+
     mouse_x = x;
     mouse_y = y;
 
-    // Camera rotation logic
-    if (left_mouse_button_down) {
-        camera_angle_y -= static_cast<float>(x - prev_mouse_x) * 0.01f;
-        camera_angle_x += static_cast<float>(y - prev_mouse_y) * 0.01f;
+    if (x < width / 2) {
+        // Camera rotation logic
+        if (left_mouse_button_down) {
+            camera_angle_y -= static_cast<float>(x - prev_mouse_x) * 0.01f;
+            camera_angle_x += static_cast<float>(y - prev_mouse_y) * 0.01f;
 
-        // Clamp vertical angle to avoid gimbal lock
-        if (camera_angle_x > M_PI / 2.0f - 0.01f)
-            camera_angle_x = M_PI / 2.0f - 0.01f;
-        if (camera_angle_x < -M_PI / 2.0f + 0.01f)
-            camera_angle_x = -M_PI / 2.0f + 0.01f;
+            if (camera_angle_x > M_PI / 2.0f - 0.01f)
+                camera_angle_x = M_PI / 2.0f - 0.01f;
+            if (camera_angle_x < -M_PI / 2.0f + 0.01f)
+                camera_angle_x = -M_PI / 2.0f + 0.01f;
 
-        prev_mouse_x = x;
-        prev_mouse_y = y;
+            prev_mouse_x = x;
+            prev_mouse_y = y;
+        }
+    } else {
+        if (dragged_point_index.has_value() && g_current_mapping) {
+            double rect_x = static_cast<double>(x - width / 2) / (width / 2.0);
+            double rect_y = 1.0 - static_cast<double>(y) / height;
+
+            rect_x = std::max(0.0, std::min(1.0, rect_x));
+            rect_y = std::max(0.0, std::min(1.0, rect_y));
+
+            g_current_mapping->update_point(*dragged_point_index, {rect_x, rect_y});
+            update_torus_points();
+        }
     }
 
     check_hovered_point();
-
     glutPostRedisplay();
 }
 
@@ -623,7 +754,16 @@ void mouse_wheel(int, int dir, int, int) {
 void keyboard(unsigned char key, int, int) {
     switch (key) {
     case 27: // ESC key
-        exit(0);
+        if (current_mode != InteractionMode::VIEW) {
+            current_mode = InteractionMode::VIEW;
+            if (selected_point_index.has_value() && g_current_mapping) {
+                g_current_mapping->set_point_color(*selected_point_index, SPHERE_DEFAULT_COLOR);
+                selected_point_index = std::nullopt;
+            }
+            glutPostRedisplay();
+        } else {
+            exit(0);
+        }
         break;
     case '0':
         // Reset camera
@@ -643,13 +783,39 @@ void keyboard(unsigned char key, int, int) {
         glutPostRedisplay();
         break;
     case 'H':
-        // Print help
         std::cout << "Torus Mapping Visualization" << std::endl;
         std::cout << "0: Reset camera" << std::endl;
         std::cout << "R: Toggle rotation" << std::endl;
         std::cout << "L: Toggle all labels" << std::endl;
         std::cout << "S: Toggle rectangle visibility" << std::endl;
+        std::cout << "V: Add Vertex Mode" << std::endl;
+        std::cout << "E: Add Edge Mode" << std::endl;
+        std::cout << "M: Move Vertex Mode" << std::endl;
+        std::cout << "ESC: Reset mode / Quit" << std::endl;
         std::cout << "H: Print help" << std::endl;
+        break;
+    case 'V':
+    case 'v':
+        current_mode = InteractionMode::ADD_VERTEX;
+        if (selected_point_index.has_value() && g_current_mapping) {
+            g_current_mapping->set_point_color(*selected_point_index, SPHERE_DEFAULT_COLOR);
+            selected_point_index = std::nullopt;
+        }
+        glutPostRedisplay();
+        break;
+    case 'E':
+    case 'e':
+        current_mode = InteractionMode::ADD_EDGE;
+        glutPostRedisplay();
+        break;
+    case 'M':
+    case 'm':
+        current_mode = InteractionMode::MOVE_VERTEX;
+        if (selected_point_index.has_value() && g_current_mapping) {
+            g_current_mapping->set_point_color(*selected_point_index, SPHERE_DEFAULT_COLOR);
+            selected_point_index = std::nullopt;
+        }
+        glutPostRedisplay();
         break;
     case 'R':
         // Toggle idle camera rotation
@@ -700,7 +866,27 @@ void TorusMapping::precompute_polygons() {
     }
 }
 
-const TorusMapping* g_current_mapping = nullptr;
+TorusMapping* g_current_mapping = nullptr;
+
+void update_torus_points() {
+    if (!g_current_mapping)
+        return;
+    torus_points.clear();
+    for (const auto& point : g_current_mapping->get_points())
+        torus_points.push_back(map_rectangle_to_torus(point));
+}
+
+void TorusMapping::update_point(size_t index, drawing::Point2D point) {
+    if (index < m_rectangle_points.size()) {
+        m_rectangle_points[index] = point;
+    }
+}
+
+void TorusMapping::set_point_color(size_t index, ColorRGB color) {
+    if (index < m_rectangle_points_color.size()) {
+        m_rectangle_points_color[index] = color;
+    }
+}
 
 void display_callback() {
     if (g_current_mapping)
@@ -766,40 +952,23 @@ void TorusMapping::set_polygon_color(size_t index, ColorRGB color) {
 
 void TorusMapping::visualize() {
     for (Point2D point : m_rectangle_points) {
-        if (point.x > 1.0f || point.x < 0)
-            throw std::runtime_error("Point x coordinate out of bounds");
-        if (point.y > 1.0f || point.y < 0)
-            throw std::runtime_error("Point y coordinate out of bounds");
+        DOMUS_ASSERT(point.x <= 1.0 && point.x >= 0.0, "TorusMapping::visualize: point x coordinate out of bounds");
+        DOMUS_ASSERT(point.y <= 1.0 && point.y >= 0.0, "TorusMapping::visualize: point y coordinate out of bounds");
     }
+
     for (auto [i_0, i_1] : m_rectangle_lines) {
-        if (i_0 >= m_rectangle_points.size())
-            throw std::runtime_error("Line start index out of bounds");
-        if (i_1 >= m_rectangle_points.size())
-            throw std::runtime_error("Line end index out of bounds");
+        DOMUS_ASSERT(i_0 < m_rectangle_points.size(), "TorusMapping::visualize: line start index out of bounds");
+        DOMUS_ASSERT(i_1< m_rectangle_points.size(), "TorusMapping::visualize: line start index out of bounds");
     }
 
     for (const auto& poly : m_rectangle_polygons) {
         for (Point2D point : poly.get_points()) {
-            if (point.x > 1.0f || point.x < 0)
-                throw std::runtime_error("Polygon point x coordinate out of bounds");
-            if (point.y > 1.0f || point.y < 0)
-                throw std::runtime_error("Polygon point y coordinate out of bounds");
+            DOMUS_ASSERT(point.x <= 1.0 && point.x >= 0.0, "TorusMapping::visualize: polygon point x coordinate out of bounds");
+            DOMUS_ASSERT(point.y <= 1.0 && point.y >= 0.0, "TorusMapping::visualize: polygon point y coordinate out of bounds");
         }
     }
 
-    pid_t child_pid = fork();
-    if (child_pid < 0) {
-        perror("Parent: fork");
-        return;
-    }
-    if (child_pid == 0) {
-        // Child process
-        visualize_torus();
-        return;
-    }
-    // Parent process
-    // int status;
-    // waitpid(child_pid, &status, 0); // Not actually necessary
+    visualize_torus();
 }
 
 } // namespace domus::torus::mapper
