@@ -6,7 +6,8 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
 
-#include "../draw.hpp"
+#include "../../mapper/embedding_converter.hpp"
+#include "domus/torus/faces.hpp"
 #include "utils.hpp"
 
 namespace domus::torus {
@@ -86,7 +87,7 @@ auto candidate_face_splitting_paths_in_bridge(
 }
 
 std::vector<size_t> SplitterWithPath::compute_attachments() {
-    NodesContainer is_attachments_in_face(m_graph);
+    NodesContainer is_attachments_in_face;
     std::vector<size_t> all_attachments;
     all_attachments.reserve(m_bridges.size() * 2);
     for (const Bridge& bridge : m_bridges) {
@@ -231,7 +232,8 @@ bool SplitterWithPath::try_face_splits_with_path(const Path& path) {
 }
 
 bool SplitterWithPath::try_embedding_extension(const Path& path) {
-    draw_face_with_path(m_embedding, m_face, path);
+    // if (m_face.type() == FaceType::TYPE_4)
+    //     mapper::build_equivalent_embedding(m_graph, m_embedding, m_face);
     return next_case(m_embedding, m_graph, m_face);
 }
 

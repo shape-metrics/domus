@@ -12,12 +12,11 @@ namespace domus::torus {
 using namespace domus::graph;
 using namespace domus::graph::utilities;
 
-std::vector<NodesContainer>
-compute_nodes_in_face(const Graph& graph, const std::vector<Face>& faces) {
+std::vector<NodesContainer> compute_nodes_in_face(const std::vector<Face>& faces) {
     std::vector<NodesContainer> nodes_in_face;
     for (size_t i = 0; i < faces.size(); ++i) {
         const Face& face = faces[i];
-        nodes_in_face.emplace_back(graph);
+        nodes_in_face.emplace_back();
         for (size_t j = 0; j < face.path().number_of_nodes() - 1; ++j) {
             const size_t node_id = face.path().node_id_at_position(j);
             if (!nodes_in_face[i].has_node(node_id))
@@ -75,7 +74,7 @@ bool handle_type_2(Graph& graph, Embedding& embedding, const std::vector<Face>& 
     // char c;
     // std::cin >> c;
 
-    std::vector<NodesContainer> nodes_in_face = compute_nodes_in_face(graph, faces);
+    std::vector<NodesContainer> nodes_in_face = compute_nodes_in_face(faces);
 
     std::vector<SpecialPiece> special_pieces;
     std::vector<OrdinaryPiece> ordinary_pieces;
@@ -97,7 +96,6 @@ bool handle_type_2(Graph& graph, Embedding& embedding, const std::vector<Face>& 
         }
         ordinary_pieces.emplace_back(i, std::move(adjacent_ordinary_faces_indexes));
     }
-    std::println("{} {}", special_pieces.size(), ordinary_pieces.size());
     // TODO
     return false;
 }

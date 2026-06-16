@@ -6,6 +6,7 @@
 
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/shape/shape.hpp"
 
 namespace domus::orthogonal {
@@ -14,14 +15,11 @@ struct OrthogonalDrawing {
     graph::Graph augmented_graph;
     graph::Attributes attributes;
     shape::Shape shape;
+    graph::utilities::NodesLabels<shape::NodeType> nodes_types;
 };
 
-std::expected<void, std::string> make_svg(
-    const graph::Graph& graph,
-    const graph::Attributes& attributes,
-    const shape::Shape& shape,
-    std::filesystem::path path
-);
+std::expected<void, std::string>
+make_svg(const OrthogonalDrawing& drawing, std::filesystem::path path);
 
 std::expected<void, std::string>
 save_orthogonal_drawing_to_file(const OrthogonalDrawing& result, std::filesystem::path path);

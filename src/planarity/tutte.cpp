@@ -2,7 +2,6 @@
 
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/graph.hpp"
-#include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
 
 #include "domus/core/domus_debug.hpp"
@@ -70,11 +69,6 @@ void compute_nodes_positions(const Graph& graph, Attributes& attributes) {
     DOMUS_ASSERT(
         attributes.has_attribute(Attribute::NODES_POSITION),
         "compute_nodes_positions: external border is not initialized"
-    );
-
-    DOMUS_ASSERT(
-        algorithms::BiconnectedComponents::compute(graph).get_components().size() == 1,
-        "compute_nodes_positions: Tutte algorithm's needs the input graph to be triconnected"
     );
 
     compute_tutte_layout(graph, attributes);

@@ -7,11 +7,17 @@ using namespace domus::graph;
 
 void NodesContainer::add_node(size_t node_id) {
     DOMUS_ASSERT(!has_node(node_id), "NodesContainer::add_node: node already exists");
+    while (m_has_node.size() <= node_id)
+        m_has_node.push_back(false);
     m_has_node[node_id] = true;
     m_number_of_nodes++;
 }
 
-bool NodesContainer::has_node(size_t node_id) const { return m_has_node.at(node_id); }
+bool NodesContainer::has_node(size_t node_id) const {
+    if (m_has_node.size() <= node_id)
+        return false;
+    return m_has_node.at(node_id);
+}
 
 size_t NodesContainer::size() const { return m_number_of_nodes; }
 
@@ -23,34 +29,29 @@ void NodesContainer::erase(size_t node_id) {
     m_number_of_nodes--;
 }
 
-EdgesContainer::EdgesContainer(size_t number_of_edges_ids)
-    : m_has_edge(number_of_edges_ids, false) {}
-
 void EdgesContainer::add_edge(size_t edge_id) {
     DOMUS_ASSERT(!has_edge(edge_id), "EdgesContainer::add_edge: edge already exists");
+    while (m_has_edge.size() <= edge_id)
+        m_has_edge.push_back(false);
     m_has_edge[edge_id] = true;
     m_number_of_edges++;
 }
 
-bool EdgesContainer::has_edge(size_t edge_id) const { return m_has_edge.at(edge_id); }
+bool EdgesContainer::has_edge(size_t edge_id) const {
+    if (m_has_edge.size() <= edge_id)
+        return false;
+    return m_has_edge.at(edge_id);
+}
 
 size_t EdgesContainer::size() const { return m_number_of_edges; }
 
 bool EdgesContainer::empty() const { return size() == 0; }
-
-void EdgesContainer::update_size(size_t edge_id) {
-    while (m_has_edge.size() <= edge_id)
-        m_has_edge.push_back(false);
-}
 
 void EdgesContainer::erase(size_t edge_id) {
     DOMUS_ASSERT(has_edge(edge_id), "EdgesContainer::erase: edge does not exist");
     m_has_edge[edge_id] = false;
     m_number_of_edges--;
 }
-
-OrientedEdgesContainer::OrientedEdgesContainer(size_t number_of_edges_ids)
-    : m_visited_edges_1(number_of_edges_ids), m_visited_edges_2(number_of_edges_ids) {}
 
 bool OrientedEdgesContainer::has_edge(size_t from_id, size_t to_id, size_t edge_id) const {
     if (from_id < to_id)
@@ -75,11 +76,6 @@ void OrientedEdgesContainer::erase(size_t from_id, size_t to_id, size_t edge_id)
 
 size_t OrientedEdgesContainer::size() const {
     return m_visited_edges_1.size() + m_visited_edges_2.size();
-}
-
-void OrientedEdgesContainer::update_size(size_t edge_id) {
-    m_visited_edges_1.update_size(edge_id);
-    m_visited_edges_2.update_size(edge_id);
 }
 
 bool OrientedEdgesContainer::empty() const { return size() == 0; }

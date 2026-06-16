@@ -14,10 +14,10 @@ class EquivalenceClasses {
     graph::utilities::NodesLabels<size_t> m_elem_to_class;
     std::vector<std::vector<size_t>> m_class_to_elems;
     size_t m_number_of_classes = 0;
+
     bool has_class(size_t class_id) const;
     void set_class(size_t elem, size_t class_id);
     size_t add_class();
-    EquivalenceClasses(const domus::graph::Graph& graph);
     void directional_node_expander(
         const shape::Shape& shape,
         const graph::Graph& graph,

@@ -15,8 +15,10 @@ class Embedding {
     size_t m_number_of_edges = 0;
 
   public:
+    Embedding();
     Embedding(const graph::Graph& graph);
 
+    size_t add_node();
     bool has_node(size_t node_id) const;
     bool are_neighbors(size_t node_1_id, size_t node_2_id) const;
 

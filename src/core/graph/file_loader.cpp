@@ -4,9 +4,11 @@
 #include <fstream>
 #include <sstream>
 
+#include "domus/core/color.hpp"
 #include "domus/core/graph/attributes.hpp"
 
 namespace domus::graph::loader {
+using color::ColorRGB;
 
 std::expected<Graph, std::string> load_graph_from_txt_file(std::filesystem::path path) {
     Graph graph;
@@ -90,7 +92,7 @@ void save_to_graphml(std::ostream& os, const Graph& graph, const Attributes& att
     for (const size_t node_id : graph.get_nodes_ids()) {
         os << "    <node id=\"n" << node_id << "\">\n";
         if (attributes.has_attribute(Attribute::NODES_COLOR)) {
-            const Color color = attributes.get_node_color(node_id);
+            const ColorRGB color = attributes.get_node_color(node_id);
             write_data_tag(os, "d0", color_to_string(color));
         }
         if (attributes.has_attribute(Attribute::NODES_POSITION)) {

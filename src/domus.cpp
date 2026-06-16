@@ -3,6 +3,7 @@
 #include <print>
 #include <string>
 
+#include "domus/core/color.hpp"
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/file_loader.hpp"
@@ -10,12 +11,10 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/test.hpp"
 #include "domus/drawing/polygon.hpp"
-#include "domus/drawing/rgb_color.hpp"
 #include "domus/orthogonal/drawing.hpp"
 #include "domus/orthogonal/drawing_builder.hpp"
 #include "domus/orthogonal/drawing_stats.hpp"
 #include "domus/planarity/auslander_parter.hpp"
-#include "domus/planarity/drawing.hpp"
 #include "domus/planarity/tutte.hpp"
 #include "domus/torus/embedder.hpp"
 #include "domus/torus/faces.hpp"
@@ -45,13 +44,7 @@ void planarity_test(const graph::Graph& graph) {
 void make_orthogonal(const Graph& graph) {
     static constexpr std::string svg_filename = "drawing.svg";
     const auto result = make_orthogonal_drawing(graph);
-    make_svg(
-        result.drawing.augmented_graph,
-        result.drawing.attributes,
-        result.drawing.shape,
-        svg_filename
-    )
-        .value();
+    make_svg(result.drawing, svg_filename).value();
     stats::compute_all_orthogonal_stats(result.drawing).print();
     std::println("Initial number of cycles: {}", result.initial_number_of_cycles);
     std::println("Number of added cycles: {}", result.number_of_added_cycles);
@@ -173,45 +166,42 @@ void test_all_possible_embeddings(const Graph& graph) {
     }
 }
 
-void visualize_torus() {
-    TorusMapping mapping;
+// void visualize_torus() {
+//     TorusMapping mapping;
 
-    mapping.add_point({0.0f, 0.0f});
-    mapping.add_point({0.4f, 0.0f});
-    mapping.add_point({0.6f, 0.0f});
-    mapping.add_point({1.0f, 0.0f});
+//     mapping.add_point({0.0, 0.0});
+//     mapping.add_point({0.4, 0.0});
+//     mapping.add_point({0.6, 0.0});
+//     mapping.add_point({1.0, 0.0});
 
-    mapping.add_point({0.0f, 1.0f});
-    mapping.add_point({0.4f, 1.0f});
-    mapping.add_point({0.6f, 1.0f});
-    mapping.add_point({1.0f, 1.0f});
+//     mapping.add_point({0.0, 1.0});
+//     mapping.add_point({0.4, 1.0});
+//     mapping.add_point({0.6, 1.0});
+//     mapping.add_point({1.0, 1.0});
 
-    mapping.add_line(0, 1);
-    mapping.add_line(1, 2);
-    mapping.add_line(2, 3);
-    mapping.add_line(4, 5);
-    mapping.add_line(5, 6);
-    mapping.add_line(6, 7);
+//     mapping.add_line(0, 1);
+//     mapping.add_line(1, 2);
+//     mapping.add_line(2, 3);
+//     mapping.add_line(4, 5);
+//     mapping.add_line(5, 6);
+//     mapping.add_line(6, 7);
 
-    mapping.add_line(1, 6);
+//     mapping.add_line(1, 6);
 
-    mapping.set_line_color(0, BLUE_RGB);
-    mapping.set_line_color(1, GREEN_RGB);
-    mapping.set_line_color(2, BLUE_RGB);
-    mapping.set_line_color(3, BLUE_RGB);
-    mapping.set_line_color(4, GREEN_RGB);
-    mapping.set_line_color(5, BLUE_RGB);
+//     mapping.set_line_color(0, BLUE_RGB);
+//     mapping.set_line_color(1, GREEN_RGB);
+//     mapping.set_line_color(2, BLUE_RGB);
+//     mapping.set_line_color(3, BLUE_RGB);
+//     mapping.set_line_color(4, GREEN_RGB);
+//     mapping.set_line_color(5, BLUE_RGB);
 
-    mapping.set_line_color(6, RED_RGB);
+//     mapping.set_line_color(6, RED_RGB);
 
-    std::vector<Point2D> polygon_points;
-    polygon_points.emplace_back(0.2, 0.2);
-    polygon_points.emplace_back(0.2, 0.8);
-    polygon_points.emplace_back(0.8, 0.8);
-    polygon_points.emplace_back(0.8, 0.2);
-    mapping.add_polygon(Polygon2D(polygon_points));
-    mapping.visualize();
-}
+//     std::vector<size_t> polygon_points;
+//     // mapping.add_polygon(Polygon2D(polygon_points));
+//     mapping.save_to_file("daje.json").value();
+//     mapping.visualize();
+// }
 
 int main() {
     // test_tutte_layout();
@@ -222,13 +212,13 @@ int main() {
     // for (const auto& forbidden_minor : test::forbidden_minors)
     //     planarity_test(forbidden_minor);
 
-    // make_orthogonal(*graph);
-    // toroidal_test(test::two_cycle_graphs[2]);
+    // make_orthogonal(test::subdivided_k_5);
+    //  toroidal_test(test::two_cycle_graphs[2]);
 
     // std::println("k5");
     // test::subdivided_k_5.print(true);
 
-    // toroidal_test(test::subdivided_k_5);
+    toroidal_test(test::subdivided_k_5);
 
     // std::println("CASE ----- K_5 -------");
     // test_all_possible_embeddings(test::subdivided_k_5);
@@ -236,7 +226,7 @@ int main() {
     // std::println("\n\nCASE ----- K_3_3 -----");
     // test_all_possible_embeddings(test::subdivided_k_3_3);
 
-    visualize_torus();
+    // visualize_torus();
 
     return 0;
 }

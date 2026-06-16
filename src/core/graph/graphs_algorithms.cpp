@@ -23,7 +23,7 @@ using namespace domus::tree;
 bool is_graph_connected(const Graph& graph) {
     if (graph.get_number_of_nodes() <= 1)
         return true;
-    NodesContainer visited(graph);
+    NodesContainer visited;
     std::stack<size_t> stack;
     stack.push(0u);
     while (!stack.empty()) {
@@ -77,10 +77,10 @@ bool dfs_find_cycle(
 }
 
 std::optional<Cycle> find_a_directed_cycle_in_graph(const Graph& graph) {
-    NodesLabels<size_t> state(graph); // 0 means unvisited
+    NodesLabels<size_t> state; // 0 means unvisited
     for (size_t node_id : graph.get_nodes_ids())
         state.add_label(node_id, 0u);
-    NodesLabels<size_t> child_to_parent_edge(graph);
+    NodesLabels<size_t> child_to_parent_edge;
     std::optional<size_t> cycle_start = std::nullopt;
     std::optional<size_t> cycle_end = std::nullopt;
     std::optional<size_t> last_edge_id = std::nullopt;
@@ -151,7 +151,7 @@ std::vector<Cycle> compute_cycle_basis(const Graph& graph) {
 }
 
 std::optional<std::vector<size_t>> make_topological_ordering(const Graph& graph) {
-    NodesLabels<size_t> in_degree(graph);
+    NodesLabels<size_t> in_degree;
     for (size_t node_id : graph.get_nodes_ids())
         in_degree.add_label(node_id, graph.get_in_degree_of_node(node_id));
     std::queue<size_t> queue;
@@ -178,8 +178,8 @@ std::optional<std::vector<size_t>> make_topological_ordering(const Graph& graph)
 
 std::pair<std::vector<Graph>, NodesLabels<size_t>>
 compute_connected_components(const Graph& graph) {
-    NodesContainer visited(graph);
-    NodesLabels<size_t> new_node_ids(graph); // node_id in component to node_id of graph
+    NodesContainer visited;
+    NodesLabels<size_t> new_node_ids; // node_id in component to node_id of graph
     std::vector<Graph> components;
     std::function<void(size_t, Graph& component)> explore_component = [&](size_t node_id,
                                                                           Graph& component) {
@@ -222,15 +222,15 @@ void dfs_bic_com(
 );
 
 BiconnectedComponents BiconnectedComponents::compute(const Graph& graph) {
-    NodesLabels<size_t> old_node_id_to_new_id(graph);
-    NodesLabels<size_t> prev_of_node(graph);
-    NodesLabels<size_t> low_point(graph);
-    NodesContainer is_cut_vertex(graph);
+    NodesLabels<size_t> old_node_id_to_new_id;
+    NodesLabels<size_t> prev_of_node;
+    NodesLabels<size_t> low_point;
+    NodesContainer is_cut_vertex;
     std::vector<Graph> components;
     std::vector<NodesLabels<size_t>> component_to_old_nodes;
     size_t next_id_to_assign = 0;
     std::vector<Edge> edge_stack{};
-    NodesLabels<size_t> old_to_new_nodes(graph);
+    NodesLabels<size_t> old_to_new_nodes;
     for (size_t node_id : graph.get_nodes_ids()) {
         old_to_new_nodes.add_label(node_id, graph.get_number_of_nodes());
     }
@@ -291,7 +291,7 @@ void build_component(
         old_to_new_nodes.update_label(node_id, new_node_id);
     }
 
-    components_to_old_nodes.emplace_back(component);
+    components_to_old_nodes.emplace_back();
     NodesLabels<size_t>& labels = components_to_old_nodes.back();
 
     for (size_t node_id : nodes)
@@ -391,7 +391,7 @@ void dfs_bic_com(
             cut_vertices.add_node(node_id);
         } else if (children_number == 0) { // isolated node
             size_t new_node = components.emplace_back().add_node();
-            components_to_old_nodes.emplace_back(components.back());
+            components_to_old_nodes.emplace_back();
             components_to_old_nodes.back().add_label(new_node, node_id);
         }
     }
@@ -448,8 +448,8 @@ bool Bipartition::is_bipartite(const Graph& graph) {
 }
 
 std::optional<Cycle> find_an_undirected_cycle_in_graph(const Graph& graph) {
-    NodesContainer visited(graph);
-    NodesLabels<size_t> edge_to_parent(graph);
+    NodesContainer visited;
+    NodesLabels<size_t> edge_to_parent;
     std::optional<Cycle> found_cycle;
     std::function<void(size_t, int)> dfs = [&](size_t node_id, int parent_id) {
         if (found_cycle)
@@ -498,7 +498,7 @@ BiconnectedComponents::BiconnectedComponents(
     : m_cutvertices{cutvertices}, m_components{components},
       m_components_nodes_to_original_nodes{old_nodes} {}
 
-Bipartition::Bipartition(const Graph& graph) : m_size(graph.get_number_of_nodes()), m_side(graph) {}
+Bipartition::Bipartition(const Graph& graph) : m_size(graph.get_number_of_nodes()) {}
 
 bool Bipartition::get_side(size_t node_id) const {
     DOMUS_ASSERT(has_node(node_id), "Bipartition::get_side: node {} does not exist", node_id);
@@ -536,7 +536,7 @@ void Bipartition::print() const { std::print("{}", to_string()); }
 std::optional<SpanningTree> SpanningTree::compute(const Graph& graph) {
     if (graph.get_number_of_nodes() <= 1)
         return std::nullopt;
-    NodesLabels<size_t> edge_id_to_parent(graph);
+    NodesLabels<size_t> edge_id_to_parent;
     std::stack<size_t> stack;
     stack.push(0u);
     edge_id_to_parent.add_label(0, 0);
@@ -661,10 +661,10 @@ void dfs_tarjan(
 
 StrongConnectedComponents StrongConnectedComponents::compute(const Graph& graph) {
     size_t timer = 0;
-    NodesLabels<size_t> discovery(graph);
-    NodesLabels<size_t> low_link(graph);
-    NodesLabels<size_t> node_to_scc_id(graph);
-    NodesContainer on_stack(graph);
+    NodesLabels<size_t> discovery;
+    NodesLabels<size_t> low_link;
+    NodesLabels<size_t> node_to_scc_id;
+    NodesContainer on_stack;
     std::stack<size_t> stack;
     std::vector<std::vector<size_t>> sccs;
 
@@ -698,7 +698,7 @@ std::optional<Path> find_shortest_path_between_nodes(
     std::queue<size_t> queue;
     queue.push(node_id_1);
 
-    NodesLabels<size_t> node_to_incoming_edge(graph);
+    NodesLabels<size_t> node_to_incoming_edge;
 
     bool found = false;
     while (!queue.empty()) {

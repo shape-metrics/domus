@@ -5,12 +5,14 @@
 #include <string>
 #include <vector>
 
+#include "domus/core/color.hpp"
 #include "domus/drawing/polygon.hpp"
 #include "domus/drawing/svg_drawer.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
 using namespace domus::drawing;
+using namespace domus::color;
 
 const std::vector<Point2D>
 get_hexagon_vertices(double h, double k, double r, bool flat_topped = false);
@@ -45,9 +47,9 @@ constexpr std::array<std::pair<size_t, size_t>, 3> SQUARE_REPEATED_PATH_ENDPOINT
 constexpr std::array<std::pair<size_t, size_t>, 3> SQUARE_REPEATED_PATH_ENDPOINTS_1{
     {{3, 2}, {0, 3}}
 };
-constexpr std::array<const char*, 3> REPEATED_PATH_INDEX_TO_COLOR{{"red", "green", "blue"}};
-constexpr const char* INNER_PATH_COLOR = "black";
-constexpr const char* NODE_COLOR = "black";
+constexpr std::array<ColorRGB, 3> REPEATED_PATH_INDEX_TO_COLOR{{RED_RGB, GREEN_RGB, BLUE_RGB}};
+constexpr const auto INNER_PATH_COLOR = BLACK_RGB;
+constexpr const auto NODE_COLOR = BLACK_RGB;
 constexpr double NODE_RADIUS = 10.0;
 constexpr size_t SVG_WIDTH = 1080;
 constexpr size_t SVG_HEIGHT = 720;
@@ -73,7 +75,7 @@ const std::vector<Point2D> get_hexagon_vertices(double h, double k, double r, bo
 }
 
 void draw_nodes_of_path(
-    SvgDrawer& drawer, Point2D first_position, Point2D last_position, const Path& path
+    Drawer& drawer, Point2D first_position, Point2D last_position, const Path& path
 ) {
     const size_t num_nodes = path.number_of_nodes();
     for (size_t k = 0; k < num_nodes; ++k) {
@@ -83,11 +85,11 @@ void draw_nodes_of_path(
         Circle2D circle(Point2D(x, y), NODE_RADIUS);
 
         drawer.add(circle, NODE_COLOR);
-        drawer.add(std::to_string(path.node_id_at_position(k)), circle.get_center());
+        drawer.add(std::to_string(path.node_id_at_position(k)), circle.center);
     }
 }
 
-void draw_the_hexagon_border(SvgDrawer& drawer, const Face& original_face) {
+void draw_the_hexagon_border(Drawer& drawer, const Face& original_face) {
     for (size_t i = 0; i < 3; ++i) {
         drawer.add(
             Line2D(
@@ -120,7 +122,7 @@ void draw_the_hexagon_border(SvgDrawer& drawer, const Face& original_face) {
     }
 }
 
-void draw_the_square_border(SvgDrawer& drawer, const Face& original_face) {
+void draw_the_square_border(Drawer& drawer, const Face& original_face) {
     for (size_t i = 0; i < original_face.repeated_paths().size(); ++i) {
         drawer.add(
             Line2D(
@@ -154,7 +156,7 @@ void draw_the_square_border(SvgDrawer& drawer, const Face& original_face) {
 }
 
 void draw_path_inside(
-    SvgDrawer& drawer,
+    Drawer& drawer,
     const Path& path,
     const Embedding& embedding,
     const Face& original_face,
@@ -327,10 +329,8 @@ void press_key_to_continue() {
     std::cin >> c;
 }
 
-void draw_face_with_path(
-    const graph::Embedding& embedding, const Face& original_face, const graph::Path& path
-) {
-    SvgDrawer drawer(SVG_WIDTH, SVG_HEIGHT);
+void draw_face_with_path(const Embedding& embedding, const Face& original_face, const Path& path) {
+    Drawer drawer(SVG_WIDTH, SVG_HEIGHT);
 
     switch (original_face.type()) {
 
@@ -372,7 +372,7 @@ void draw_face_with_path(
 void draw_face_with_2_paths_path(
     const Embedding& embedding, const Face& original_face, const Path& path_1, const Path& path_2
 ) {
-    SvgDrawer drawer(SVG_WIDTH, SVG_HEIGHT);
+    Drawer drawer(SVG_WIDTH, SVG_HEIGHT);
 
     draw_path_inside(
         drawer,

@@ -13,8 +13,6 @@ using namespace domus::graph;
 using namespace orthogonal::shape;
 using namespace graph::utilities;
 
-EquivalenceClasses::EquivalenceClasses(const Graph& graph) : m_elem_to_class(graph) {}
-
 size_t EquivalenceClasses::add_class() {
     m_class_to_elems.push_back({});
     return m_number_of_classes++;
@@ -84,8 +82,8 @@ void EquivalenceClasses::vertical_node_expander(
 
 const std::pair<EquivalenceClasses, EquivalenceClasses>
 EquivalenceClasses::build(const Shape& shape, const Graph& graph) {
-    EquivalenceClasses equivalence_classes_x(graph);
-    EquivalenceClasses equivalence_classes_y(graph);
+    EquivalenceClasses equivalence_classes_x;
+    EquivalenceClasses equivalence_classes_y;
     for (const size_t node_id : graph.get_nodes_ids()) {
         if (!equivalence_classes_y.has_elem_a_class(node_id))
             equivalence_classes_y.horizontal_node_expander(shape, graph, node_id);
@@ -114,8 +112,8 @@ Ordering Ordering::build(
         ordering_x.add_node();
     for (size_t i = 0; i < equivalence_classes_y.get_classes().size(); ++i)
         ordering_y.add_node();
-    EdgesLabels<size_t> ordering_x_edge_to_graph_edge(ordering_x);
-    EdgesLabels<size_t> ordering_y_edge_to_graph_edge(ordering_y);
+    EdgesLabels<size_t> ordering_x_edge_to_graph_edge;
+    EdgesLabels<size_t> ordering_y_edge_to_graph_edge;
 
     for (const size_t node_id : graph.get_nodes_ids()) {
         for (const graph::EdgeIter edge : graph.get_edges(node_id)) {
@@ -128,7 +126,6 @@ Ordering Ordering::build(
                 if (ordering_x.has_edge(node_class_x, neighbor_class_x))
                     continue;
                 const size_t ordering_edge_id = ordering_x.add_edge(node_class_x, neighbor_class_x);
-                ordering_x_edge_to_graph_edge.update_size(ordering_edge_id);
                 ordering_x_edge_to_graph_edge.add_label(ordering_edge_id, edge.id);
             } else if (shape.is_up(graph, edge.id, node_id, edge.neighbor_id)) {
                 const size_t node_class_y = equivalence_classes_y.get_class_of_elem(node_id);
@@ -139,7 +136,6 @@ Ordering Ordering::build(
                 if (ordering_y.has_edge(node_class_y, neighbor_class_y))
                     continue;
                 const size_t ordering_edge_id = ordering_y.add_edge(node_class_y, neighbor_class_y);
-                ordering_y_edge_to_graph_edge.update_size(ordering_edge_id);
                 ordering_y_edge_to_graph_edge.add_label(ordering_edge_id, edge.id);
             }
         }

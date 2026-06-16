@@ -73,14 +73,12 @@ set(COMMON_SRCS
     src/orthogonal/shape/shape_builder.cpp
     src/orthogonal/shape/variables_handler.cpp
     src/orthogonal/shape/clauses_functions.cpp
-    src/orthogonal/shape/node_type.cpp
     src/orthogonal/area_compacter.cpp
     src/orthogonal/loader.cpp
     src/orthogonal/equivalence_classes.cpp
     src/orthogonal/drawing.cpp
     src/drawing/polygon.cpp
     src/core/config.cpp
-    src/core/color.cpp
     src/core/graph/graphs_algorithms.cpp
     src/core/graph/graph.cpp
     src/core/graph/subgraph.cpp
@@ -104,19 +102,18 @@ set(COMMON_SRCS
     src/planarity/tutte.cpp
     src/core/graph/embedding.cpp
     src/planarity/interlacement.cpp
-    src/planarity/drawing.cpp
-    src/torus/embedder.cpp
-    src/torus/embed_two_cycles.cpp
+    src/torus/embedder/embedder.cpp
+    src/torus/embedder/embed_two_cycles.cpp
     src/torus/bridge.cpp
     src/torus/faces.cpp
-    src/torus/draw.cpp
-    src/torus/cases/splitter.cpp
-    src/torus/cases/utils.cpp
-    src/torus/cases/4/type_4.cpp
-    src/torus/cases/4/3_stars.cpp
-    src/torus/cases/3/type_3.cpp
-    src/torus/cases/2/type_2.cpp
-    src/torus/cases/1/type_1.cpp
+    src/torus/embedder/draw.cpp
+    src/torus/embedder/cases/splitter.cpp
+    src/torus/embedder/cases/utils.cpp
+    src/torus/embedder/cases/4/type_4.cpp
+    src/torus/embedder/cases/4/3_stars.cpp
+    src/torus/embedder/cases/3/type_3.cpp
+    src/torus/embedder/cases/2/type_2.cpp
+    src/torus/embedder/cases/1/type_1.cpp
     src/core/graph/test.cpp
 )
 
@@ -136,7 +133,12 @@ target_link_libraries(core
 )
 
 if(NOT BUILDING_WASM)
-    target_sources(core PRIVATE src/torus/mapping.cpp)
+    target_sources(core PRIVATE
+        src/torus/mapper/mapping.cpp
+        src/torus/mapper/graphics.cpp
+        src/torus/mapper/file_loader.cpp
+        src/torus/mapper/embedding_converter.cpp
+    )
     target_link_libraries(core PRIVATE GL GLU glut)
 endif()
 

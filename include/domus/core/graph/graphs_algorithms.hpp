@@ -99,7 +99,7 @@ struct StrongConnectedComponents {
  */
 
 template <UndirectedGraphLike G> size_t compute_number_of_connected_components(const G& graph) {
-    utilities::NodesContainer visited(graph);
+    utilities::NodesContainer visited;
     size_t components = 0;
     for (const size_t node_id : graph.get_nodes_ids()) {
         if (!visited.has_node(node_id)) {

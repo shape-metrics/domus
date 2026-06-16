@@ -12,24 +12,18 @@
 #include "domus/core/domus_debug.hpp"
 
 namespace domus::graph {
+using namespace graph::utilities;
 
-Embedding::Embedding(const Graph& graph)
-    : m_next_in_adjacency_list(graph), m_prev_in_adjacency_list(graph) {
-    DOMUS_ASSERT(
-        [](const Graph& g) {
-            std::vector<size_t> nodes;
-            nodes.reserve(g.get_number_of_nodes());
-            for (size_t node_id : g.get_nodes_ids())
-                nodes.push_back(node_id);
-            for (size_t node_id = 0; node_id < g.get_number_of_nodes(); ++node_id)
-                if (std::ranges::find(nodes, node_id) == nodes.end())
-                    return false;
-            return true;
-        }(graph),
-        "Embedding::Embedding: graph is not well formed"
-    );
+Embedding::Embedding() {}
+
+Embedding::Embedding(const Graph& graph) {
     for (size_t i = 0; i < graph.get_number_of_nodes(); i++)
         m_adjacency_list.push_back({});
+}
+
+size_t Embedding::add_node() {
+    m_adjacency_list.push_back({});
+    return m_adjacency_list.size() - 1;
 }
 
 bool Embedding::has_node(size_t node_id) const { return node_id < get_number_of_nodes(); }
@@ -68,9 +62,6 @@ size_t Embedding::get_degree_of_node(size_t node_id) const {
 }
 
 void Embedding::add_edge(size_t from_id, size_t to_id, size_t edge_id) {
-    m_next_in_adjacency_list.update_size(edge_id);
-    m_prev_in_adjacency_list.update_size(edge_id);
-
     EdgeIter new_edge{edge_id, to_id};
     auto& adj = m_adjacency_list.at(from_id);
 
@@ -104,9 +95,6 @@ void Embedding::add_edge_after(size_t from_id, size_t to_id, size_t edge_id, siz
         has_node(from_id) && has_node(to_id),
         "Embedding::add_edge_after: node does not exist"
     );
-
-    m_next_in_adjacency_list.update_size(edge_id);
-    m_prev_in_adjacency_list.update_size(edge_id);
 
     EdgeIter new_edge{edge_id, to_id};
     auto& adj = m_adjacency_list.at(from_id);
@@ -154,9 +142,6 @@ void Embedding::add_edge_before(size_t from_id, size_t to_id, size_t edge_id, si
         has_node(from_id) && has_node(to_id),
         "Embedding::add_edge_before: node does not exist"
     );
-
-    m_next_in_adjacency_list.update_size(edge_id);
-    m_prev_in_adjacency_list.update_size(edge_id);
 
     auto& adj = m_adjacency_list.at(from_id);
 
@@ -272,7 +257,7 @@ void Embedding::print() const { std::print("{}", to_string()); }
 
 size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
     size_t number_of_faces = 0;
-    utilities::OrientedEdgesContainer visited_edges(embedding);
+    OrientedEdgesContainer visited_edges;
 
     for (const size_t start_node : embedding.get_nodes_ids()) {
         if (embedding.get_degree_of_node(start_node) == 0) {
@@ -303,7 +288,7 @@ size_t compute_number_of_faces_in_embedding(const Embedding& embedding) {
 
 std::vector<Path> compute_faces_in_embedding(const Graph& graph, const Embedding& embedding) {
     std::vector<Path> faces;
-    utilities::OrientedEdgesContainer visited_edges(graph);
+    OrientedEdgesContainer visited_edges;
 
     for (const size_t start_node : embedding.get_nodes_ids()) {
         for (const EdgeIter start_edge : embedding.get_edges(start_node)) {
@@ -340,10 +325,9 @@ bool is_embedding_planar(const Embedding& embedding) {
 // This function verifies that for every edge from_id-to_id there is the edge to_id-from_id
 // It is intended to be used only for debug purposes
 bool Embedding::is_consistent() const {
-    utilities::OrientedEdgesContainer edges(get_number_of_edges());
+    utilities::OrientedEdgesContainer edges;
     for (const size_t node_id : get_nodes_ids()) {
         for (const EdgeIter edge : get_edges(node_id)) {
-            edges.update_size(edge.id);
             if (edges.has_edge(edge.neighbor_id, node_id, edge.id))
                 edges.erase(edge.neighbor_id, node_id, edge.id);
             else
@@ -398,23 +382,29 @@ std::vector<Embedding> compute_all_possible_embeddings(const Graph& graph) {
         for (const auto& edge : edges_range) {
             edges.push_back(edge);
         }
-        
+
         if (edges.empty()) {
             all_permutations[u].push_back({});
             continue;
         }
 
         std::ranges::sort(edges, [](const EdgeIter& a, const EdgeIter& b) {
-            if (a.neighbor_id != b.neighbor_id) return a.neighbor_id < b.neighbor_id;
+            if (a.neighbor_id != b.neighbor_id)
+                return a.neighbor_id < b.neighbor_id;
             return a.id < b.id;
         });
-        
+
         do {
             all_permutations[u].push_back(edges);
-        } while (std::next_permutation(edges.begin() + 1, edges.end(), [](const EdgeIter& a, const EdgeIter& b) {
-            if (a.neighbor_id != b.neighbor_id) return a.neighbor_id < b.neighbor_id;
-            return a.id < b.id;
-        }));
+        } while (std::next_permutation(
+            edges.begin() + 1,
+            edges.end(),
+            [](const EdgeIter& a, const EdgeIter& b) {
+                if (a.neighbor_id != b.neighbor_id)
+                    return a.neighbor_id < b.neighbor_id;
+                return a.id < b.id;
+            }
+        ));
     }
 
     std::vector<Embedding> result;

@@ -34,12 +34,8 @@ std::vector<Path> max_vertex_disjoint_paths(const Graph& graph, size_t sink_id, 
         flow_graph.add_node();
     }
 
-    EdgesLabels<Flow> edge_data(
-        2 * (graph.get_number_of_nodes() + 2 * graph.get_number_of_edges())
-    );
-    EdgesLabels<size_t> rev_edge(
-        2 * (graph.get_number_of_nodes() + 2 * graph.get_number_of_edges())
-    );
+    EdgesLabels<Flow> edge_data;
+    EdgesLabels<size_t> rev_edge;
 
     auto add_flow_edge = [&](size_t u, size_t v, size_t cap) {
         size_t e1 = flow_graph.add_edge(u, v);
@@ -77,9 +73,7 @@ std::vector<Path> max_vertex_disjoint_paths(const Graph& graph, size_t sink_id, 
         add_flow_edge(2 * i, 2 * i + 1, capacity);
     }
 
-    EdgesLabels<size_t> flow_to_orig_edge(
-        2 * (graph.get_number_of_nodes() + 2 * graph.get_number_of_edges())
-    );
+    EdgesLabels<size_t> flow_to_orig_edge;
 
     for (const auto& edge : graph.get_all_edges()) {
         size_t u = edge.edge.from_id;

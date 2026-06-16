@@ -43,12 +43,12 @@ load_shape_metrics_drawing_from_file(std::filesystem::path path) {
     std::ifstream file(path);
     json data;
     file >> data;
-    ShapeMetricsDrawing result;
-    result.drawing = std::move(*drawing);
-    result.initial_number_of_cycles =
-        static_cast<size_t>(data.value("initial_number_of_cycles", 0));
-    result.number_of_added_cycles = static_cast<size_t>(data.value("number_of_added_cycles", 0));
-    result.number_of_useless_bends = static_cast<size_t>(data.value("number_of_useless_bends", 0));
+    ShapeMetricsDrawing result{
+        std::move(*drawing),
+        static_cast<size_t>(data.value("initial_number_of_cycles", 0)),
+        static_cast<size_t>(data.value("number_of_added_cycles", 0)),
+        static_cast<size_t>(data.value("number_of_useless_bends", 0))
+    };
     return result;
 }
 

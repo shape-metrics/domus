@@ -5,10 +5,12 @@
 
 namespace domus::torus {
 
+// legacy function
 void draw_face_with_path(
     const graph::Embedding& embedding, const Face& original_face, const graph::Path& path
 );
 
+// legacy function
 void draw_face_with_2_paths_path(
     const graph::Embedding& embedding,
     const Face& original_face,

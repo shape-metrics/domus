@@ -10,25 +10,27 @@
 #include <utility>
 #include <vector>
 
+#include "domus/core/domus_debug.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/utils.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
-#include "domus/core/domus_debug.hpp"
-
 namespace domus::orthogonal::stats {
 using namespace domus::graph;
-using graph::utilities::NodesContainer;
+using namespace graph::utilities;
+using namespace domus::orthogonal::shape;
 using orthogonal::OrthogonalDrawing;
 
-std::vector<size_t> compute_edge_lengths(const Graph& graph, const Attributes& attributes) {
+std::vector<size_t> compute_edge_lengths(
+    const Graph& graph, const Attributes& attributes, const NodesLabels<NodeType>& nodes_types
+) {
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     std::vector<size_t> edge_lengths;
-    NodesContainer visited(graph);
+    NodesContainer visited;
     for (size_t node_id : graph.get_nodes_ids()) {
-        if (attributes.get_node_color(node_id) != Color::BLACK)
+        if (nodes_types.get_label(node_id) != NodeType::VERTEX)
             continue;
         std::function<void(size_t, size_t, size_t)> dfs =
             [&](size_t current_id, size_t black_id, size_t current_length) {
@@ -47,8 +49,7 @@ std::vector<size_t> compute_edge_lengths(const Graph& graph, const Attributes& a
                         dx == 0 || dy == 0,
                         "compute_edge_lengths: neighbors are not x or y alligned"
                     );
-                    Color neighbor_color = attributes.get_node_color(neighbor_id);
-                    if (neighbor_color != Color::BLACK)
+                    if (nodes_types.get_label(neighbor_id) != NodeType::VERTEX)
                         dfs(neighbor_id, black_id, current_length + length);
                     else {
                         if (black_id < neighbor_id) {
@@ -65,8 +66,8 @@ std::vector<size_t> compute_edge_lengths(const Graph& graph, const Attributes& a
 }
 
 size_t compute_total_edge_length(const OrthogonalDrawing& result) {
-    const Graph& graph = result.augmented_graph;
-    const std::vector<size_t> edge_lengths = compute_edge_lengths(graph, result.attributes);
+    const std::vector<size_t> edge_lengths =
+        compute_edge_lengths(result.augmented_graph, result.attributes, result.nodes_types);
     size_t total_edge_length = 0;
     for (size_t length : edge_lengths)
         total_edge_length += length;
@@ -74,9 +75,8 @@ size_t compute_total_edge_length(const OrthogonalDrawing& result) {
 }
 
 size_t compute_max_edge_length(const OrthogonalDrawing& result) {
-    const Graph& graph = result.augmented_graph;
-    const Attributes& attributes = result.attributes;
-    const std::vector<size_t> edge_lengths = compute_edge_lengths(graph, attributes);
+    const std::vector<size_t> edge_lengths =
+        compute_edge_lengths(result.augmented_graph, result.attributes, result.nodes_types);
     size_t max_edge_length = 0;
     for (size_t length : edge_lengths)
         if (length > max_edge_length)
@@ -85,28 +85,28 @@ size_t compute_max_edge_length(const OrthogonalDrawing& result) {
 }
 
 double compute_edge_length_std_dev(const OrthogonalDrawing& result) {
-    const Graph& graph = result.augmented_graph;
-    const Attributes& attributes = result.attributes;
-    const std::vector<size_t> edge_lengths = compute_edge_lengths(graph, attributes);
-    return domus::utilities::compute_stddev(edge_lengths);
+    return domus::utilities::compute_stddev(
+        compute_edge_lengths(result.augmented_graph, result.attributes, result.nodes_types)
+    );
 }
 
-std::vector<size_t> compute_bends_counts(const Graph& graph, const Attributes& attributes) {
+std::vector<size_t> compute_bends_counts(
+    const Graph& graph, const Attributes& attributes, const NodesLabels<NodeType>& nodes_types
+) {
     const auto [node_to_coordinate_x, node_to_coordinate_y] =
         compute_node_to_index_position(graph, attributes);
     std::vector<size_t> bends_counts;
     for (const size_t node_id : graph.get_nodes_ids()) {
-        if (attributes.get_node_color(node_id) != Color::BLACK)
+        if (nodes_types.get_label(node_id) != NodeType::VERTEX)
             continue;
-        graph::utilities::NodesContainer visited(graph);
+        NodesContainer visited;
         std::function<void(size_t, size_t, size_t, size_t)> dfs =
             [&](size_t current, size_t black, size_t count, size_t previous_id) {
                 visited.add_node(current);
                 for (const size_t neighbor_id : graph.get_neighbors(current)) {
                     if (visited.has_node(neighbor_id))
                         continue;
-                    Color neighbor_color = attributes.get_node_color(neighbor_id);
-                    if (neighbor_color != Color::BLACK) {
+                    if (nodes_types.get_label(neighbor_id) != NodeType::VERTEX) {
                         if (node_to_coordinate_x[previous_id] ==
                                 node_to_coordinate_x[neighbor_id] &&
                             node_to_coordinate_y[previous_id] == node_to_coordinate_y[neighbor_id])
@@ -128,9 +128,8 @@ std::vector<size_t> compute_bends_counts(const Graph& graph, const Attributes& a
 }
 
 size_t compute_total_bends(const OrthogonalDrawing& result) {
-    const Graph& graph = result.augmented_graph;
-    const Attributes& attributes = result.attributes;
-    const std::vector<size_t> bends_counts = compute_bends_counts(graph, attributes);
+    const std::vector<size_t> bends_counts =
+        compute_bends_counts(result.augmented_graph, result.attributes, result.nodes_types);
     size_t total_bends = 0;
     for (size_t count : bends_counts)
         total_bends += count;
@@ -138,9 +137,8 @@ size_t compute_total_bends(const OrthogonalDrawing& result) {
 }
 
 size_t compute_max_bends_per_edge(const OrthogonalDrawing& result) {
-    const Graph& graph = result.augmented_graph;
-    const Attributes& attributes = result.attributes;
-    const std::vector<size_t> bends_counts = compute_bends_counts(graph, attributes);
+    const std::vector<size_t> bends_counts =
+        compute_bends_counts(result.augmented_graph, result.attributes, result.nodes_types);
     size_t max_bends = 0;
     for (size_t count : bends_counts)
         if (count > max_bends)
@@ -149,9 +147,9 @@ size_t compute_max_bends_per_edge(const OrthogonalDrawing& result) {
 }
 
 double compute_bends_std_dev(const OrthogonalDrawing& result) {
-    const Graph& graph = result.augmented_graph;
-    const auto& attributes = result.attributes;
-    return domus::utilities::compute_stddev(compute_bends_counts(graph, attributes));
+    return domus::utilities::compute_stddev(
+        compute_bends_counts(result.augmented_graph, result.attributes, result.nodes_types)
+    );
 }
 
 size_t compute_total_area(const OrthogonalDrawing& result) {
@@ -210,14 +208,14 @@ bool do_edges_cross(
 }
 
 bool do_edges_cross(const Attributes& attributes, size_t i, size_t j, size_t k, size_t l) {
-    int i_pos_x = attributes.get_position_x(i);
-    int i_pos_y = attributes.get_position_y(i);
-    int j_pos_x = attributes.get_position_x(j);
-    int j_pos_y = attributes.get_position_y(j);
-    int k_pos_x = attributes.get_position_x(k);
-    int k_pos_y = attributes.get_position_y(k);
-    int l_pos_x = attributes.get_position_x(l);
-    int l_pos_y = attributes.get_position_y(l);
+    double i_pos_x = attributes.get_position_x(i);
+    double i_pos_y = attributes.get_position_y(i);
+    double j_pos_x = attributes.get_position_x(j);
+    double j_pos_y = attributes.get_position_y(j);
+    double k_pos_x = attributes.get_position_x(k);
+    double k_pos_y = attributes.get_position_y(k);
+    double l_pos_x = attributes.get_position_x(l);
+    double l_pos_y = attributes.get_position_y(l);
 
     if (abs(i_pos_x - k_pos_x) < 0.2 || abs(i_pos_x - l_pos_x) < 0.2 ||
         abs(i_pos_y - k_pos_y) < 0.2 || abs(i_pos_y - l_pos_y) < 0.2 ||

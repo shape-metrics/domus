@@ -10,13 +10,14 @@
 #include "domus/core/graph/path.hpp"
 #include "domus/torus/bridge.hpp"
 #include "domus/torus/faces.hpp"
+#include "domus/torus/mapping.hpp"
 
-#include "../../draw.hpp"
 #include "../insertions.hpp"
 #include "../utils.hpp"
 
 namespace domus::torus::stars {
 using namespace domus::graph;
+using mapper::TorusMapping;
 
 class TrueThreeStar {
     std::array<Path, 3> m_paths_to_center;
@@ -357,7 +358,7 @@ void SplitterWithStar::populate_spreaded_circular_order(size_t star_index) {
 bool SplitterWithStar::try_embedding_extension(
     const FalseThreeStarBridge& p_1, const FalseThreeStarBridge& p_2
 ) {
-    draw_face_with_2_paths_path(m_embedding, m_face, p_1.get_path(), p_2.get_path());
+    //
     return next_case(m_embedding, m_graph, m_face);
 }
 

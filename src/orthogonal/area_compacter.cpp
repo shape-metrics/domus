@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "domus/core/graph/attributes.hpp"
-#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
 #include "domus/core/domus_debug.hpp"
@@ -110,7 +109,7 @@ void compact_area(const Graph& graph, Attributes& attributes) {
         if (shift_amount == 0)
             continue;
         for (size_t node_id : index_x_to_nodes[index]) {
-            int old_x = attributes.get_position_x(node_id);
+            double old_x = attributes.get_position_x(node_id);
             attributes.change_position_x(node_id, old_x - 100 * static_cast<int>(shift_amount));
         }
         for (auto [min, max] : index_to_min_max_y[index]) {
@@ -128,7 +127,7 @@ void compact_area(const Graph& graph, Attributes& attributes) {
         if (shift_amount == 0)
             continue;
         for (size_t node_id : index_y_to_nodes[index]) {
-            int old_y = attributes.get_position_y(node_id);
+            double old_y = attributes.get_position_y(node_id);
             attributes.change_position_y(node_id, old_y - 100 * static_cast<int>(shift_amount));
         }
         for (auto [min, max] : index_to_min_max_x[index]) {

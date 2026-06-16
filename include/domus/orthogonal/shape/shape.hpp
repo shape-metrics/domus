@@ -4,13 +4,25 @@
 #include <string>
 #include <vector>
 
+#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/orthogonal/shape/direction.hpp"
 
 namespace domus::graph {
 class Graph;
-}
+class Cycle;
+class Attributes;
+} // namespace domus::graph
 
 namespace domus::orthogonal::shape {
+
+enum class NodeType {
+    VERTEX, // Color::BLACK
+    CORNER,
+    MINI_CORNER_1, // Color::BLUE
+    MINI_CORNER_2, // Color::green
+    MINI_CORNER_3, // DARK_GREEN
+    MINI_CORNER_4  // DARK BLUE
+};
 
 class Shape {
     std::vector<std::optional<Direction>> m_edge_id_to_direction;
@@ -45,6 +57,13 @@ class Shape {
     std::string to_string() const;
     void print() const;
 };
+
+Shape build_shape(
+    graph::Graph& graph,
+    graph::utilities::NodesLabels<NodeType>& nodes_types,
+    std::vector<graph::Cycle>& cycles,
+    bool randomize = false
+);
 
 bool is_shape_valid(const graph::Graph& graph, const Shape& shape);
 

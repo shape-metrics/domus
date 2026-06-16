@@ -8,8 +8,6 @@
 
 namespace domus::drawing {
 
-Point2D::Point2D(const double x, const double y) : x(x), y(y) {}
-
 double Point2D::distance(const Point2D& other) const {
     return sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
 }
@@ -27,8 +25,6 @@ bool Point2D::operator==(const Point2D& other) const { return x == other.x && y 
 bool Point2D::operator!=(const Point2D& other) const { return !(*this == other); }
 
 bool Point2D::operator<(const Point2D& p) const { return x < p.x || (x == p.x && y < p.y); }
-
-Point3D::Point3D(const double x, const double y, const double z) : x(x), y(y), z(z) {}
 
 double Point3D::distance(const Point3D& other) const {
     return sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
@@ -61,28 +57,6 @@ bool Line2D::operator==(const Line2D& other) const {
 }
 
 bool Line2D::operator!=(const Line2D& other) const { return !(*this == other); }
-
-Circle2D::Circle2D(const Point2D& center, const double radius)
-    : m_center(center), m_radius(radius) {}
-
-const Point2D& Circle2D::get_center() const { return m_center; }
-
-double Circle2D::get_radius() const { return m_radius; }
-
-Square2D::Square2D(const Point2D& center, const double side) : m_center(center), m_side(side) {}
-
-const Point2D& Square2D::get_center() const { return m_center; }
-
-double Square2D::get_side() const { return m_side; }
-
-RoundSquare2D::RoundSquare2D(const Point2D& center, const double side, const double corner_radious)
-    : m_square(center, side), m_corner_radious(corner_radious) {}
-
-const Point2D& RoundSquare2D::get_center() const { return m_square.get_center(); }
-
-double RoundSquare2D::get_side() const { return m_square.get_side(); }
-
-double RoundSquare2D::get_corner_radious() const { return m_corner_radious; }
 
 Line2D::Line2D(const Point2D& p1, const Point2D& p2) : m_p1(p1), m_p2(p2) {}
 
@@ -117,16 +91,14 @@ bool Line2D::is_intersecting(const Line2D& l) const {
 Polygon2D::Polygon2D(const std::vector<Point2D>& points) {
     DOMUS_ASSERT(points.size() >= 3, "Polygon2D::Polygon2D: Polygon must have at least 3 points");
     for (const auto& p : points) {
-        m_points.emplace_back(p.x, p.y);
+        this->points.emplace_back(p.x, p.y);
     }
 }
 
-const std::vector<Point2D>& Polygon2D::get_points() const { return m_points; }
-
 bool Polygon2D::is_on_boundary(const Point2D& p) const {
-    for (size_t i = 0; i < m_points.size(); i++) {
-        const Point2D& p1 = m_points[i];
-        const Point2D& p2 = m_points[(i + 1) % m_points.size()];
+    for (size_t i = 0; i < points.size(); i++) {
+        const Point2D& p1 = points[i];
+        const Point2D& p2 = points[(i + 1) % points.size()];
         if (p1.x == p2.x) {
             if (p.x == p1.x && p.y >= std::min(p1.y, p2.y) && p.y <= std::max(p1.y, p2.y))
                 return true;
@@ -143,11 +115,11 @@ bool Polygon2D::is_on_boundary(const Point2D& p) const {
 
 bool Polygon2D::is_inside(const Point2D& p) const {
     size_t count = 0;
-    for (size_t i = 0; i < m_points.size(); i++) {
-        const Point2D& p1 = m_points[i];
+    for (size_t i = 0; i < points.size(); i++) {
+        const Point2D& p1 = points[i];
         if (p == p1)
             return true;
-        const Point2D& p2 = m_points[(i + 1) % m_points.size()];
+        const Point2D& p2 = points[(i + 1) % points.size()];
         if (p1.y == p2.y)
             continue;
         if (p.y < std::min(p1.y, p2.y))
@@ -164,9 +136,9 @@ bool Polygon2D::is_inside(const Point2D& p) const {
 bool Polygon2D::is_inside(const Line2D& l) const {
     if (!is_inside(l.m_p1) || !is_inside(l.m_p2))
         return false;
-    for (size_t i = 0; i < m_points.size(); i++) {
-        const Point2D& p1 = m_points[i];
-        const Point2D& p2 = m_points[(i + 1) % m_points.size()];
+    for (size_t i = 0; i < points.size(); i++) {
+        const Point2D& p1 = points[i];
+        const Point2D& p2 = points[(i + 1) % points.size()];
         const Line2D edge(p1, p2);
         if (l.is_intersecting(edge)) {
             if (!(l.is_point_on_line(p1) || l.is_point_on_line(p2)))
@@ -191,23 +163,23 @@ double cross(const Point2D& p, const Point2D& q, const Point2D& r) {
 
 // Funzione per calcolare il contorno convesso
 std::vector<Point2D> Polygon2D::compute_convex_hull() const {
-    std::vector<Point2D> points(m_points);
+    std::vector<Point2D> points_copy(this->points);
     // Ordina i punti in base all'ordinamento lessicografico
-    std::sort(points.begin(), points.end());
+    std::sort(points_copy.begin(), points_copy.end());
     std::vector<Point2D> hull;
     // Costruzione della metà inferiore del contorno
-    for (const auto& p : points) {
+    for (const auto& p : points_copy) {
         while (hull.size() >= 2 && cross(hull[hull.size() - 2], hull[hull.size() - 1], p) <= 0)
             hull.pop_back();
         hull.push_back(p);
     }
     // Costruzione della metà superiore del contorno
     const size_t lowerSize = hull.size();
-    for (size_t i = points.size(); i > 0; --i) {
+    for (size_t i = points_copy.size(); i > 0; --i) {
         while (hull.size() > lowerSize &&
-               cross(hull[hull.size() - 2], hull[hull.size() - 1], points[i - 1]) <= 0)
+               cross(hull[hull.size() - 2], hull[hull.size() - 1], points_copy[i - 1]) <= 0)
             hull.pop_back();
-        hull.push_back(points[i - 1]);
+        hull.push_back(points_copy[i - 1]);
     }
     // Rimuove l'ultimo punto poiché è uguale al primo
     hull.pop_back();

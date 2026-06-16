@@ -18,8 +18,8 @@ Segment::Segment(
     const EdgesLabels<size_t>&& edges_labels,
     const size_t cycle_size
 )
-    : m_segment(segment), m_new_id_to_old_id(labels), m_is_attachment(m_segment),
-      m_new_edge_id_to_old_id(edges_labels), m_cycle_size(cycle_size) {}
+    : m_segment(segment), m_new_id_to_old_id(labels), m_new_edge_id_to_old_id(edges_labels),
+      m_cycle_size(cycle_size) {}
 
 const Graph& Segment::get_segment() const { return m_segment; }
 
@@ -73,7 +73,7 @@ bool is_segment_a_path(const Segment& segment) {
 Path compute_path_between_attachments(
     const Segment& segment, const size_t attachment_1, const size_t attachment_2
 ) {
-    NodesLabels<size_t> edge_id_to_prev(segment.get_segment());
+    NodesLabels<size_t> edge_id_to_prev;
     std::deque<size_t> queue;
     queue.push_back(attachment_1);
     while (!queue.empty()) {
@@ -160,7 +160,7 @@ Segment Segment::build_segment(
     Graph segment;
     for (size_t i = 0; i < nodes.size() + cycle.size(); ++i)
         segment.add_node();
-    NodesLabels<size_t> new_id_to_old_id(segment);
+    NodesLabels<size_t> new_id_to_old_id;
     std::vector<size_t> attachments;
     // important that the cycle nodes have new ids from 0 ... cycle.size()-1
     for (size_t i = 0; i < cycle.size(); ++i) {
@@ -176,7 +176,7 @@ Segment Segment::build_segment(
     }
 
     // adding edges
-    EdgesLabels<size_t> edges_labels(edges.size() + cycle.size());
+    EdgesLabels<size_t> edges_labels;
     // adding cycle edges
     add_cycle_edges(cycle, segment, edges_labels);
     // adding inner edges
@@ -210,7 +210,7 @@ void Segment::find_segments(
     std::vector<Segment>& segments,
     NodesLabels<size_t>& old_id_to_new_id
 ) {
-    NodesContainer visited(graph);
+    NodesContainer visited;
     for (size_t node_id : graph.get_nodes_ids()) {
         old_id_to_new_id.add_label(node_id, graph.get_number_of_nodes());
         if (cycle.has_node_id(node_id))
@@ -235,13 +235,13 @@ Segment Segment::build_chord(
     Graph chord;
     for (size_t i = 0; i < cycle.size(); ++i)
         chord.add_node();
-    NodesLabels<size_t> new_id_to_old_id(chord);
+    NodesLabels<size_t> new_id_to_old_id;
     for (size_t i = 0; i < cycle.size(); ++i) {
         const size_t node_id = cycle.node_id_at(i);
         new_id_to_old_id.add_label(i, node_id);
         old_id_to_new_id.update_label(node_id, i);
     }
-    EdgesLabels<size_t> edges_labels(cycle.size() + 1);
+    EdgesLabels<size_t> edges_labels;
     add_cycle_edges(cycle, chord, edges_labels);
     // adding chord edge
     size_t new_attachment_1 = old_id_to_new_id.get_label(attachment_1);
@@ -284,7 +284,7 @@ void Segment::find_chords(
 
 std::vector<Segment> Segment::compute(const Graph& graph, const Cycle& cycle) {
     std::vector<Segment> segments;
-    NodesLabels<size_t> old_id_to_new_id(graph);
+    NodesLabels<size_t> old_id_to_new_id;
     find_segments(graph, cycle, segments, old_id_to_new_id);
     find_chords(graph, cycle, segments, old_id_to_new_id);
     return segments;

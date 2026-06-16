@@ -31,8 +31,7 @@ std::string face_type_to_string(FaceType face_type) {
 }
 
 Face::Face(const Graph& graph, FaceType type, Path&& path, std::vector<Path>&& repeated_paths)
-    : m_type(type), m_path(path), m_repeated_paths(repeated_paths),
-      m_is_node_in_repeated_path(graph) {
+    : m_type(type), m_path(path), m_repeated_paths(repeated_paths) {
     if (m_repeated_paths.empty())
         return;
     for (const size_t node_id : graph.get_nodes_ids())

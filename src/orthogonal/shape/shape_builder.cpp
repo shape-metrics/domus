@@ -1,4 +1,4 @@
-#include "domus/orthogonal/shape/shape_builder.hpp"
+#include "domus/orthogonal/shape/shape.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -8,9 +8,9 @@
 #include <string>
 #include <utility>
 
-#include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
+#include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/sat/cnf.hpp"
 #include "domus/sat/sat.hpp"
@@ -21,6 +21,7 @@
 
 namespace domus::orthogonal::shape {
 using namespace graph::algorithms;
+using namespace graph::utilities;
 using namespace sat;
 using namespace graph;
 
@@ -83,11 +84,17 @@ size_t find_edge_id_to_split(
 }
 
 std::optional<Shape> build_shape_or_add_corner(
-    Graph& graph, Attributes& attributes, std::vector<Cycle>& cycles, std::mt19937& random_engine
+    Graph& graph,
+    NodesLabels<NodeType>& attributes,
+    std::vector<Cycle>& cycles,
+    std::mt19937& random_engine
 );
 
 Shape build_shape(
-    Graph& graph, Attributes& attributes, std::vector<Cycle>& cycles, const bool randomize
+    Graph& graph,
+    NodesLabels<NodeType>& nodes_types,
+    std::vector<Cycle>& cycles,
+    const bool randomize
 ) {
     const size_t seed = randomize ? std::random_device{}() : 42;
     std::mt19937 random_engine(seed);
@@ -101,17 +108,17 @@ Shape build_shape(
         "build_shape: a cycle is not valid"
     );
     std::optional<Shape> shape =
-        build_shape_or_add_corner(graph, attributes, cycles, random_engine);
+        build_shape_or_add_corner(graph, nodes_types, cycles, random_engine);
     while (!shape.has_value())
-        shape = build_shape_or_add_corner(graph, attributes, cycles, random_engine);
+        shape = build_shape_or_add_corner(graph, nodes_types, cycles, random_engine);
     return std::move(shape.value());
 }
 
 void add_corner_inside_edge(
-    size_t edge_id, Graph& graph, Attributes& attributes, std::vector<Cycle>& cycles
+    size_t edge_id, Graph& graph, NodesLabels<NodeType>& nodes_types, std::vector<Cycle>& cycles
 ) {
     graph::Subdivision subdivision = graph.subdivide_edge(edge_id);
-    attributes.set_node_color(subdivision.in_between_id, Color::RED);
+    nodes_types.add_label(subdivision.in_between_id, NodeType::CORNER);
     for (Cycle& cycle : cycles)
         if (cycle.has_edge_id(edge_id)) {
             graph.add_subdivision_to_cycle(subdivision, cycle);
@@ -123,7 +130,10 @@ void add_corner_inside_edge(
 }
 
 std::optional<Shape> build_shape_or_add_corner(
-    Graph& graph, Attributes& attributes, std::vector<Cycle>& cycles, std::mt19937& random_engine
+    Graph& graph,
+    NodesLabels<NodeType>& nodes_types,
+    std::vector<Cycle>& cycles,
+    std::mt19937& random_engine
 ) {
     VariablesHandler handler(graph);
     cnf::Cnf cnf{};
@@ -141,7 +151,7 @@ std::optional<Shape> build_shape_or_add_corner(
             handler,
             cnf.get_number_of_variables()
         );
-        add_corner_inside_edge(edge_id, graph, attributes, cycles);
+        add_corner_inside_edge(edge_id, graph, nodes_types, cycles);
         return std::nullopt;
     }
     Shape shape = result_to_shape(graph, numbers, handler);

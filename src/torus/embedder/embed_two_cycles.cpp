@@ -259,6 +259,18 @@ std::pair<Embedding, Face> compute_embedding_of_two_cycles(
             (repeated_paths.size() == 3 && face_type == FaceType::TYPE_4),
         "compute_embedding_of_two_cycles: repeated paths do not match face type"
     );
+
+    if (repeated_paths.size() == 3 && embedding
+                                              .next_in_adjacency_list(
+                                                  repeated_paths[2].get_first_node_id(),
+                                                  repeated_paths[2].node_id_at_position(1),
+                                                  repeated_paths[2].get_first_edge_id()
+                                              )
+                                              .id != repeated_paths[0].get_first_edge_id()) {
+        embedding.reverse_circular_order(repeated_paths[0].get_first_node_id());
+        embedding.reverse_circular_order(repeated_paths[0].get_last_node_id());
+    }
+
     return {embedding, Face(graph, face_type, std::move(faces[0]), std::move(repeated_paths))};
 }
 
