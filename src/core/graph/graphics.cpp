@@ -3,9 +3,9 @@
 #include "domus/core/color.hpp"
 
 #include <GL/freeglut.h>
-#include <sys/wait.h>
-#include <limits>
 #include <algorithm>
+#include <limits>
+#include <sys/wait.h>
 
 namespace domus::graph {
 using namespace domus::drawing;
@@ -65,7 +65,9 @@ void draw_rectangle(float ortho_width, float ortho_height) {
         glEnd();
 
         // Draw node ID text centered
-        std::string label = std::to_string(node_id);
+        std::string label = (g_current_attributes->has_attribute(Attribute::NODES_LABELS))
+                                ? std::string{g_current_attributes->get_node_label(node_id)}
+                                : std::to_string(node_id);
         int text_width_px = glutBitmapLength(
             GLUT_BITMAP_HELVETICA_18,
             reinterpret_cast<const unsigned char*>(label.c_str())
@@ -109,15 +111,25 @@ void display() {
     }
 
     if (!has_nodes) {
-        min_x = 0.0f; max_x = 1.0f;
-        min_y = 0.0f; max_y = 1.0f;
+        min_x = 0.0f;
+        max_x = 1.0f;
+        min_y = 0.0f;
+        max_y = 1.0f;
     }
 
     float width_val = max_x - min_x;
     float height_val = max_y - min_y;
 
-    if (width_val == 0.0f) { width_val = 1.0f; min_x -= 0.5f; max_x += 0.5f; }
-    if (height_val == 0.0f) { height_val = 1.0f; min_y -= 0.5f; max_y += 0.5f; }
+    if (width_val == 0.0f) {
+        width_val = 1.0f;
+        min_x -= 0.5f;
+        max_x += 0.5f;
+    }
+    if (height_val == 0.0f) {
+        height_val = 1.0f;
+        min_y -= 0.5f;
+        max_y += 0.5f;
+    }
 
     float pad_x = std::max(width_val * 0.125f, VERTEX_HALF_SIDE * 2.0f);
     float pad_y = std::max(height_val * 0.125f, VERTEX_HALF_SIDE * 2.0f);

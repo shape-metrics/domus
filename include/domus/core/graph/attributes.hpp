@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "domus/core/color.hpp"
 #include "domus/core/graph/graph.hpp"
@@ -17,6 +18,7 @@ enum class Attribute {
     NODES_POSITION,
     HIDDEN_NODES,
     HIDDEN_EDGES,
+    NODES_LABELS,
     // NODES_WEIGHT,
     // EDGES_WEIGHT,
 };
@@ -29,6 +31,7 @@ class Attributes {
     std::optional<utilities::NodesLabels<drawing::Point2D>> m_nodes_position = std::nullopt;
     std::optional<utilities::NodesContainer> m_hidden_nodes = std::nullopt;
     std::optional<utilities::EdgesContainer> m_hidden_edges = std::nullopt;
+    std::optional<utilities::NodesLabels<std::string>> m_nodes_labels = std::nullopt;
 
   public:
     bool has_attribute(Attribute attribute) const;
@@ -64,6 +67,11 @@ class Attributes {
     void hide_node(size_t node_id);
     void unhide_node(size_t node_id);
     bool is_node_hidden(size_t node_id) const;
+    // nodes labels
+    void set_node_label(size_t node_id, std::string_view label);
+    bool has_node_label(size_t node_id) const;
+    std::string_view get_node_label(size_t node_id) const;
+    void change_node_label(size_t node_id, std::string_view label);
 
     drawing::Drawer build_drawer(const graph::Graph& graph) const;
     void visualize(const graph::Graph& graph) const;

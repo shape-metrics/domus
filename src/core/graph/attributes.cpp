@@ -26,6 +26,8 @@ std::string attribute_to_string(Attribute attribute) {
         return "HIDDEN_NODES";
     case Attribute::HIDDEN_EDGES:
         return "HIDDEN_EDGES";
+    case Attribute::NODES_LABELS:
+        return "NODES_LABELS";
     default:
         DOMUS_ASSERT(false, "attribute_to_string: invalid attribute");
         return "ERROR";
@@ -44,6 +46,8 @@ bool Attributes::has_attribute(Attribute attribute) const {
         return m_hidden_edges.has_value();
     case Attribute::HIDDEN_NODES:
         return m_hidden_nodes.has_value();
+    case Attribute::NODES_LABELS:
+        return m_nodes_labels.has_value();
     default:
         DOMUS_ASSERT(false, "GraphAttributes::has_attribute: invalid attribute");
         return false;
@@ -70,6 +74,9 @@ void Attributes::add_attribute(Attribute attribute) {
         break;
     case Attribute::HIDDEN_EDGES:
         m_hidden_edges = utilities::EdgesContainer();
+        break;
+    case Attribute::NODES_LABELS:
+        m_nodes_labels = utilities::NodesLabels<std::string>();
         break;
     default:
         DOMUS_ASSERT(false, "GraphAttributes::add_attribute: invalid attribute");
@@ -98,6 +105,9 @@ void Attributes::remove_attribute(Attribute attribute) {
     case Attribute::HIDDEN_EDGES:
         m_hidden_edges.reset();
         break;
+    case Attribute::NODES_LABELS:
+        m_nodes_labels.reset();
+        break;
     default:
         DOMUS_ASSERT(false, "GraphAttributes::remove_attribute: invalid attribute");
         break;
@@ -111,6 +121,8 @@ void Attributes::remove_nodes_attribute(size_t node_id) {
         m_nodes_position->erase_label(node_id);
     if (has_attribute(Attribute::HIDDEN_NODES) && m_hidden_nodes->has_node(node_id))
         m_hidden_nodes->erase(node_id);
+    if (has_attribute(Attribute::NODES_LABELS) && m_nodes_labels->has_label(node_id))
+        m_nodes_labels->erase_label(node_id);
 }
 
 void Attributes::remove_edges_attribute(size_t edge_id) {
@@ -123,83 +135,232 @@ void Attributes::remove_edges_attribute(size_t edge_id) {
 // node color
 
 void Attributes::set_node_color(size_t node_id, ColorRGB color) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_COLOR),
+        "Attributes::set_node_color: missing attribute"
+    );
     m_nodes_color->add_label(node_id, color);
 }
 
-bool Attributes::has_node_color(size_t node_id) const { return m_nodes_color->has_label(node_id); }
+bool Attributes::has_node_color(size_t node_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_COLOR),
+        "Attributes::has_node_color: missing attribute"
+    );
+    return m_nodes_color->has_label(node_id);
+}
 
 ColorRGB Attributes::get_node_color(size_t node_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_COLOR),
+        "Attributes::get_node_color: missing attribute"
+    );
     return m_nodes_color->get_label(node_id);
 }
 
 void Attributes::change_node_color(size_t node_id, ColorRGB color) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_COLOR),
+        "Attributes::change_node_color: missing attribute"
+    );
     m_nodes_color->update_label(node_id, color);
 }
 
 // edge color
 
 void Attributes::set_edge_color(size_t edge_id, ColorRGB color) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::EDGES_COLOR),
+        "Attributes::set_edge_color: missing attribute"
+    );
     m_edges_color->add_label(edge_id, color);
 }
 
-bool Attributes::has_edge_color(size_t edge_id) const { return m_edges_color->has_label(edge_id); }
+bool Attributes::has_edge_color(size_t edge_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::EDGES_COLOR),
+        "Attributes::has_edge_color: missing attribute"
+    );
+    return m_edges_color->has_label(edge_id);
+}
 
 ColorRGB Attributes::get_edge_color(size_t edge_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::EDGES_COLOR),
+        "Attributes::get_edge_color: missing attribute"
+    );
     return m_edges_color->get_label(edge_id);
 }
 
 void Attributes::change_edge_color(size_t edge_id, ColorRGB color) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::EDGES_COLOR),
+        "Attributes::change_edge_color: missing attribute"
+    );
     m_edges_color->update_label(edge_id, color);
 }
 
 // node position
 
 void Attributes::set_position(size_t node_id, double x, double y) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_POSITION),
+        "Attributes::set_position: missing attribute"
+    );
     m_nodes_position->add_label(node_id, drawing::Point2D(x, y));
 }
 
 void Attributes::change_position(size_t node_id, double x, double y) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_POSITION),
+        "Attributes::change_position: missing attribute"
+    );
     m_nodes_position->update_label(node_id, drawing::Point2D(x, y));
 }
 
 void Attributes::change_position_x(size_t node_id, double x) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_POSITION),
+        "Attributes::change_position_x: missing attribute"
+    );
     m_nodes_position->get_label(node_id).x = x;
 }
 
 void Attributes::change_position_y(size_t node_id, double y) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_POSITION),
+        "Attributes::change_position_y: missing attribute"
+    );
     m_nodes_position->get_label(node_id).y = y;
 }
 
 double Attributes::get_position_x(size_t node_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_POSITION),
+        "Attributes::get_position_x: missing attribute"
+    );
     return m_nodes_position->get_label(node_id).x;
 }
 
 double Attributes::get_position_y(size_t node_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_POSITION),
+        "Attributes::get_position_y: missing attribute"
+    );
     return m_nodes_position->get_label(node_id).y;
 }
 
 const drawing::Point2D& Attributes::get_position(size_t node_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_POSITION),
+        "Attributes::get_position: missing attribute"
+    );
     return m_nodes_position->get_label(node_id);
 }
 
-bool Attributes::has_position(size_t node_id) const { return m_nodes_position->has_label(node_id); }
+bool Attributes::has_position(size_t node_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_POSITION),
+        "Attributes::has_position: missing attribute"
+    );
+    return m_nodes_position->has_label(node_id);
+}
 
-void Attributes::remove_position(size_t node_id) { m_nodes_position->erase_label(node_id); }
+void Attributes::remove_position(size_t node_id) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_POSITION),
+        "Attributes::remove_position: missing attribute"
+    );
+    m_nodes_position->erase_label(node_id);
+}
 
 // hidden edge
 
-void Attributes::hide_edge(size_t edge_id) { m_hidden_edges->add_edge(edge_id); }
+void Attributes::hide_edge(size_t edge_id) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::HIDDEN_EDGES),
+        "Attributes::hide_edge: missing attribute"
+    );
+    m_hidden_edges->add_edge(edge_id);
+}
 
-void Attributes::unhide_edge(size_t edge_id) { m_hidden_edges->erase(edge_id); }
+void Attributes::unhide_edge(size_t edge_id) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::HIDDEN_EDGES),
+        "Attributes::unhide_edge: missing attribute"
+    );
+    m_hidden_edges->erase(edge_id);
+}
 
-bool Attributes::is_edge_hidden(size_t edge_id) const { return m_hidden_edges->has_edge(edge_id); }
+bool Attributes::is_edge_hidden(size_t edge_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::HIDDEN_EDGES),
+        "Attributes::is_edge_hidden: missing attribute"
+    );
+    return m_hidden_edges->has_edge(edge_id);
+}
 
 // hidden node
-void Attributes::hide_node(size_t node_id) { m_hidden_nodes->add_node(node_id); }
 
-void Attributes::unhide_node(size_t node_id) { m_hidden_nodes->erase(node_id); }
+void Attributes::hide_node(size_t node_id) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::HIDDEN_NODES),
+        "Attributes::hide_node: missing attribute"
+    );
+    m_hidden_nodes->add_node(node_id);
+}
 
-bool Attributes::is_node_hidden(size_t node_id) const { return m_hidden_nodes->has_node(node_id); }
+void Attributes::unhide_node(size_t node_id) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::HIDDEN_NODES),
+        "Attributes::unhide_node: missing attribute"
+    );
+    m_hidden_nodes->erase(node_id);
+}
+
+bool Attributes::is_node_hidden(size_t node_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::HIDDEN_NODES),
+        "Attributes::is_node_hidden: missing attribute"
+    );
+    return m_hidden_nodes->has_node(node_id);
+}
+
+// nodes labels
+
+void Attributes::set_node_label(size_t node_id, std::string_view label) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_LABELS),
+        "Attributes::set_node_label: missing attribute"
+    );
+    m_nodes_labels->add_label(node_id, std::string{label});
+}
+
+bool Attributes::has_node_label(size_t node_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_LABELS),
+        "Attributes::has_node_label: missing attribute"
+    );
+    return m_nodes_labels->has_label(node_id);
+}
+
+std::string_view Attributes::get_node_label(size_t node_id) const {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_LABELS),
+        "Attributes::get_node_label: missing attribute"
+    );
+    return m_nodes_labels->get_label(node_id);
+}
+
+void Attributes::change_node_label(size_t node_id, std::string_view label) {
+    DOMUS_ASSERT(
+        has_attribute(Attribute::NODES_LABELS),
+        "Attributes::change_node_label: missing attribute"
+    );
+    m_nodes_labels->update_label(node_id, std::string{label});
+}
+
+// from attributes to drawing
 
 Drawer Attributes::build_drawer(const Graph& graph) const {
     double max_x = -std::numeric_limits<double>().max();
@@ -245,11 +406,16 @@ Drawer Attributes::build_drawer(const Graph& graph) const {
     for (const size_t node_id : graph.get_nodes_ids()) {
         if (has_attribute(Attribute::HIDDEN_NODES) && is_node_hidden(node_id))
             continue;
+
         if (has_attribute(Attribute::NODES_COLOR) && has_node_color(node_id))
             drawer.add(RoundSquare2D{points.at(node_id), 20, 4, get_node_color(node_id)});
         else
             drawer.add(RoundSquare2D{points.at(node_id), 20, 4, CORNERFLOWERBLUE_RGB});
-        drawer.add(Text2D{std::to_string(node_id), points.at(node_id)});
+
+        if (has_attribute(Attribute::NODES_LABELS))
+            drawer.add(Text2D{std::string{get_node_label(node_id)}, points.at(node_id)});
+        else
+            drawer.add(Text2D{std::to_string(node_id), points.at(node_id)});
     }
     return drawer;
 }
