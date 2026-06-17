@@ -6,8 +6,7 @@
 #include <vector>
 
 #include "domus/core/color.hpp"
-#include "domus/drawing/polygon.hpp"
-#include "domus/drawing/svg_drawer.hpp"
+#include "domus/drawing/drawer.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -82,29 +81,23 @@ void draw_nodes_of_path(
         const double fraction = static_cast<double>(k) / static_cast<double>(num_nodes - 1);
         const double x = first_position.x + fraction * (last_position.x - first_position.x);
         const double y = first_position.y + fraction * (last_position.y - first_position.y);
-        Circle2D circle(Point2D(x, y), NODE_RADIUS);
-
-        drawer.add(circle, NODE_COLOR);
-        drawer.add(std::to_string(path.node_id_at_position(k)), circle.center);
+        drawer.add(Circle2D(Point2D(x, y), NODE_RADIUS, NODE_COLOR));
+        drawer.add(Text2D{std::to_string(path.node_id_at_position(k)), Point2D(x, y)});
     }
 }
 
 void draw_the_hexagon_border(Drawer& drawer, const Face& original_face) {
     for (size_t i = 0; i < 3; ++i) {
-        drawer.add(
-            Line2D(
-                HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[i].first],
-                HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[i].second]
-            ),
+        drawer.add(Line2D(
+            HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[i].first],
+            HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_0[i].second],
             REPEATED_PATH_INDEX_TO_COLOR[i]
-        );
-        drawer.add(
-            Line2D(
-                HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[i].first],
-                HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[i].second]
-            ),
+        ));
+        drawer.add(Line2D(
+            HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[i].first],
+            HEXAGON_VERTICES[HEXAGON_REPEATED_PATH_ENDPOINTS_1[i].second],
             REPEATED_PATH_INDEX_TO_COLOR[i]
-        );
+        ));
     }
     for (size_t i = 0; i < 3; ++i) {
         draw_nodes_of_path(
@@ -124,20 +117,16 @@ void draw_the_hexagon_border(Drawer& drawer, const Face& original_face) {
 
 void draw_the_square_border(Drawer& drawer, const Face& original_face) {
     for (size_t i = 0; i < original_face.repeated_paths().size(); ++i) {
-        drawer.add(
-            Line2D(
-                SQUARE_VERTICES[SQUARE_REPEATED_PATH_ENDPOINTS_0[i].first],
-                SQUARE_VERTICES[SQUARE_REPEATED_PATH_ENDPOINTS_0[i].second]
-            ),
+        drawer.add(Line2D(
+            SQUARE_VERTICES[SQUARE_REPEATED_PATH_ENDPOINTS_0[i].first],
+            SQUARE_VERTICES[SQUARE_REPEATED_PATH_ENDPOINTS_0[i].second],
             REPEATED_PATH_INDEX_TO_COLOR[i]
-        );
-        drawer.add(
-            Line2D(
-                SQUARE_VERTICES[SQUARE_REPEATED_PATH_ENDPOINTS_1[i].first],
-                SQUARE_VERTICES[SQUARE_REPEATED_PATH_ENDPOINTS_1[i].second]
-            ),
+        ));
+        drawer.add(Line2D(
+            SQUARE_VERTICES[SQUARE_REPEATED_PATH_ENDPOINTS_1[i].first],
+            SQUARE_VERTICES[SQUARE_REPEATED_PATH_ENDPOINTS_1[i].second],
             REPEATED_PATH_INDEX_TO_COLOR[i]
-        );
+        ));
     }
     for (size_t i = 0; i < original_face.repeated_paths().size(); ++i) {
         draw_nodes_of_path(
@@ -320,7 +309,7 @@ void draw_path_inside(
 
     Point2D first_position = find_position(first_node_id, first_edge_id);
     Point2D last_position = find_position(last_node_id, last_edge_id);
-    drawer.add(Line2D(first_position, last_position), INNER_PATH_COLOR);
+    drawer.add(Line2D(first_position, last_position, INNER_PATH_COLOR));
     draw_nodes_of_path(drawer, first_position, last_position, path);
 }
 

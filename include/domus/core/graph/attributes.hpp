@@ -1,14 +1,13 @@
 #pragma once
 
-#include <expected>
-#include <filesystem>
 #include <optional>
 #include <string>
 
 #include "domus/core/color.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
-#include "domus/drawing/polygon.hpp"
+#include "domus/drawing/draw_elements.hpp"
+#include "domus/drawing/drawer.hpp"
 
 namespace domus::graph {
 
@@ -54,6 +53,7 @@ class Attributes {
     void change_position_y(size_t node_id, double y);
     double get_position_x(size_t node_id) const;
     double get_position_y(size_t node_id) const;
+    const drawing::Point2D& get_position(size_t node_id) const;
     bool has_position(size_t node_id) const;
     void remove_position(size_t node_id);
     // hidden edge
@@ -64,9 +64,9 @@ class Attributes {
     void hide_node(size_t node_id);
     void unhide_node(size_t node_id);
     bool is_node_hidden(size_t node_id) const;
-};
 
-std::expected<void, std::string>
-make_svg(const graph::Graph& graph, const Attributes& attributes, std::filesystem::path path);
+    drawing::Drawer build_drawer(const graph::Graph& graph) const;
+    void visualize(const graph::Graph& graph) const;
+};
 
 } // namespace domus::graph

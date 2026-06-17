@@ -7,9 +7,8 @@
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
+#include "domus/drawing/drawer.hpp"
 #include "domus/drawing/linear_scale.hpp"
-#include "domus/drawing/polygon.hpp"
-#include "domus/drawing/svg_drawer.hpp"
 
 namespace domus::graph {
 using color::ColorRGB;
@@ -179,6 +178,10 @@ double Attributes::get_position_y(size_t node_id) const {
     return m_nodes_position->get_label(node_id).y;
 }
 
+const drawing::Point2D& Attributes::get_position(size_t node_id) const {
+    return m_nodes_position->get_label(node_id);
+}
+
 bool Attributes::has_position(size_t node_id) const { return m_nodes_position->has_label(node_id); }
 
 void Attributes::remove_position(size_t node_id) { m_nodes_position->erase_label(node_id); }
@@ -198,56 +201,57 @@ void Attributes::unhide_node(size_t node_id) { m_hidden_nodes->erase(node_id); }
 
 bool Attributes::is_node_hidden(size_t node_id) const { return m_hidden_nodes->has_node(node_id); }
 
-std::expected<void, std::string>
-make_svg(const Graph& graph, const Attributes& attributes, std::filesystem::path path) {
+Drawer Attributes::build_drawer(const Graph& graph) const {
     double max_x = -std::numeric_limits<double>().max();
     double max_y = -std::numeric_limits<double>().max();
     for (const size_t node_id : graph.get_nodes_ids()) {
-        max_x = std::max(max_x, attributes.get_position_x(node_id));
-        max_y = std::max(max_y, attributes.get_position_y(node_id));
+        max_x = std::max(max_x, get_position_x(node_id));
+        max_y = std::max(max_y, get_position_y(node_id));
     }
     double min_x = std::numeric_limits<double>().max();
     double min_y = std::numeric_limits<double>().max();
     for (const size_t node_id : graph.get_nodes_ids()) {
-        min_x = std::min(min_x, attributes.get_position_x(node_id));
-        min_y = std::min(min_y, attributes.get_position_y(node_id));
+        min_x = std::min(min_x, get_position_x(node_id));
+        min_y = std::min(min_y, get_position_y(node_id));
     }
     const double width = max_x - min_x;
     const double height = max_y - min_y;
     Drawer drawer{width, height};
-    auto scale_x = ScaleLinear(min_x - 100, max_x + 100, 0, width);
-    auto scale_y = ScaleLinear(min_y - 100, max_y + 100, 0, height);
+    auto scale_x = ScaleLinear(min_x, max_x, 0, width);
+    auto scale_y = ScaleLinear(min_y, max_y, 0, height);
     std::vector<Point2D> points;
     points.resize(graph.get_number_of_nodes());
     for (const size_t node_id : graph.get_nodes_ids()) {
-        const double x = scale_x.map(attributes.get_position_x(node_id));
-        const double y = scale_y.map(attributes.get_position_y(node_id));
+        const double x = scale_x.map(get_position_x(node_id));
+        const double y = scale_y.map(get_position_y(node_id));
         while (points.size() <= node_id)
             points.emplace_back();
         points[node_id] = Point2D(x, y);
     }
     for (const EdgeId edge : graph.get_all_edges()) {
-        if (attributes.has_attribute(Attribute::HIDDEN_EDGES) && attributes.is_edge_hidden(edge.id))
+        if (has_attribute(Attribute::HIDDEN_EDGES) && is_edge_hidden(edge.id))
             continue;
-        Line2D line(points.at(edge.edge.from_id), points.at(edge.edge.to_id));
-        if (attributes.has_attribute(Attribute::EDGES_COLOR) && attributes.has_edge_color(edge.id))
-            drawer.add(line, attributes.get_edge_color(edge.id));
-        else
-            drawer.add(line);
-    }
-    for (const size_t node_id : graph.get_nodes_ids()) {
-        if (attributes.has_attribute(Attribute::HIDDEN_NODES) && attributes.is_node_hidden(node_id))
-            continue;
-        if (attributes.has_attribute(Attribute::NODES_COLOR) && attributes.has_node_color(node_id))
+        if (has_attribute(Attribute::EDGES_COLOR) && has_edge_color(edge.id))
             drawer.add(
-                RoundSquare2D{points.at(node_id), 20, 4},
-                attributes.get_node_color(node_id)
+                Line2D{
+                    points.at(edge.edge.from_id),
+                    points.at(edge.edge.to_id),
+                    get_edge_color(edge.id)
+                }
             );
         else
-            drawer.add(RoundSquare2D{points.at(node_id), 20, 4}, CORNERFLOWERBLUE_RGB);
-        drawer.add(std::to_string(node_id), points.at(node_id));
+            drawer.add(Line2D{points.at(edge.edge.from_id), points.at(edge.edge.to_id), BLACK_RGB});
     }
-    return drawer.save_to_file(path);
+    for (const size_t node_id : graph.get_nodes_ids()) {
+        if (has_attribute(Attribute::HIDDEN_NODES) && is_node_hidden(node_id))
+            continue;
+        if (has_attribute(Attribute::NODES_COLOR) && has_node_color(node_id))
+            drawer.add(RoundSquare2D{points.at(node_id), 20, 4, get_node_color(node_id)});
+        else
+            drawer.add(RoundSquare2D{points.at(node_id), 20, 4, CORNERFLOWERBLUE_RGB});
+        drawer.add(Text2D{std::to_string(node_id), points.at(node_id)});
+    }
+    return drawer;
 }
 
 } // namespace domus::graph

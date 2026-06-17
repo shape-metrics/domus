@@ -9,9 +9,8 @@
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
+#include "domus/drawing/drawer.hpp"
 #include "domus/drawing/linear_scale.hpp"
-#include "domus/drawing/polygon.hpp"
-#include "domus/drawing/svg_drawer.hpp"
 
 #include "../nlohmann/json.hpp"
 #include "domus/orthogonal/shape/direction.hpp"
@@ -212,8 +211,8 @@ std::expected<void, std::string> make_svg(
         NodeType type = nodes_types.get_label(node_id);
         if (type != NodeType::VERTEX)
             continue;
-        drawer.add(RoundSquare2D{points.at(node_id), side, side / 4}, CORNERFLOWERBLUE_RGB);
-        drawer.add(std::to_string(node_id), points.at(node_id));
+        drawer.add(RoundSquare2D{points.at(node_id), side, side / 4, CORNERFLOWERBLUE_RGB});
+        drawer.add(Text2D{std::to_string(node_id), points.at(node_id)});
     }
     return drawer.save_to_file(path);
 }

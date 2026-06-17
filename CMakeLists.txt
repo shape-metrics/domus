@@ -77,7 +77,7 @@ set(COMMON_SRCS
     src/orthogonal/loader.cpp
     src/orthogonal/equivalence_classes.cpp
     src/orthogonal/drawing.cpp
-    src/drawing/polygon.cpp
+    src/drawing/draw_elements.cpp
     src/core/config.cpp
     src/core/graph/graphs_algorithms.cpp
     src/core/graph/graph.cpp
@@ -87,11 +87,12 @@ set(COMMON_SRCS
     src/core/graph/path.cpp
     src/core/graph/cycle.cpp
     src/core/graph/attributes.cpp
+    src/core/graph/graphics.cpp
     src/core/graph/file_loader.cpp
     src/core/tree/tree.cpp
     src/core/tree/tree_algorithms.cpp
     src/planarity/segment.cpp
-    src/drawing/svg_drawer.cpp
+    src/drawing/drawer.cpp
     src/drawing/linear_scale.cpp
     src/orthogonal/drawing_builder.cpp
     src/orthogonal/drawing_stats.cpp

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "domus/core/color.hpp"
+#include <string>
 #include <vector>
 
 namespace domus::drawing {
@@ -34,14 +36,16 @@ struct Point3D {
 
 struct Path2D {
     std::vector<Point2D> points;
+    color::ColorRGB color;
+
     void add_point(const Point2D& p);
 };
 
 struct Line2D {
-    Point2D m_p1;
-    Point2D m_p2;
+    Point2D p1;
+    Point2D p2;
+    color::ColorRGB color;
 
-    Line2D(const Point2D& p1, const Point2D& p2);
     bool is_point_on_line(const Point2D& p) const;
     bool is_intersecting(const Line2D& l) const;
     bool operator==(const Line2D& other) const;
@@ -50,8 +54,14 @@ struct Line2D {
 
 struct Polygon2D {
     std::vector<Point2D> points;
+    color::ColorRGB color;
+    std::optional<color::ColorRGB> fill_color;
 
-    explicit Polygon2D(const std::vector<Point2D>& points);
+    explicit Polygon2D(
+        const std::vector<Point2D>& points,
+        color::ColorRGB color,
+        std::optional<color::ColorRGB> fill_color
+    );
     bool is_on_boundary(const Point2D& p) const;
     bool is_inside(const Point2D& p) const;
     bool is_inside(const Line2D& l) const;
@@ -61,17 +71,30 @@ struct Polygon2D {
 struct Circle2D {
     Point2D center;
     double radius;
+    color::ColorRGB color;
 };
 
 struct Square2D {
     Point2D center;
     double side;
+    color::ColorRGB color;
 };
 
 struct RoundSquare2D {
     Point2D center;
     double side;
     double corner_radious;
+    color::ColorRGB color;
+};
+
+struct Text2D {
+    std::string text;
+    Point2D center;
+};
+
+struct SmoothPath2D {
+    Path2D path;
+    color::ColorRGB color;
 };
 
 } // namespace domus::drawing

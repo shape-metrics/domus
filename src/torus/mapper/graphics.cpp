@@ -1,3 +1,4 @@
+#include "domus/core/color.hpp"
 #include "domus/torus/mapping.hpp"
 
 #include <GL/freeglut.h>
@@ -8,6 +9,7 @@
 
 namespace domus::torus::mapper {
 using namespace domus::drawing;
+using color::ColorRGB;
 
 struct TextLabel {
     std::string text;
@@ -33,15 +35,8 @@ bool idle_camera_rotation = false;
 
 void TorusMapping::precompute_polygons() {
     m_cached_polygon_meshes.clear();
-    m_cached_polygon_meshes_color.clear();
-    for (size_t index = 0; index < m_rectangle_polygons.size(); index++) {
-        const auto color = m_rectangle_polygons_color[index];
-        std::vector<Point2D> pts;
-        for (size_t idx : m_rectangle_polygons[index]) {
-            pts.push_back(m_rectangle_points[idx]);
-        }
-        drawing::Polygon2D poly(pts);
-        PolygonMesh mesh;
+    for (size_t index = 0; index < m_polygons.size(); index++) {
+        PolygonMesh mesh(m_polygons[index].color);
         for (int i = 0; i < POLYGON_GRID_RES_U; i++) {
             for (int j = 0; j < POLYGON_GRID_RES_V; j++) {
                 const double u1 = static_cast<double>(i) / POLYGON_GRID_RES_U;
@@ -50,7 +45,7 @@ void TorusMapping::precompute_polygons() {
                 const double v2 = static_cast<double>(j + 1) / POLYGON_GRID_RES_V;
 
                 const Point2D center{(u1 + u2) / 2.0, (v1 + v2) / 2.0};
-                if (poly.is_inside(center)) {
+                if (m_polygons[index].is_inside(center)) {
                     mesh.quads_3d.push_back(map_rectangle_to_torus({u1, v1}));
                     mesh.quads_3d.push_back(map_rectangle_to_torus({u2, v1}));
                     mesh.quads_3d.push_back(map_rectangle_to_torus({u2, v2}));
@@ -64,7 +59,6 @@ void TorusMapping::precompute_polygons() {
             }
         }
         m_cached_polygon_meshes.push_back(mesh);
-        m_cached_polygon_meshes_color.push_back(color);
     }
 }
 
@@ -281,7 +275,9 @@ void draw_oriented_cylinder(
 }
 
 // Draw a line between two points on the torus
-void draw_torus_line(const Point2D& start, const Point2D& end, const ColorRGB& color) {
+void TorusMapping::draw_torus_line(
+    const Point2D& start, const Point2D& end, const ColorRGB& color
+) const {
     const double ds = (end.x - start.x) / static_cast<double>(EDGE_SLICES);
     const double dt = (end.y - start.y) / static_cast<double>(EDGE_SLICES);
 
@@ -362,8 +358,7 @@ void TorusMapping::draw_rectangle() const {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     for (size_t i = 0; i < m_cached_polygon_meshes.size(); i++) {
         const auto& mesh = m_cached_polygon_meshes[i];
-        const auto& color = m_cached_polygon_meshes_color[i];
-        glColor4f(color.r, color.g, color.b, 0.5f);
+        glColor4f(mesh.color.r, mesh.color.g, mesh.color.b, 0.5f);
         glBegin(GL_QUADS);
         for (const auto& p : mesh.quads_2d) {
             glVertex3f(static_cast<float>(p.x), static_cast<float>(p.y), 0.0f);
@@ -373,12 +368,15 @@ void TorusMapping::draw_rectangle() const {
     glDisable(GL_BLEND);
 
     // Draw polygon outlines
-    for (const auto& poly_indices : m_rectangle_polygons) {
-        glColor3f(POLYGON_DEFAULT_COLOR.r, POLYGON_DEFAULT_COLOR.g, POLYGON_DEFAULT_COLOR.b);
+    for (const auto& polygon : m_polygons) {
+        glColor3f(
+            polygon.fill_color.value().r,
+            polygon.fill_color.value().g,
+            polygon.fill_color.value().b
+        );
         glBegin(GL_LINE_LOOP);
-        for (size_t idx : poly_indices) {
-            const auto& p = m_rectangle_points[idx];
-            glVertex3f(static_cast<float>(p.x), static_cast<float>(p.y), 0.0f);
+        for (auto& point : polygon.points) {
+            glVertex3f(static_cast<float>(point.x), static_cast<float>(point.y), 0.0f);
         }
         glEnd();
     }
@@ -386,30 +384,22 @@ void TorusMapping::draw_rectangle() const {
     // Draw lines
     glLineWidth(RECTANGLE_EDGE_WIDTH);
     glBegin(GL_LINES);
-    for (size_t i = 0; i < m_rectangle_lines.size(); ++i) {
-        const auto& line = m_rectangle_lines[i];
-        const auto& color = m_rectangle_lines_color[i];
-        glColor3f(color.r, color.g, color.b);
-        const Point2D& p1 = m_rectangle_points[line.first];
-        const Point2D& p2 = m_rectangle_points[line.second];
-        glVertex3f(static_cast<float>(p1.x), static_cast<float>(p1.y), 0.0f);
-        glVertex3f(static_cast<float>(p2.x), static_cast<float>(p2.y), 0.0f);
+    for (const auto& line : m_lines) {
+        glColor3f(line.color.r, line.color.g, line.color.b);
+        glVertex3f(static_cast<float>(line.p1.x), static_cast<float>(line.p1.y), 0.0f);
+        glVertex3f(static_cast<float>(line.p2.x), static_cast<float>(line.p2.y), 0.0f);
     }
     glEnd();
     glLineWidth(1.0f);
 
     // Draw points (drawn last so they are on top)
-    glPointSize(RECTANGLE_POINT_SIZE);
-    glBegin(GL_POINTS);
-    for (size_t i = 0; i < m_rectangle_points.size(); ++i) {
-        if (m_is_rectangle_point_hidden[i])
-            continue;
-        const auto& point = m_rectangle_points[i];
-        const auto& color = m_rectangle_points_color[i];
-        glColor3f(color.r, color.g, color.b);
-        glVertex3f(static_cast<float>(point.x), static_cast<float>(point.y), 0.0f);
+    for (const auto& circle : m_circles) {
+        glPointSize(static_cast<float>(circle.radius));
+        glBegin(GL_POINTS);
+        glColor3f(circle.color.r, circle.color.g, circle.color.b);
+        glVertex3f(static_cast<float>(circle.center.x), static_cast<float>(circle.center.y), 0.0f);
+        glEnd();
     }
-    glEnd();
 
     // Restore 3D settings
     glEnable(GL_DEPTH_TEST);
@@ -457,27 +447,21 @@ void TorusMapping::display() const {
     draw_wireframe_torus(TORUS_COLOR);
 
     // Draw points on the torus and add their labels
-    for (size_t i = 0; i < m_torus_points.size(); i++) {
-        const Point3D& point = m_torus_points[i];
-        if (m_is_rectangle_point_hidden[i])
-            continue;
+    for (size_t i = 0; i < m_circles.size(); i++) {
+        const Point3D point = map_rectangle_to_torus(m_circles[i].center);
 
-        draw_sphere(SPHERE_RADIUS, point, m_rectangle_points_color[i]);
+        draw_sphere(m_circles[i].radius / 150.0, point, m_circles[i].color);
         // Add label for all points if the option is enabled
         if (draw_all_labels) {
             char index_str[32];
-            sprintf(index_str, "%zu", m_point_to_node_id[i]);
+            sprintf(index_str, "%zu", m_circle_to_node_id[i]);
             add_world_label(index_str, {point.x, point.y + 0.2f, point.z});
         }
     }
     // Draw lines on the torus
 
-    for (size_t i = 0; i < m_rectangle_lines.size(); i++) {
-        const auto& line = m_rectangle_lines[i];
-        const Point2D& p1 = m_rectangle_points[line.first];
-        const Point2D& p2 = m_rectangle_points[line.second];
-        draw_torus_line(p1, p2, m_rectangle_lines_color[i]);
-    }
+    for (const auto& line : m_lines)
+        draw_torus_line(line.p1, line.p2, line.color);
 
     // Draw polygons on the torus
     glEnable(GL_BLEND);
@@ -486,8 +470,7 @@ void TorusMapping::display() const {
 
     for (size_t i = 0; i < m_cached_polygon_meshes.size(); i++) {
         const auto& mesh = m_cached_polygon_meshes[i];
-        const auto& color = m_cached_polygon_meshes_color[i];
-        glColor4f(color.r, color.g, color.b, 0.5f);
+        glColor4f(mesh.color.r, mesh.color.g, mesh.color.b, 0.5f);
         glBegin(GL_QUADS);
         for (const auto& p : mesh.quads_3d) {
             glVertex3f(static_cast<float>(p.x), static_cast<float>(p.y), static_cast<float>(p.z));
@@ -618,13 +601,9 @@ void display_callback() {
         g_current_mapping->display();
 }
 
-void TorusMapping::visualize_torus() {
+void TorusMapping::visualize() {
     g_current_mapping = this;
     precompute_polygons();
-    // Map all points to the torus
-    m_torus_points.clear();
-    for (const auto& point : m_rectangle_points)
-        m_torus_points.push_back(map_rectangle_to_torus(point));
 
     // Initialize GLUT
     int fake_argc = 1;

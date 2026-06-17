@@ -14,6 +14,8 @@ struct EquivalentEmbedding {
     graph::Attributes attributes;
     graph::utilities::NodesLabels<size_t> node_id_to_old;
     graph::utilities::EdgesLabels<size_t> edge_id_to_old;
+
+    void visualize_torus() const;
 };
 
 /**

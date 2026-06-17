@@ -1,9 +1,10 @@
-#include "domus/drawing/polygon.hpp"
+#include "domus/drawing/draw_elements.hpp"
 
 #include <algorithm>
 #include <cmath>
-#include <stddef.h>
+#include <cstddef>
 
+#include "domus/core/color.hpp"
 #include "domus/core/domus_debug.hpp"
 
 namespace domus::drawing {
@@ -52,43 +53,39 @@ bool Point3D::operator==(const Point3D& other) const {
 
 void Path2D::add_point(const Point2D& p) { points.push_back(p); }
 
-bool Line2D::operator==(const Line2D& other) const {
-    return m_p1 == other.m_p1 && m_p2 == other.m_p2;
-}
+bool Line2D::operator==(const Line2D& other) const { return p1 == other.p1 && p2 == other.p2; }
 
 bool Line2D::operator!=(const Line2D& other) const { return !(*this == other); }
 
-Line2D::Line2D(const Point2D& p1, const Point2D& p2) : m_p1(p1), m_p2(p2) {}
-
 bool Line2D::is_point_on_line(const Point2D& p) const {
-    double crossProduct = (p.y - m_p1.y) * (m_p2.x - m_p1.x) - (p.x - m_p1.x) * (m_p2.y - m_p1.y);
+    double crossProduct = (p.y - p1.y) * (p2.x - p1.x) - (p.x - p1.x) * (p2.y - p1.y);
     if (std::abs(crossProduct) > 1e-7)
         return false; // Not on the line
-    double dotProduct = (p.x - m_p1.x) * (m_p2.x - m_p1.x) + (p.y - m_p1.y) * (m_p2.y - m_p1.y);
+    double dotProduct = (p.x - p1.x) * (p2.x - p1.x) + (p.y - p1.y) * (p2.y - p1.y);
     if (dotProduct < 0)
         return false; // Not on the segment
-    double squaredLength =
-        (m_p2.x - m_p1.x) * (m_p2.x - m_p1.x) + (m_p2.y - m_p1.y) * (m_p2.y - m_p1.y);
+    double squaredLength = (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y);
     if (dotProduct > squaredLength)
         return false; // Not on the segment
     return true;
 }
 
 bool Line2D::is_intersecting(const Line2D& l) const {
-    double denominator =
-        (m_p2.y - m_p1.y) * (l.m_p2.x - l.m_p1.x) - (m_p2.x - m_p1.x) * (l.m_p2.y - l.m_p1.y);
+    double denominator = (p2.y - p1.y) * (l.p2.x - l.p1.x) - (p2.x - p1.x) * (l.p2.y - l.p1.y);
     if (denominator == 0)
         return false; // Lines are parallel
-    double ua =
-        ((m_p2.x - m_p1.x) * (l.m_p1.y - m_p1.y) - (m_p2.y - m_p1.y) * (l.m_p1.x - m_p1.x)) /
-        denominator;
-    double ub = ((l.m_p2.x - l.m_p1.x) * (l.m_p1.y - m_p1.y) -
-                 (l.m_p2.y - l.m_p1.y) * (l.m_p1.x - m_p1.x)) /
-                denominator;
+    double ua = ((p2.x - p1.x) * (l.p1.y - p1.y) - (p2.y - p1.y) * (l.p1.x - p1.x)) / denominator;
+    double ub =
+        ((l.p2.x - l.p1.x) * (l.p1.y - p1.y) - (l.p2.y - l.p1.y) * (l.p1.x - p1.x)) / denominator;
     return ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1;
 }
 
-Polygon2D::Polygon2D(const std::vector<Point2D>& points) {
+Polygon2D::Polygon2D(
+    const std::vector<Point2D>& points,
+    color::ColorRGB color,
+    std::optional<color::ColorRGB> fill_color
+)
+    : color(color), fill_color(fill_color) {
     DOMUS_ASSERT(points.size() >= 3, "Polygon2D::Polygon2D: Polygon must have at least 3 points");
     for (const auto& p : points) {
         this->points.emplace_back(p.x, p.y);
@@ -134,7 +131,7 @@ bool Polygon2D::is_inside(const Point2D& p) const {
 }
 
 bool Polygon2D::is_inside(const Line2D& l) const {
-    if (!is_inside(l.m_p1) || !is_inside(l.m_p2))
+    if (!is_inside(l.p1) || !is_inside(l.p2))
         return false;
     for (size_t i = 0; i < points.size(); i++) {
         const Point2D& p1 = points[i];
@@ -145,18 +142,18 @@ bool Polygon2D::is_inside(const Line2D& l) const {
                 return false;
         }
     }
-    if (is_on_boundary(l.m_p1) && is_on_boundary(l.m_p2)) {
-        const Point2D m = (l.m_p1 + l.m_p2) / 2.0;
+    if (is_on_boundary(l.p1) && is_on_boundary(l.p2)) {
+        const Point2D m = (l.p1 + l.p2) / 2.0;
         if (!is_inside(m))
             return false;
     }
     return true;
 }
 
-// Calcola il determinante tra tre punti (p, q, r)
-// Se > 0, indica una svolta a sinistra (convesso);
-// se < 0, indica una svolta a destra (concavo);
-// se == 0, sono collineari
+// compute determinant of three points (p, q, r)
+// if > 0 convex
+// if < 0 concave
+// if = 0 are collinear
 double cross(const Point2D& p, const Point2D& q, const Point2D& r) {
     return (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
 }
@@ -164,16 +161,16 @@ double cross(const Point2D& p, const Point2D& q, const Point2D& r) {
 // Funzione per calcolare il contorno convesso
 std::vector<Point2D> Polygon2D::compute_convex_hull() const {
     std::vector<Point2D> points_copy(this->points);
-    // Ordina i punti in base all'ordinamento lessicografico
+    // lexicographic ordering of the points
     std::sort(points_copy.begin(), points_copy.end());
     std::vector<Point2D> hull;
-    // Costruzione della metà inferiore del contorno
+    // building bottom half of the hull
     for (const auto& p : points_copy) {
         while (hull.size() >= 2 && cross(hull[hull.size() - 2], hull[hull.size() - 1], p) <= 0)
             hull.pop_back();
         hull.push_back(p);
     }
-    // Costruzione della metà superiore del contorno
+    // building top half of the hull
     const size_t lowerSize = hull.size();
     for (size_t i = points_copy.size(); i > 0; --i) {
         while (hull.size() > lowerSize &&
@@ -181,7 +178,7 @@ std::vector<Point2D> Polygon2D::compute_convex_hull() const {
             hull.pop_back();
         hull.push_back(points_copy[i - 1]);
     }
-    // Rimuove l'ultimo punto poiché è uguale al primo
+    // remove last point because its the same as the first
     hull.pop_back();
     return hull;
 }

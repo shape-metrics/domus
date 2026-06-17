@@ -10,7 +10,6 @@
 #include "domus/core/graph/flow.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/test.hpp"
-#include "domus/drawing/polygon.hpp"
 #include "domus/orthogonal/drawing.hpp"
 #include "domus/orthogonal/drawing_builder.hpp"
 #include "domus/orthogonal/drawing_stats.hpp"
@@ -110,10 +109,9 @@ void test_tutte_layout() {
     attributes.set_position(2, 600, 0);
     attributes.set_position(9, 600, 400);
     compute_nodes_positions(graph, attributes);
-    auto res = make_svg(graph, attributes, "daje.svg");
-    if (!res) {
+    auto res = attributes.build_drawer(graph).save_to_file("daje.svg");
+    if (!res)
         std::println("{}", res.error());
-    }
     auto cycles = flow::max_vertex_disjoint_cycles(graph, 12);
     std::println("Number of vertex-disjoint cycles: {}", cycles.size());
     for (const auto& cycle : cycles) {
