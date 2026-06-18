@@ -1,6 +1,5 @@
 #include "embedding_converter.hpp"
 
-#include <iostream>
 #include <print>
 #include <string>
 
@@ -9,7 +8,6 @@
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/drawing/linear_scale.hpp"
-#include "domus/planarity/tutte.hpp"
 #include "domus/torus/faces.hpp"
 
 namespace domus::torus::mapper {
@@ -123,7 +121,7 @@ class EquivalentEmbeddingBuilder {
                 RED_RGB,
                 prev_point,
                 next_point,
-                m_outer_face.repeated_paths()[0].edge_id_at_position(
+                m_outer_face.repeated_paths()[1].edge_id_at_position(
                     m_outer_face.repeated_paths()[1].number_of_edges() - i - 1
                 )
             );
@@ -234,7 +232,7 @@ class EquivalentEmbeddingBuilder {
                 RED_RGB,
                 prev_point,
                 next_point,
-                m_outer_face.repeated_paths()[0].edge_id_at_position(
+                m_outer_face.repeated_paths()[1].edge_id_at_position(
                     m_outer_face.repeated_paths()[1].number_of_edges() - i - 1
                 )
             );
@@ -282,7 +280,6 @@ class EquivalentEmbeddingBuilder {
         const size_t old_edge_id,
         const size_t old_prev_node_id
     ) {
-        std::println("adding inner edges of {}", old_node_id);
         size_t current_old_edge = old_edge_id;
         size_t old_neighbor_id = old_next_node_id;
         while (true) {
@@ -291,8 +288,6 @@ class EquivalentEmbeddingBuilder {
                 old_neighbor_id,
                 current_old_edge
             );
-            std::println("{}", old_neighbor_id);
-            std::println("{}", e.neighbor_id);
 
             if (old_prev_node_id == e.neighbor_id)
                 break;
@@ -315,7 +310,8 @@ class EquivalentEmbeddingBuilder {
                 (m_old_inner_node_to_new_node.has_label(old_neighbor_id))
                     ? new_inner_node_id = m_old_inner_node_to_new_node.get_label(old_neighbor_id)
                     : add_inner_node(old_neighbor_id);
-            const size_t new_edge_id = m_graph.add_edge(new_node_id, new_inner_node_id);
+            const size_t new_edge_id =
+                add_line(EDGE_DEFAULT_COLOR, new_node_id, new_inner_node_id, e.id);
             m_embedding.add_edge(new_node_id, new_inner_node_id, new_edge_id);
             m_embedding.add_edge(new_inner_node_id, new_node_id, new_edge_id);
             e = m_old_embedding
@@ -345,19 +341,8 @@ class EquivalentEmbeddingBuilder {
             }
             return faces[1];
         }();
-        std::print("daje ");
-        for (size_t i = 0; i < inner_face.number_of_edges(); i++) {
-            const size_t new_node_id = inner_face.node_id_at_position(i);
-            const size_t old_node_id = m_node_id_to_old.get_label(new_node_id);
-            std::print("{} ", old_node_id);
-        }
-        std::println();
-        std::print("sk ");
-        for (size_t old_node_id : m_old_graph.get_nodes_ids())
-            if (m_is_border_old_node.has_node(old_node_id))
-                std::print("{} ", old_node_id);
-        std::println();
-        for (size_t i = 0; i < inner_face.number_of_edges(); i++) {
+        for (size_t index = 0; index < inner_face.number_of_edges(); index++) {
+            const size_t i = inner_face.number_of_edges() - 1 - index;
             const size_t new_node_id = inner_face.node_id_at_position(i);
             const size_t old_node_id = m_node_id_to_old.get_label(new_node_id);
 
@@ -380,6 +365,27 @@ class EquivalentEmbeddingBuilder {
                 old_prev_node_id
             );
         }
+    }
+
+    void complete_all_inner_nodes() {
+        for (const size_t old_node_id : m_old_graph.get_nodes_ids()) {
+            if (m_is_border_old_node.has_node(old_node_id))
+                continue;
+            if (m_old_inner_node_to_new_node.has_label(old_node_id))
+                continue;
+            add_inner_node(old_node_id);
+        }
+        // at this point we have all needed nodes
+
+        // now we need to match the just added nodes's rotation scheme to the one of the
+        // old_embedding
+
+        // all the border nodes do not need to be touched
+
+        // however some of the inner nodes already have a portion of their rotation scheme settled
+        // up, so we need to be careful when handling them
+
+        // TODO
     }
 
     EquivalentEmbeddingBuilder(
@@ -412,14 +418,12 @@ class EquivalentEmbeddingBuilder {
         if (outer_face.type() == FaceType::TYPE_4) {
             builder.build_type_4_border();
             builder.add_nodes_adjacent_to_border();
+            builder.complete_all_inner_nodes();
         } else {
-            //
+            // builder.build_type_3_border();
+            // builder.add_nodes_adjacent_to_border();
+            // builder.complete_all_inner_nodes();
         }
-
-        // planarity::compute_nodes_positions(
-        //     equivalent_embedding.graph,
-        //     equivalent_embedding.attributes
-        // );
 
         return equivalent_embedding;
     }
