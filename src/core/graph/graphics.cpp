@@ -35,6 +35,9 @@ void draw_rectangle(float ortho_width, float ortho_height) {
     glLineWidth(EDGE_WIDTH);
     glBegin(GL_LINES);
     for (const auto& edge : g_current_graph->get_all_edges()) {
+        if (g_current_attributes->has_attribute(Attribute::HIDDEN_EDGES) &&
+            g_current_attributes->is_edge_hidden(edge.id))
+            continue;
         const auto& p1 = g_current_attributes->get_position(edge.edge.from_id);
         const auto& p2 = g_current_attributes->get_position(edge.edge.to_id);
         const auto& color = g_current_attributes->get_edge_color(edge.id);
@@ -52,6 +55,10 @@ void draw_rectangle(float ortho_width, float ortho_height) {
 
     // Draw points (drawn last so they are on top)
     for (const auto& node_id : g_current_graph->get_nodes_ids()) {
+        if (g_current_attributes->has_attribute(Attribute::HIDDEN_NODES) &&
+            g_current_attributes->is_node_hidden(node_id))
+            continue;
+
         float px = static_cast<float>(g_current_attributes->get_position_x(node_id));
         float py = static_cast<float>(g_current_attributes->get_position_y(node_id));
 

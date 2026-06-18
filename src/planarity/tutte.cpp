@@ -58,9 +58,8 @@ void compute_tutte_layout(const domus::graph::Graph& graph, Attributes& attribut
         const long node_id = static_cast<long>(i);
         if (attributes.has_position(i))
             continue;
-        // TODO at the moment positions can only be ints
-        const int x = static_cast<int>(res_x(node_id));
-        const int y = static_cast<int>(res_y(node_id));
+        const double x = res_x(node_id);
+        const double y = res_y(node_id);
         attributes.set_position(i, x, y);
     }
 }

@@ -8,6 +8,7 @@
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/drawing/linear_scale.hpp"
+#include "domus/planarity/tutte.hpp"
 #include "domus/torus/faces.hpp"
 
 namespace domus::torus::mapper {
@@ -18,6 +19,7 @@ using color::ColorRGB;
 
 constexpr ColorRGB VERTEX_DEFAULT_COLOR = NAVY_RGB;
 constexpr ColorRGB EDGE_DEFAULT_COLOR = GRAY_RGB;
+constexpr ColorRGB WHEEL_EDGE_COLOR = ColorRGB{0.9f, 0.9f, 0.9f};
 
 class EquivalentEmbeddingBuilder {
     const Graph& m_old_graph;
@@ -30,9 +32,12 @@ class EquivalentEmbeddingBuilder {
     NodesLabels<size_t>& m_node_id_to_old;
     EdgesLabels<size_t>& m_edge_id_to_old;
 
+    std::optional<Path> new_inner_face = std::nullopt;
+
     NodesContainer m_is_border_new_node;
     NodesContainer m_is_border_old_node;
     NodesLabels<size_t> m_old_inner_node_to_new_node;
+    EdgesLabels<size_t> m_old_inner_edge_to_new_edge;
 
     size_t add_point(double x, double y, size_t old_node_id) {
         m_graph.add_node();
@@ -278,9 +283,11 @@ class EquivalentEmbeddingBuilder {
         const size_t old_node_id,
         const size_t old_next_node_id,
         const size_t old_edge_id,
+        const size_t new_edge_id,
         const size_t old_prev_node_id
     ) {
         size_t current_old_edge = old_edge_id;
+        size_t prev_new_edge = new_edge_id;
         size_t old_neighbor_id = old_next_node_id;
         while (true) {
             EdgeIter e = m_old_embedding.prev_in_adjacency_list(
@@ -310,10 +317,12 @@ class EquivalentEmbeddingBuilder {
                 (m_old_inner_node_to_new_node.has_label(old_neighbor_id))
                     ? new_inner_node_id = m_old_inner_node_to_new_node.get_label(old_neighbor_id)
                     : add_inner_node(old_neighbor_id);
-            const size_t new_edge_id =
+            const size_t new_e_id =
                 add_line(EDGE_DEFAULT_COLOR, new_node_id, new_inner_node_id, e.id);
-            m_embedding.add_edge(new_node_id, new_inner_node_id, new_edge_id);
-            m_embedding.add_edge(new_inner_node_id, new_node_id, new_edge_id);
+            m_old_inner_edge_to_new_edge.add_label(e.id, new_e_id);
+            m_embedding.add_edge_before(new_node_id, new_inner_node_id, new_e_id, prev_new_edge);
+            prev_new_edge = new_e_id;
+            m_embedding.add_edge(new_inner_node_id, new_node_id, new_e_id);
             e = m_old_embedding
                     .prev_in_adjacency_list(old_node_id, old_neighbor_id, current_old_edge);
         }
@@ -341,6 +350,7 @@ class EquivalentEmbeddingBuilder {
             }
             return faces[1];
         }();
+
         for (size_t index = 0; index < inner_face.number_of_edges(); index++) {
             const size_t i = inner_face.number_of_edges() - 1 - index;
             const size_t new_node_id = inner_face.node_id_at_position(i);
@@ -362,12 +372,19 @@ class EquivalentEmbeddingBuilder {
                 old_node_id,
                 old_next_node_id,
                 old_edge_id,
+                new_edge_id,
                 old_prev_node_id
             );
         }
+        new_inner_face = Path(std::move(inner_face));
+        new_inner_face->reverse();
     }
 
     void complete_all_inner_nodes() {
+        // first we add missing edges and nodes to the graph
+
+        // nodes
+
         for (const size_t old_node_id : m_old_graph.get_nodes_ids()) {
             if (m_is_border_old_node.has_node(old_node_id))
                 continue;
@@ -375,17 +392,128 @@ class EquivalentEmbeddingBuilder {
                 continue;
             add_inner_node(old_node_id);
         }
-        // at this point we have all needed nodes
 
-        // now we need to match the just added nodes's rotation scheme to the one of the
+        // edges
+
+        for (const size_t old_node_id : m_old_graph.get_nodes_ids()) {
+            if (m_is_border_old_node.has_node(old_node_id))
+                continue;
+            const size_t new_node_id = m_old_inner_node_to_new_node.get_label(old_node_id);
+            for (const auto old_edge : m_old_graph.get_out_edges(old_node_id)) {
+                if (m_is_border_old_node.has_node(old_edge.neighbor_id))
+                    continue;
+                const size_t new_neighbor_id =
+                    m_old_inner_node_to_new_node.get_label(old_edge.neighbor_id);
+                const size_t new_edge_id =
+                    add_line(EDGE_DEFAULT_COLOR, new_node_id, new_neighbor_id, old_edge.id);
+                m_old_inner_edge_to_new_edge.add_label(old_edge.id, new_edge_id);
+            }
+        }
+
+        // then we adjust their rotation scheme in the embedding
+
+        // we need to match the just added nodes's rotation scheme to the one of the
         // old_embedding
 
         // all the border nodes do not need to be touched
 
         // however some of the inner nodes already have a portion of their rotation scheme settled
-        // up, so we need to be careful when handling them
+        // up (if they have some border node adjacent), so we need to be careful when handling them
 
-        // TODO
+        for (const size_t old_node_id : m_old_graph.get_nodes_ids()) {
+            if (m_is_border_old_node.has_node(old_node_id))
+                continue;
+            const size_t new_node_id = m_old_inner_node_to_new_node.get_label(old_node_id);
+            if (m_embedding.get_degree_of_node(new_node_id) == 0) {
+                // fresh node, means it cannot be adjacent to a border node
+                // we can safely add its neighbors to the embedding since they are all inner
+                for (const auto old_edge : m_old_embedding.get_edges(old_node_id)) {
+                    const size_t new_neighbor_id =
+                        m_old_inner_node_to_new_node.get_label(old_edge.neighbor_id);
+                    const size_t new_edge_id = m_old_inner_edge_to_new_edge.get_label(old_edge.id);
+                    m_embedding.add_edge(new_node_id, new_neighbor_id, new_edge_id);
+                }
+            } else {
+                // already has some edges (however they are all inner)
+                auto e = m_embedding.get_edges(new_node_id).front();
+                while (m_embedding.get_degree_of_node(new_node_id) <
+                       m_old_embedding.get_degree_of_node(old_node_id)) {
+                    const size_t old_edge_id = m_edge_id_to_old.get_label(e.id);
+                    const size_t old_neighbor_id = m_node_id_to_old.get_label(e.neighbor_id);
+                    auto next_old_e = m_old_embedding.next_in_adjacency_list(
+                        old_node_id,
+                        old_neighbor_id,
+                        old_edge_id
+                    );
+                    if (!m_is_border_old_node.has_node(next_old_e.neighbor_id)) {
+                        const size_t new_next_neighbor_id =
+                            m_old_inner_node_to_new_node.get_label(next_old_e.neighbor_id);
+                        const size_t new_next_edge_id =
+                            m_old_inner_edge_to_new_edge.get_label(next_old_e.id);
+                        m_embedding.add_edge_after(
+                            new_node_id,
+                            new_next_neighbor_id,
+                            new_next_edge_id,
+                            e.id
+                        );
+                    }
+                    e = m_embedding.next_in_adjacency_list(new_node_id, e.neighbor_id, e.id);
+                    continue;
+                }
+            }
+        }
+    }
+
+    // every face in m_embedding has to be triangulated, with the exception of the face
+    // corresponding to new_inner_face, so we get a triconnected graph and we can use Tutte
+    void triangulate_inner_faces() {
+        auto faces = compute_faces_in_embedding(m_graph, m_embedding);
+        for (const auto& face : faces) {
+            // if face is the same as new_inner_face skip (note that corresponding paths may be
+            // shifted with one relative to the other, however same faces have same ordering of the
+            // same edges in the path)
+            if (face.number_of_edges() == new_inner_face->number_of_edges()) {
+                bool is_same = false;
+                for (size_t i = 0; i < face.number_of_edges(); i++) {
+                    if (face.edge_id_at_position(0) == new_inner_face->edge_id_at_position(i)) {
+                        bool match = true;
+                        for (size_t j = 1; j < face.number_of_edges(); j++) {
+                            if (face.edge_id_at_position(j) != new_inner_face->edge_id_at_position(
+                                                                   (i + j) % face.number_of_edges()
+                                                               )) {
+                                match = false;
+                                break;
+                            }
+                        }
+                        if (match) {
+                            is_same = true;
+                            break;
+                        }
+                    }
+                }
+                if (is_same)
+                    continue;
+            }
+
+            // otherwise triangulate
+
+            if (face.number_of_edges() <= 3)
+                continue;
+
+            const size_t wheel_node_id = m_graph.add_node();
+            m_embedding.add_node();
+            m_attributes.hide_node(wheel_node_id);
+            for (size_t i = 0; i < face.number_of_edges(); ++i) {
+                const size_t new_node_id = face.node_id_at_position(i);
+                const size_t new_edge_id = face.edge_id_at_position(i);
+                const size_t wheel_edge_id = m_graph.add_edge(wheel_node_id, new_node_id);
+                m_attributes.set_edge_color(wheel_edge_id, WHEEL_EDGE_COLOR);
+                // m_attributes.hide_edge(wheel_edge_id);
+                m_embedding.add_edge(wheel_node_id, new_node_id, wheel_edge_id);
+                m_embedding.add_edge_before(new_node_id, wheel_node_id, wheel_edge_id, new_edge_id);
+            }
+            m_embedding.reverse_circular_order(wheel_node_id);
+        }
     }
 
     EquivalentEmbeddingBuilder(
@@ -417,13 +545,28 @@ class EquivalentEmbeddingBuilder {
 
         if (outer_face.type() == FaceType::TYPE_4) {
             builder.build_type_4_border();
-            builder.add_nodes_adjacent_to_border();
-            builder.complete_all_inner_nodes();
         } else {
+            DOMUS_ASSERT(false, "work in progress");
             // builder.build_type_3_border();
-            // builder.add_nodes_adjacent_to_border();
-            // builder.complete_all_inner_nodes();
         }
+
+        builder.add_nodes_adjacent_to_border();
+        builder.complete_all_inner_nodes();
+        builder.triangulate_inner_faces();
+
+        DOMUS_ASSERT(
+            compute_embedding_genus(equivalent_embedding.embedding) == 0,
+            "EquivalentEmbeddingBuilder::build: embedding is not planar"
+        );
+
+        for (const size_t new_node_id : equivalent_embedding.embedding.get_nodes_ids())
+            if (equivalent_embedding.embedding.get_degree_of_node(new_node_id) == 0)
+                equivalent_embedding.attributes.hide_node(new_node_id);
+
+        planarity::compute_nodes_positions(
+            equivalent_embedding.graph,
+            equivalent_embedding.attributes
+        );
 
         return equivalent_embedding;
     }

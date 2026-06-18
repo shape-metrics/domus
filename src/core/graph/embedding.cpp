@@ -86,10 +86,10 @@ void Embedding::add_edge(size_t from_id, size_t to_id, size_t edge_id) {
 }
 
 void Embedding::add_edge_after(size_t from_id, size_t to_id, size_t edge_id, size_t prev_edge_id) {
-    DOMUS_ASSERT(
-        get_degree_of_node(from_id) > 1,
-        "Embedding::add_edge_after: from_id has degree <= 1"
-    );
+    if (get_degree_of_node(from_id) == 1) {
+        add_edge(from_id, to_id, edge_id);
+        return;
+    }
     DOMUS_ASSERT(from_id != to_id, "Embedding::add_edge_after: from_id and to_id are equal");
     DOMUS_ASSERT(
         has_node(from_id) && has_node(to_id),
@@ -133,10 +133,10 @@ void Embedding::add_edge_after(size_t from_id, size_t to_id, size_t edge_id, siz
 }
 
 void Embedding::add_edge_before(size_t from_id, size_t to_id, size_t edge_id, size_t next_edge_id) {
-    DOMUS_ASSERT(
-        get_degree_of_node(from_id) > 1,
-        "Embedding::add_edge_before: from_id has degree <= 1"
-    );
+    if (get_degree_of_node(from_id) == 1) {
+        add_edge(from_id, to_id, edge_id);
+        return;
+    }
     DOMUS_ASSERT(from_id != to_id, "Embedding::add_edge_before: from_id and to_id are equal");
     DOMUS_ASSERT(
         has_node(from_id) && has_node(to_id),
