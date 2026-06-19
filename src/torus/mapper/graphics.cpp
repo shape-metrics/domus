@@ -86,7 +86,7 @@ Point2D world_to_screen(const Point3D& world_coordinates) {
     );
 
     // Convert to 0-1 range
-    return {static_cast<double>(win_x) / viewport[2], static_cast<double>(win_y) / viewport[3]};
+    return {(static_cast<double>(win_x) - viewport[0]) / viewport[2], (static_cast<double>(win_y) - viewport[1]) / viewport[3]};
 }
 
 void add_text_label(const std::string_view text, const Point2D& screen_coordinates) {
@@ -393,12 +393,19 @@ void TorusMapping::draw_rectangle() const {
     glLineWidth(1.0f);
 
     // Draw points (drawn last so they are on top)
-    for (const auto& circle : m_circles) {
+    for (size_t i = 0; i < m_circles.size(); i++) {
+        const auto& circle = m_circles[i];
         glPointSize(static_cast<float>(circle.radius));
         glBegin(GL_POINTS);
         glColor3f(circle.color.r, circle.color.g, circle.color.b);
         glVertex3f(static_cast<float>(circle.center.x), static_cast<float>(circle.center.y), 0.0f);
         glEnd();
+
+        if (draw_all_labels) {
+            char index_str[32];
+            sprintf(index_str, "%zu", m_circle_to_node_id[i]);
+            add_world_label(index_str, {circle.center.x, circle.center.y + 0.03f, 0.0f});
+        }
     }
 
     // Restore 3D settings
@@ -483,6 +490,7 @@ void TorusMapping::display() const {
 
     glViewport(0, 0, width / 2, height);
     render_text_labels(LABELS_BACKGROUND_COLOR);
+    text_labels.clear();
 
     // --- RIGHT VIEWPORT (2D Rectangle) ---
     glViewport(width / 2, 0, width / 2, height);
@@ -493,6 +501,10 @@ void TorusMapping::display() const {
     glLoadIdentity();
 
     draw_rectangle(); // Draw the 2D rectangle representation
+
+    glViewport(width / 2, 0, width / 2, height);
+    render_text_labels(LABELS_BACKGROUND_COLOR);
+    text_labels.clear();
 
     glutSwapBuffers();
 }
