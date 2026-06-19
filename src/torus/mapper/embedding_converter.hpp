@@ -16,7 +16,7 @@ struct EquivalentEmbedding {
     graph::utilities::NodesLabels<size_t> node_id_to_old;
     graph::utilities::EdgesLabels<size_t> edge_id_to_old;
 
-    TorusMapping to_mapping() const;
+    TorusMapping to_torus_mapping() const;
 };
 
 /**

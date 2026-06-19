@@ -235,7 +235,7 @@ bool SplitterWithPath::try_embedding_extension(const Path& path) {
     if (m_face.type() == FaceType::TYPE_4) {
         auto embedding = mapper::build_equivalent_embedding(m_graph, m_embedding, m_face);
         // embedding.attributes.visualize(embedding.graph);
-        embedding.to_mapping().visualize();
+        embedding.to_torus_mapping().visualize();
     }
     return next_case(m_embedding, m_graph, m_face);
 }

@@ -11,6 +11,8 @@ cnf_logs.txt
 
 todo.txt
 
+/OGDF/
+
 /src/nlohmann/*
 /src/sat/glucose/*
 /src/sat/kissat/*

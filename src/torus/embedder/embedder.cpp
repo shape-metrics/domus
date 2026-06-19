@@ -43,6 +43,14 @@ std::optional<Embedding> compute_toroidal_embedding(
 std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
     if (graph.get_number_of_edges() > 3 * graph.get_number_of_nodes())
         return std::nullopt;
+    DOMUS_ASSERT(
+        algorithms::BiconnectedComponents::compute(graph).get_components().size() == 1,
+        "compute_toroidal_embedding: input graph is not biconnected"
+    );
+    DOMUS_ASSERT(
+        algorithms::is_graph_subcubic(graph),
+        "compute_toroidal_embedding: input graph is not sub cubic"
+    );
 
     Graph graph_copy = graph;
     std::vector<Cycle> cycle_basis = algorithms::compute_cycle_basis(graph_copy);

@@ -740,4 +740,11 @@ std::optional<Path> find_shortest_path_between_nodes(
     return path;
 }
 
+bool is_graph_subcubic(const Graph& graph) {
+    for (const size_t node_id : graph.get_nodes_ids())
+        if (graph.get_degree_of_node(node_id) > 3)
+            return false;
+    return true;
+}
+
 } // namespace domus::graph::algorithms

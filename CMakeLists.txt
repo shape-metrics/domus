@@ -15,6 +15,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Eigen3 REQUIRED)
 
+add_subdirectory(OGDF)
+
 #====================================================
 # Options
 #====================================================
@@ -64,6 +66,7 @@ target_include_directories(glucose PRIVATE
 #====================================================
 
 set(COMMON_SRCS
+    src/ogdf_utils.cpp
     src/sat/kissat.cpp
     src/sat/glucose.cpp
     src/sat/sat.cpp
@@ -130,6 +133,7 @@ target_include_directories(core
 )
 
 target_link_libraries(core
+    PUBLIC OGDF
     PRIVATE kissat glucose Threads::Threads Eigen3::Eigen
 )
 

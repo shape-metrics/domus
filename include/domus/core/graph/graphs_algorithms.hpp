@@ -121,4 +121,6 @@ template <UndirectedGraphLike G> size_t compute_number_of_connected_components(c
     return components;
 }
 
+bool is_graph_subcubic(const graph::Graph& graph);
+
 } // namespace domus::graph::algorithms

@@ -674,7 +674,7 @@ build_equivalent_embedding(const Graph& graph, const Embedding& embedding, const
     return EquivalentEmbeddingBuilder::build(graph, embedding, outer_face);
 }
 
-TorusMapping EquivalentEmbedding::to_mapping() const {
+TorusMapping EquivalentEmbedding::to_torus_mapping() const {
     TorusMapping mapping;
     for (const size_t node_id : graph.get_nodes_ids()) {
         if (graph.get_degree_of_node(node_id) == 0)

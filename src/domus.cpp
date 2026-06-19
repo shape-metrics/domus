@@ -216,7 +216,7 @@ int main() {
     // std::println("k5");
     // test::subdivided_k_5.print(true);
 
-    toroidal_test(test::subdivided_k_5);
+    toroidal_test(test::subdivided_k_3_3);
 
     // std::println("CASE ----- K_5 -------");
     // test_all_possible_embeddings(test::subdivided_k_5);
