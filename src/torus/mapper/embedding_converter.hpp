@@ -5,6 +5,7 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/torus/faces.hpp"
+#include "domus/torus/mapping.hpp"
 
 namespace domus::torus::mapper {
 
@@ -14,6 +15,8 @@ struct EquivalentEmbedding {
     graph::Attributes attributes;
     graph::utilities::NodesLabels<size_t> node_id_to_old;
     graph::utilities::EdgesLabels<size_t> edge_id_to_old;
+
+    TorusMapping to_mapping() const;
 };
 
 /**

@@ -7,9 +7,11 @@
 #include "domus/core/domus_debug.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
+#include "domus/drawing/draw_elements.hpp"
 #include "domus/drawing/linear_scale.hpp"
 #include "domus/planarity/tutte.hpp"
 #include "domus/torus/faces.hpp"
+#include "domus/torus/mapping.hpp"
 
 namespace domus::torus::mapper {
 using namespace domus::graph;
@@ -516,6 +518,98 @@ class EquivalentEmbeddingBuilder {
         }
     }
 
+    void back_to_square() {
+        constexpr double x = 1.0;
+        std::vector<EdgeId> original_edges;
+        for (const auto e : m_graph.get_all_edges())
+            original_edges.push_back(e);
+        for (const auto e : original_edges) {
+            size_t node_id_1 = e.edge.from_id;
+            size_t node_id_2 = e.edge.to_id;
+            double x_1 = m_attributes.get_position_x(node_id_1);
+            double x_2 = m_attributes.get_position_x(node_id_2);
+            if (x_1 > x_2) {
+                double temp_d = x_1;
+                x_1 = x_2;
+                x_2 = temp_d;
+                size_t temp_st = node_id_1;
+                node_id_1 = node_id_2;
+                node_id_2 = temp_st;
+            }
+            const double y_1 = m_attributes.get_position_y(node_id_1);
+            const double y_2 = m_attributes.get_position_y(node_id_2);
+            if (x_1 < x && x_2 > x) {
+                const double y = y_1 + (y_2 - y_1) * (x - x_1) / (x_2 - x_1);
+
+                const size_t new_node_id_1 = m_graph.add_node();
+                m_attributes.set_position(new_node_id_1, x, y);
+                const size_t e_id_1 = m_graph.add_edge(node_id_1, new_node_id_1);
+
+                const size_t new_node_id_2 = m_graph.add_node();
+                const size_t new_node_id_3 = m_graph.add_node();
+                m_attributes.set_position(new_node_id_2, 0.0, y);
+                m_attributes.set_position(new_node_id_3, x_2 - 1.0, y_2);
+                const size_t e_id_2 = m_graph.add_edge(new_node_id_2, new_node_id_3);
+
+                m_attributes.set_edge_color(e_id_1, m_attributes.get_edge_color(e.id));
+                m_attributes.set_edge_color(e_id_2, m_attributes.get_edge_color(e.id));
+
+                m_attributes.hide_node(new_node_id_1);
+                m_attributes.hide_node(new_node_id_2);
+                if (m_node_id_to_old.has_label(node_id_2))
+                    m_attributes.set_node_label(
+                        new_node_id_3,
+                        std::to_string(m_node_id_to_old.get_label(node_id_2))
+                    );
+                else
+                    m_attributes.hide_node(new_node_id_3);
+
+                if (m_attributes.is_edge_hidden(e.id)) {
+                    m_attributes.hide_edge(e_id_1);
+                    m_attributes.hide_edge(e_id_2);
+                }
+                m_attributes.hide_edge(e.id);
+
+                if (!m_attributes.is_node_hidden(node_id_2))
+                    m_attributes.hide_node(node_id_2);
+            } else if (x_1 >= x) {
+                const size_t new_node_id_1 = m_graph.add_node();
+                const size_t new_node_id_2 = m_graph.add_node();
+                m_attributes.set_position(new_node_id_1, x_1 - 1.0, y_1);
+                m_attributes.set_position(new_node_id_2, x_2 - 1.0, y_2);
+                const size_t e_id = m_graph.add_edge(new_node_id_1, new_node_id_2);
+
+                m_attributes.set_edge_color(e_id, m_attributes.get_edge_color(e.id));
+
+                if (m_node_id_to_old.has_label(node_id_1))
+                    m_attributes.set_node_label(
+                        new_node_id_1,
+                        std::to_string(m_node_id_to_old.get_label(node_id_1))
+                    );
+                else
+                    m_attributes.hide_node(new_node_id_1);
+
+                if (m_node_id_to_old.has_label(node_id_2))
+                    m_attributes.set_node_label(
+                        new_node_id_2,
+                        std::to_string(m_node_id_to_old.get_label(node_id_2))
+                    );
+                else
+                    m_attributes.hide_node(new_node_id_2);
+
+                if (m_attributes.is_edge_hidden(e.id))
+                    m_attributes.hide_edge(e_id);
+
+                m_attributes.hide_edge(e.id);
+
+                if (x_1 > 1.0 && !m_attributes.is_node_hidden(node_id_1))
+                    m_attributes.hide_node(node_id_1);
+                if (x_2 > 1.0 && !m_attributes.is_node_hidden(node_id_2))
+                    m_attributes.hide_node(node_id_2);
+            }
+        }
+    }
+
     EquivalentEmbeddingBuilder(
         const Graph& old_graph,
         const Embedding& old_embedding,
@@ -568,6 +662,9 @@ class EquivalentEmbeddingBuilder {
             equivalent_embedding.attributes
         );
 
+        if (outer_face.type() == FaceType::TYPE_4)
+            builder.back_to_square();
+
         return equivalent_embedding;
     }
 };
@@ -575,6 +672,32 @@ class EquivalentEmbeddingBuilder {
 EquivalentEmbedding
 build_equivalent_embedding(const Graph& graph, const Embedding& embedding, const Face& outer_face) {
     return EquivalentEmbeddingBuilder::build(graph, embedding, outer_face);
+}
+
+TorusMapping EquivalentEmbedding::to_mapping() const {
+    TorusMapping mapping;
+    for (const size_t node_id : graph.get_nodes_ids()) {
+        if (graph.get_degree_of_node(node_id) == 0)
+            continue;
+        if (attributes.is_node_hidden(node_id))
+            continue;
+        Circle2D circle{attributes.get_position(node_id), 15.0, GRAY_RGB};
+        mapping.add_circle(
+            circle,
+            static_cast<size_t>(std::stoi(std::string(attributes.get_node_label(node_id))))
+        );
+    }
+    for (const auto& edge : graph.get_all_edges()) {
+        if (attributes.is_edge_hidden(edge.id))
+            continue;
+        Line2D line{
+            attributes.get_position(edge.edge.from_id),
+            attributes.get_position(edge.edge.to_id),
+            attributes.get_edge_color(edge.id)
+        };
+        mapping.add_line(line);
+    }
+    return mapping;
 }
 
 } // namespace domus::torus::mapper

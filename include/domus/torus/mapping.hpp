@@ -60,14 +60,14 @@ class TorusMapping {
     static drawing::Point3D map_rectangle_to_torus(const drawing::Point2D& point);
 
   public:
+    friend void display_callback();
+
     void add_circle(const drawing::Circle2D& circle, size_t node_id);
     void add_line(const drawing::Line2D& line);
     void add_polygon(const drawing::Polygon2D& polygon);
 
     std::expected<void, std::string> save_to_file(std::filesystem::path path);
     static std::expected<TorusMapping, std::string> load_from_file(std::filesystem::path path);
-
-    friend void display_callback();
 
     void visualize();
 };

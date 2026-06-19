@@ -107,7 +107,10 @@ void display() {
     float max_y = std::numeric_limits<float>::lowest();
 
     bool has_nodes = false;
-    for (const auto& node_id : g_current_graph->get_nodes_ids()) {
+    for (const size_t node_id : g_current_graph->get_nodes_ids()) {
+        if (g_current_attributes->has_attribute(Attribute::HIDDEN_NODES) &&
+            g_current_attributes->is_node_hidden(node_id))
+            continue;
         has_nodes = true;
         float px = static_cast<float>(g_current_attributes->get_position_x(node_id));
         float py = static_cast<float>(g_current_attributes->get_position_y(node_id));
