@@ -8,7 +8,7 @@
 #include "domus/core/domus_debug.hpp"
 
 namespace domus::planarity {
-using Cycle = domus::graph::Cycle;
+using domus::graph::Cycle;
 
 std::vector<int> compute_cycle_labels(const Segment& segment, const Cycle& cycle) {
     std::vector<int> cycle_labels(cycle.size());

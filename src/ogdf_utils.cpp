@@ -10,7 +10,7 @@
 namespace domus::ogdf_utils {
 using namespace domus::graph;
 
-void find_kuratowski_subdivision(const Graph& graph) {
+std::vector<size_t> find_kuratowski_subdivision(const Graph& graph) {
     ogdf::Graph G;
     std::vector<ogdf::node> nodes;
 
@@ -23,15 +23,17 @@ void find_kuratowski_subdivision(const Graph& graph) {
     ogdf::BoyerMyrvold bm;
     ogdf::SList<ogdf::KuratowskiWrapper> kuratowski;
 
+    std::vector<size_t> edge_ids_kuratowski;
+
     if (bm.planarEmbed(G, kuratowski, 1)) {
         DOMUS_ASSERT(false, "find_kuratowski_subdivision: graph is planar");
     } else {
-        for (auto k : kuratowski) {
-            std::cout << "Kuratowski subdivision" << std::boolalpha << std::endl;
-            std::cout << "is k5: " << k.isK5() << std::endl;
-            std::cout << "is k33: " << k.isK33() << std::endl;
-        }
+        for (auto k : kuratowski)
+            for (auto e : k.edgeList)
+                edge_ids_kuratowski.push_back(static_cast<size_t>(e->index()));
     }
+
+    return edge_ids_kuratowski;
 }
 
 } // namespace domus::ogdf_utils

@@ -16,14 +16,13 @@ enum class FaceType {
     TYPE_1 = 1,
     TYPE_2 = 2,
     TYPE_3 = 3,
-    TYPE_4 = 4,
 };
 
 class Face {
     FaceType m_type;
     graph::Path m_path;
     std::vector<graph::Path> m_repeated_paths;
-    graph::utilities::NodesLabels<std::bitset<3>> m_is_node_in_repeated_path;
+    graph::utilities::NodesLabels<std::bitset<2>> m_is_node_in_repeated_path;
 
   public:
     Face(
@@ -36,7 +35,7 @@ class Face {
     FaceType type() const;
     const graph::Path& path() const;
     const std::vector<graph::Path>& repeated_paths() const;
-    const graph::utilities::NodesLabels<std::bitset<3>>& is_node_in_repeated_path() const;
+    const graph::utilities::NodesLabels<std::bitset<2>>& is_node_in_repeated_path() const;
     std::string to_string() const;
     void print() const;
 };

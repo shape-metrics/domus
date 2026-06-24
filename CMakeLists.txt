@@ -107,17 +107,11 @@ set(COMMON_SRCS
     src/core/graph/embedding.cpp
     src/planarity/interlacement.cpp
     src/torus/embedder/embedder.cpp
-    src/torus/embedder/embed_two_cycles.cpp
     src/torus/bridge.cpp
     src/torus/faces.cpp
-    src/torus/embedder/draw.cpp
-    src/torus/embedder/cases/splitter.cpp
-    src/torus/embedder/cases/utils.cpp
-    src/torus/embedder/cases/4/type_4.cpp
-    src/torus/embedder/cases/4/3_stars.cpp
-    src/torus/embedder/cases/3/type_3.cpp
-    src/torus/embedder/cases/2/type_2.cpp
-    src/torus/embedder/cases/1/type_1.cpp
+    src/torus/embedder/utils.cpp
+    src/torus/embedder/type_3.cpp
+    src/torus/embedder/type_2.cpp
     src/core/graph/test.cpp
 )
 
@@ -143,6 +137,7 @@ if(NOT BUILDING_WASM)
         src/torus/mapper/graphics.cpp
         src/torus/mapper/file_loader.cpp
         src/torus/mapper/embedding_converter.cpp
+        src/torus/mapper/outer_face.cpp
     )
     target_link_libraries(core PRIVATE GL GLU glut)
 endif()

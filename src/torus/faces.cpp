@@ -1,4 +1,4 @@
-#include "domus/torus/faces.hpp"
+#include "faces.hpp"
 
 #include <algorithm>
 #include <format>
@@ -23,8 +23,6 @@ std::string face_type_to_string(FaceType face_type) {
         return "Type 2";
     case FaceType::TYPE_3:
         return "Type 3";
-    case FaceType::TYPE_4:
-        return "Type 4";
     }
     DOMUS_ASSERT(false, "face_type_to_string: invalid face type");
     return "";
@@ -55,7 +53,7 @@ const Path& Face::path() const { return m_path; }
 
 const std::vector<Path>& Face::repeated_paths() const { return m_repeated_paths; }
 
-const graph::utilities::NodesLabels<std::bitset<3>>& Face::is_node_in_repeated_path() const {
+const NodesLabels<std::bitset<2>>& Face::is_node_in_repeated_path() const {
     return m_is_node_in_repeated_path;
 }
 
@@ -88,7 +86,7 @@ std::string Face::to_string() const {
 
 void Face::print() const { std::print("{}", to_string()); }
 
-size_t node_id_count_in_path(const graph::Path& path, const size_t node_id) {
+size_t node_id_count_in_path(const Path& path, const size_t node_id) {
     size_t count = 0;
     for (size_t i = 0; i < path.number_of_edges(); ++i)
         if (path.node_id_at_position(i) == node_id)
@@ -173,29 +171,8 @@ Face compute_face_from_path(Path&& path, const Graph& graph) {
     FaceType face_type;
     if (repeated_paths.size() == 1)
         face_type = FaceType::TYPE_2;
-    else if (repeated_paths.size() == 2)
-        face_type = FaceType::TYPE_3;
     else
-        face_type = FaceType::TYPE_4;
-
-    if (repeated_paths.size() >= 2)
-        repeated_paths[1].reverse();
-
-    DOMUS_ASSERT(
-        [&]() {
-            const size_t first = repeated_paths[0].get_first_node_id();
-            const size_t last = repeated_paths[0].get_last_node_id();
-
-            for (size_t i = 1; i < repeated_paths.size(); i++)
-                if (repeated_paths[i].get_last_node_id() != last ||
-                    repeated_paths[i].get_first_node_id() != first) {
-                    return false;
-                }
-
-            return true;
-        }(),
-        "compute_face_from_path: invalid endpoints of repeated paths"
-    );
+        face_type = FaceType::TYPE_3;
 
     return Face(graph, face_type, std::move(path), std::move(repeated_paths));
 }

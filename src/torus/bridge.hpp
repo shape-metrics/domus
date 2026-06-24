@@ -27,7 +27,7 @@ class Bridge {
     const graph::utilities::EdgesLabels<size_t>& get_new_edge_id_to_old_id() const;
     size_t number_of_attachments() const;
     bool is_attachment(size_t node_id) const;
-    const std::vector<size_t> get_attachments() const;
+    const std::vector<size_t>& get_attachments() const;
     std::string to_string() const;
     void print() const;
     static std::vector<Bridge> compute(const graph::Graph& graph, const graph::SubGraph& subgraph);

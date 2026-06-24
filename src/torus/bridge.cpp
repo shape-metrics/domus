@@ -1,4 +1,4 @@
-#include "domus/torus/bridge.hpp"
+#include "bridge.hpp"
 
 #include <print>
 
@@ -17,7 +17,7 @@ Bridge::Bridge(const SubGraph&& bridge) : m_bridge(bridge) {}
 
 const Graph& Bridge::get_bridge() const { return m_bridge.get_sub_graph(); }
 
-const std::vector<size_t> Bridge::get_attachments() const { return m_attachments; }
+const std::vector<size_t>& Bridge::get_attachments() const { return m_attachments; }
 
 size_t Bridge::number_of_attachments() const { return m_is_attachment.size(); }
 

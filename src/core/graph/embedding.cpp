@@ -209,7 +209,10 @@ void Embedding::remove_edge(size_t from_id, size_t to_id, size_t edge_id) {
     // find and remove the edge from the adjacency list
     auto& adj = m_adjacency_list.at(from_id);
     auto it = std::ranges::find_if(adj, [edge_id](const EdgeIter& e) { return e.id == edge_id; });
-    DOMUS_ASSERT(it != adj.end(), "Embedding::remove_edge: edge does not exist");
+    if (it == adj.end()) {
+        std::println("Embedding::remove_edge FAILED! from={} to={} edge_id={}", from_id, to_id, edge_id);
+        DOMUS_ASSERT(it != adj.end(), "Embedding::remove_edge: edge does not exist");
+    }
 
     // update the linked list pointers
     DOMUS_ASSERT(

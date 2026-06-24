@@ -3,7 +3,6 @@
 #include <print>
 #include <string>
 
-#include "domus/core/color.hpp"
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/file_loader.hpp"
@@ -16,7 +15,7 @@
 #include "domus/planarity/auslander_parter.hpp"
 #include "domus/planarity/tutte.hpp"
 #include "domus/torus/embedder.hpp"
-#include "domus/torus/faces.hpp"
+#include "domus/torus/embedding_converter.hpp"
 #include "domus/torus/mapping.hpp"
 
 using namespace domus;
@@ -50,7 +49,7 @@ void make_orthogonal(const Graph& graph) {
     std::println("Number of useless bends: {}", result.number_of_useless_bends);
 }
 
-void toroidal_test(const graph::Graph& graph) {
+void toroidal_test(const Graph& graph) {
     const std::optional<Embedding> embedding = torus::compute_toroidal_embedding(graph);
     if (embedding.has_value()) {
         std::println("Embedding found");
@@ -60,6 +59,9 @@ void toroidal_test(const graph::Graph& graph) {
             compute_number_of_faces_in_embedding(embedding.value())
         );
         std::println("genus: {}", compute_embedding_genus(embedding.value()));
+
+        EquivalentEmbedding eq_embedding = build_equivalent_embedding(graph, *embedding);
+        eq_embedding.to_torus_mapping().visualize();
     } else
         std::println("Embedding not found");
 }
@@ -124,81 +126,44 @@ void test_tutte_layout() {
     }
 }
 
-void test_all_possible_embeddings(const Graph& graph) {
-    std::vector<Embedding> embeddings = compute_all_possible_embeddings(graph);
-    std::println("Number of embeddings: {}", embeddings.size());
-    std::vector<size_t> genuses;
-    std::vector<size_t> max_face_types;
-    for (const Embedding& embedding : embeddings) {
-        const std::vector<Path> faces = compute_faces_in_embedding(graph, embedding);
-        const size_t g = compute_embedding_genus(
-            graph.get_number_of_nodes(),
-            graph.get_number_of_edges(),
-            faces.size(),
-            1
-        );
-        if (genuses.size() <= g)
-            genuses.resize(g + 1);
-        ++genuses[g];
-        if (g == 1) {
-            size_t max_face_type = 0;
-            for (FaceType type : std::views::transform(faces, [&](const Path& path) {
-                     return compute_face_from_path(Path(path), graph).type();
-                 })) {
-                if (static_cast<size_t>(type) > max_face_type)
-                    max_face_type = static_cast<size_t>(type);
-            }
+// void test_all_possible_embeddings(const Graph& graph) {
+//     std::vector<Embedding> embeddings = compute_all_possible_embeddings(graph);
+//     std::println("Number of embeddings: {}", embeddings.size());
+//     std::vector<size_t> genuses;
+//     std::vector<size_t> max_face_types;
+//     for (const Embedding& embedding : embeddings) {
+//         const std::vector<Path> faces = compute_faces_in_embedding(graph, embedding);
+//         const size_t g = compute_embedding_genus(
+//             graph.get_number_of_nodes(),
+//             graph.get_number_of_edges(),
+//             faces.size(),
+//             1
+//         );
+//         if (genuses.size() <= g)
+//             genuses.resize(g + 1);
+//         ++genuses[g];
+//         if (g == 1) {
+//             size_t max_face_type = 0;
+//             for (FaceType type : std::views::transform(faces, [&](const Path& path) {
+//                      return compute_face_from_path(Path(path), graph).type();
+//                  })) {
+//                 if (static_cast<size_t>(type) > max_face_type)
+//                     max_face_type = static_cast<size_t>(type);
+//             }
 
-            if (max_face_types.size() <= static_cast<size_t>(max_face_type))
-                max_face_types.resize(static_cast<size_t>(max_face_type) + 1);
-            ++max_face_types[static_cast<size_t>(max_face_type)];
-        }
-    }
+//             if (max_face_types.size() <= static_cast<size_t>(max_face_type))
+//                 max_face_types.resize(static_cast<size_t>(max_face_type) + 1);
+//             ++max_face_types[static_cast<size_t>(max_face_type)];
+//         }
+//     }
 
-    for (size_t i = 1; i < genuses.size(); ++i) {
-        std::println("Genus: [{:>2}] Quantity: [{:>4}]", i, genuses[i]);
-    }
+//     for (size_t i = 1; i < genuses.size(); ++i) {
+//         std::println("Genus: [{:>2}] Quantity: [{:>4}]", i, genuses[i]);
+//     }
 
-    for (size_t i = 1; i < max_face_types.size(); ++i) {
-        std::println("Case: [{:>2}] Quantity: [{:>4}]", i, max_face_types[i]);
-    }
-}
-
-// void visualize_torus() {
-//     TorusMapping mapping;
-
-//     mapping.add_point({0.0, 0.0});
-//     mapping.add_point({0.4, 0.0});
-//     mapping.add_point({0.6, 0.0});
-//     mapping.add_point({1.0, 0.0});
-
-//     mapping.add_point({0.0, 1.0});
-//     mapping.add_point({0.4, 1.0});
-//     mapping.add_point({0.6, 1.0});
-//     mapping.add_point({1.0, 1.0});
-
-//     mapping.add_line(0, 1);
-//     mapping.add_line(1, 2);
-//     mapping.add_line(2, 3);
-//     mapping.add_line(4, 5);
-//     mapping.add_line(5, 6);
-//     mapping.add_line(6, 7);
-
-//     mapping.add_line(1, 6);
-
-//     mapping.set_line_color(0, BLUE_RGB);
-//     mapping.set_line_color(1, GREEN_RGB);
-//     mapping.set_line_color(2, BLUE_RGB);
-//     mapping.set_line_color(3, BLUE_RGB);
-//     mapping.set_line_color(4, GREEN_RGB);
-//     mapping.set_line_color(5, BLUE_RGB);
-
-//     mapping.set_line_color(6, RED_RGB);
-
-//     std::vector<size_t> polygon_points;
-//     // mapping.add_polygon(Polygon2D(polygon_points));
-//     mapping.save_to_file("daje.json").value();
-//     mapping.visualize();
+//     for (size_t i = 1; i < max_face_types.size(); ++i) {
+//         std::println("Case: [{:>2}] Quantity: [{:>4}]", i, max_face_types[i]);
+//     }
 // }
 
 int main() {
