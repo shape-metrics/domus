@@ -2,7 +2,7 @@
 
 #include "domus/core/graph/graph.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 namespace domus::orthogonal::shape {
 using namespace graph;

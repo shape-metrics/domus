@@ -3,7 +3,7 @@
 #include <optional>
 #include <vector>
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph.hpp"
@@ -23,13 +23,20 @@ using namespace domus::graph::utilities;
 bool extend_embedding(
     Graph& graph, Embedding& embedding, const size_t jolly_id, const std::vector<Face>& faces
 ) {
+    DOMUS_DEBUG_LN("extend_embedding: attempting to extend embedding.");
+    // if at least one face is of type 3 then call the procedure for type 3 faces
+    // (note that, however, at most one face can be of type 3 in any toroidal embedding)
     for (const auto& face : faces) {
         if (face.type() == FaceType::TYPE_3) {
+            DOMUS_DEBUG_LN("extend_embedding: extending case 3.");
+            ScopedPrintIndent indent;
             if (handle_type_3(graph, embedding, face, jolly_id))
                 return true;
             return false;
         }
     }
+    // otherwise call the procedure for the type 2 faces
+    DOMUS_DEBUG_LN("extend_embedding: extending case 2.");
     if (handle_type_2(graph, embedding, faces))
         return true;
     return false;
@@ -105,28 +112,48 @@ std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
         "compute_toroidal_embedding: input graph is not sub cubic"
     );
 
+    // we will work on a copy of the input graph in the alogrithm
     Graph graph_copy = graph;
+
+    // first thing we do is compute a kuratowski subdivision of the input graph (since it is not
+    // planar, there must exist at least one)
+
+    // TODO if there are two disjoint kuratowski subdivision, the graph is probably not toroidal,
+    // need to check if this is actually the case and if ogdf is able to find also those in linear
+    // time
+
+    // then we want to subdivide all the edges of this kuratowski graph. the thing is that we want
+    // to be able to add paths to "split" the faces, however we do not want to add paths to nodes
+    // that are already of degree 3, otherwise the graph will no longer be cubic. to avoid this we
+    // subdivide edges so that only degree 2 nodes will be taken into consideration when trying to
+    // add ficticious paths.
     EdgesLabels<size_t> subdivided_old_edge;
+    std::vector<size_t> edges_of_kuratowski_subdivision;
     for (const size_t edge_id : ogdf_utils::find_kuratowski_subdivision(graph_copy)) {
         Subdivision subdivision = graph_copy.subdivide_edge(edge_id);
         subdivided_old_edge.add_label(subdivision.edge_from_between_id, edge_id);
         subdivided_old_edge.add_label(subdivision.edge_between_to_id, edge_id);
+        edges_of_kuratowski_subdivision.push_back(subdivision.edge_from_between_id);
+        edges_of_kuratowski_subdivision.push_back(subdivision.edge_between_to_id);
     }
 
+    // this will be the embedding that we will try to extend. we're gonna start by trying to extend
+    // the embedding of the kuratowski subdivision to one of the whole graph.
     Embedding embedding(graph_copy);
-    for (const size_t edge_id : ogdf_utils::find_kuratowski_subdivision(graph_copy)) {
+    for (const size_t edge_id : edges_of_kuratowski_subdivision) {
         Edge edge = graph_copy.get_edge(edge_id);
         embedding.add_edge(edge.from_id, edge.to_id, edge_id);
         embedding.add_edge(edge.to_id, edge.from_id, edge_id);
     }
 
-    // adding jolly node used to insert new paths to split faces
+    // adding jolly node used to insert new ficticious paths to split faces
     size_t jolly_id = graph_copy.add_node();
     embedding.add_node();
 
     std::vector<size_t> degree_3_nodes;
     degree_3_nodes.reserve(6);
-    size_t isolated_nodes = 0;
+    size_t isolated_nodes =
+        0; // all the nodes that are not in the kuratowski subdivision + a jolly node
     for (const size_t node_id : embedding.get_nodes_ids()) {
         if (embedding.get_degree_of_node(node_id) == 3)
             degree_3_nodes.push_back(node_id);
@@ -138,7 +165,19 @@ std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
         "compute_toroidal_embedding: expected to find 6 nodes"
     );
 
+    // we want to compute all possible embeddings of the kuratowski subdivision, and try to extend
+    // them. since the input graph is subcubic, the kuratowski subdivision must be a K_{3,3}
+    // this also allows us to compute all possible embeddings just by flipping the circular order of
+    // the edges at each node (only 2 circular orders are possible with degree 3 nodes)
+    size_t number_of_embedding = 0;
     for (auto& combination : domus::utilities::generate_all_bitsets<6>()) {
+        number_of_embedding++;
+
+        DOMUS_DEBUG_LN(
+            "compute_toroidal_embedding: testing embedding number {}.",
+            number_of_embedding
+        );
+        // here we do the flips of the circular orders to obtain one specific possible embedding
         for (size_t i = 0; i < 6; i++)
             if (combination.test(i))
                 embedding.reverse_circular_order(degree_3_nodes[i]);
@@ -150,14 +189,25 @@ std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
                 embedding.get_number_of_edges() / 2,
                 paths.size(),
                 1
-            ) == 1) {
+            ) == 1) { // if we produced a non toroidal graph, skip the extension attempt
+            DOMUS_DEBUG("{}", embedding.to_string());
             std::vector<Face> faces;
             for (Path f : paths)
                 faces.push_back(compute_face_from_path(std::move(f), graph_copy));
 
             if (extend_embedding(graph_copy, embedding, jolly_id, faces))
-                return remove_added_edges(graph, embedding, subdivided_old_edge);
+                return remove_added_edges(
+                    graph,
+                    embedding,
+                    subdivided_old_edge
+                ); // we want to remove the added subdivided edges to obtain an embedding of the
+                   // original graph
+        } else {
+            DOMUS_DEBUG_LN("compute_toroidal_embedding: non toroidal embedding. Skipping.");
         }
+
+        // here we reverse the flips of the circular orders we just did, so we can try the next
+        // possible embedding
         for (size_t i = 0; i < 6; i++)
             if (combination.test(i))
                 embedding.reverse_circular_order(degree_3_nodes[i]);

@@ -1,8 +1,7 @@
 #include "domus/core/tree/tree.hpp"
 
-#include <print>
-
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
+#include "domus/core/print.hpp"
 
 namespace domus::tree {
 
@@ -61,7 +60,7 @@ std::string Tree::to_string() const {
     return result;
 }
 
-void Tree::print() const { println("{}", to_string()); }
+void Tree::print() const { domus::println("{}", to_string()); }
 
 size_t Tree::add_node() {
     m_nodeid_to_childrenid.push_back({});

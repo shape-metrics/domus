@@ -4,7 +4,7 @@
 #include <string>
 
 #include "domus/core/color.hpp"
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "domus/core/graph/concept.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
@@ -81,7 +81,7 @@ class EquivalentEmbeddingBuilder {
         if (m_old_embedding
                 .next_in_adjacency_list(
                     m_third_repeated_path->get_first_node_id(),
-                    m_third_repeated_path->node_id_at_position(1),
+                    m_third_repeated_path->get_node_id_at_position(1),
                     m_third_repeated_path->get_first_edge_id()
                 )
                 .id == m_outer_face.repeated_paths()[0].get_first_edge_id()) {
@@ -110,7 +110,7 @@ class EquivalentEmbeddingBuilder {
         m_is_border_old_node.add_node(m_first_repeated_path->get_first_node_id());
 
         for (size_t i = 0; i < m_first_repeated_path->number_of_edges(); i++) {
-            const size_t next_old_node_id = m_first_repeated_path->node_id_at_position(i + 1);
+            const size_t next_old_node_id = m_first_repeated_path->get_node_id_at_position(i + 1);
             const double x = scale.map(static_cast<double>(i + 1));
             const size_t next_point = add_point(x, 0.0, next_old_node_id);
             m_is_border_new_node.add_node(next_point);
@@ -121,7 +121,7 @@ class EquivalentEmbeddingBuilder {
                 GREEN_RGB,
                 prev_point,
                 next_point,
-                m_first_repeated_path->edge_id_at_position(i)
+                m_first_repeated_path->get_edge_id_at_position(i)
             );
             m_embedding.add_edge(prev_point, next_point, edge_id);
             m_embedding.add_edge(next_point, prev_point, edge_id);
@@ -131,7 +131,7 @@ class EquivalentEmbeddingBuilder {
 
         // adding the second repeated path in the bottom of the rectangle
         for (size_t i = 0; i < m_second_repeated_path->number_of_edges(); i++) {
-            const size_t next_old_node_id = m_second_repeated_path->node_id_at_position(
+            const size_t next_old_node_id = m_second_repeated_path->get_node_id_at_position(
                 m_second_repeated_path->number_of_nodes() - i - 2
             );
             const double x =
@@ -146,7 +146,7 @@ class EquivalentEmbeddingBuilder {
                 RED_RGB,
                 prev_point,
                 next_point,
-                m_second_repeated_path->edge_id_at_position(
+                m_second_repeated_path->get_edge_id_at_position(
                     m_second_repeated_path->number_of_edges() - i - 1
                 )
             );
@@ -177,7 +177,7 @@ class EquivalentEmbeddingBuilder {
             true
         );
         for (size_t i = 0; i < m_third_repeated_path->number_of_edges(); i++) {
-            const size_t next_old_node_id = m_third_repeated_path->node_id_at_position(i + 1);
+            const size_t next_old_node_id = m_third_repeated_path->get_node_id_at_position(i + 1);
             const double x = scale_x_1.map(static_cast<double>(i + 1));
             const double y = scale_y_1.map(static_cast<double>(i + 1));
             const size_t next_point = add_point(x, y, next_old_node_id);
@@ -189,7 +189,7 @@ class EquivalentEmbeddingBuilder {
                 BLUE_RGB,
                 prev_point,
                 next_point,
-                m_third_repeated_path->edge_id_at_position(i)
+                m_third_repeated_path->get_edge_id_at_position(i)
             );
             m_embedding.add_edge(prev_point, next_point, edge_id);
             m_embedding.add_edge(next_point, prev_point, edge_id);
@@ -216,7 +216,7 @@ class EquivalentEmbeddingBuilder {
             true
         );
         for (size_t i = 0; i < m_third_repeated_path->number_of_edges(); i++) {
-            const size_t next_old_node_id = m_third_repeated_path->node_id_at_position(i + 1);
+            const size_t next_old_node_id = m_third_repeated_path->get_node_id_at_position(i + 1);
             const double x = scale_x_2.map(static_cast<double>(i + 1));
             const double y = scale_y_2.map(static_cast<double>(i + 1));
             const size_t next_point = add_point(x, y, next_old_node_id);
@@ -228,7 +228,7 @@ class EquivalentEmbeddingBuilder {
                 BLUE_RGB,
                 prev_point,
                 next_point,
-                m_third_repeated_path->edge_id_at_position(i)
+                m_third_repeated_path->get_edge_id_at_position(i)
             );
             m_embedding.add_edge(prev_point, next_point, edge_id);
             m_embedding.add_edge(next_point, prev_point, edge_id);
@@ -241,7 +241,7 @@ class EquivalentEmbeddingBuilder {
         // adding the second repeated path in the top of the rectangle
         prev_point = corners[3].value();
         for (size_t i = 0; i < m_second_repeated_path->number_of_edges(); i++) {
-            const size_t next_old_node_id = m_second_repeated_path->node_id_at_position(
+            const size_t next_old_node_id = m_second_repeated_path->get_node_id_at_position(
                 m_second_repeated_path->number_of_nodes() - i - 2
             );
             const double x = scale.map(static_cast<double>(i + 1)) + last_x;
@@ -255,7 +255,7 @@ class EquivalentEmbeddingBuilder {
                 RED_RGB,
                 prev_point,
                 next_point,
-                m_second_repeated_path->edge_id_at_position(
+                m_second_repeated_path->get_edge_id_at_position(
                     m_second_repeated_path->number_of_edges() - i - 1
                 )
             );
@@ -266,7 +266,7 @@ class EquivalentEmbeddingBuilder {
 
         // adding the first repeated path in the top of the rectangle
         for (size_t i = 0; i < m_first_repeated_path->number_of_edges(); i++) {
-            const size_t next_old_node_id = m_first_repeated_path->node_id_at_position(i + 1);
+            const size_t next_old_node_id = m_first_repeated_path->get_node_id_at_position(i + 1);
             const double x =
                 scale.map(static_cast<double>(i + m_second_repeated_path->number_of_nodes())) +
                 last_x;
@@ -285,7 +285,7 @@ class EquivalentEmbeddingBuilder {
                 GREEN_RGB,
                 prev_point,
                 next_point,
-                m_first_repeated_path->edge_id_at_position(i)
+                m_first_repeated_path->get_edge_id_at_position(i)
             );
             m_embedding.add_edge(prev_point, next_point, edge_id);
             m_embedding.add_edge(next_point, prev_point, edge_id);
@@ -350,14 +350,15 @@ class EquivalentEmbeddingBuilder {
             "EquivalentEmbeddingBuilder::add_nodes_adjacent_to_border: expected 2 faces"
         );
         const Path& inner_face = [&]() {
-            const size_t old_edge_id = m_edge_id_to_old.get_label(faces[0].edge_id_at_position(0));
+            const size_t old_edge_id =
+                m_edge_id_to_old.get_label(faces[0].get_edge_id_at_position(0));
             const size_t old_next_edge_id =
-                m_edge_id_to_old.get_label(faces[0].edge_id_at_position(1));
+                m_edge_id_to_old.get_label(faces[0].get_edge_id_at_position(1));
             for (size_t i = 0; i < m_outer_face.path().number_of_edges(); i++) {
-                const size_t ed_id = m_outer_face.path().edge_id_at_position(i);
+                const size_t ed_id = m_outer_face.path().get_edge_id_at_position(i);
                 if (ed_id != old_edge_id)
                     continue;
-                const size_t next_ed_id = m_outer_face.path().edge_id_at_position(
+                const size_t next_ed_id = m_outer_face.path().get_edge_id_at_position(
                     (i + 1) % m_outer_face.path().number_of_edges()
                 );
                 if (next_ed_id == old_next_edge_id)
@@ -368,18 +369,18 @@ class EquivalentEmbeddingBuilder {
 
         for (size_t index = 0; index < inner_face.number_of_edges(); index++) {
             const size_t i = inner_face.number_of_edges() - 1 - index;
-            const size_t new_node_id = inner_face.node_id_at_position(i);
+            const size_t new_node_id = inner_face.get_node_id_at_position(i);
             const size_t old_node_id = m_node_id_to_old.get_label(new_node_id);
 
-            const size_t new_next_node_id = inner_face.node_id_at_position(i + 1);
+            const size_t new_next_node_id = inner_face.get_node_id_at_position(i + 1);
             const size_t old_next_node_id = m_node_id_to_old.get_label(new_next_node_id);
 
-            const size_t new_edge_id = inner_face.edge_id_at_position(i);
+            const size_t new_edge_id = inner_face.get_edge_id_at_position(i);
             const size_t old_edge_id = m_edge_id_to_old.get_label(new_edge_id);
 
             const size_t new_prev_node_id =
-                (i == 0) ? inner_face.node_id_at_position(inner_face.number_of_edges() - 1)
-                         : inner_face.node_id_at_position(i - 1);
+                (i == 0) ? inner_face.get_node_id_at_position(inner_face.number_of_edges() - 1)
+                         : inner_face.get_node_id_at_position(i - 1);
             const size_t old_prev_node_id = m_node_id_to_old.get_label(new_prev_node_id);
 
             add_inner_edges(
@@ -490,12 +491,14 @@ class EquivalentEmbeddingBuilder {
             if (face.number_of_edges() == new_inner_face->number_of_edges()) {
                 bool is_same = false;
                 for (size_t i = 0; i < face.number_of_edges(); i++) {
-                    if (face.edge_id_at_position(0) == new_inner_face->edge_id_at_position(i)) {
+                    if (face.get_edge_id_at_position(0) ==
+                        new_inner_face->get_edge_id_at_position(i)) {
                         bool match = true;
                         for (size_t j = 1; j < face.number_of_edges(); j++) {
-                            if (face.edge_id_at_position(j) != new_inner_face->edge_id_at_position(
-                                                                   (i + j) % face.number_of_edges()
-                                                               )) {
+                            if (face.get_edge_id_at_position(j) !=
+                                new_inner_face->get_edge_id_at_position(
+                                    (i + j) % face.number_of_edges()
+                                )) {
                                 match = false;
                                 break;
                             }
@@ -519,8 +522,8 @@ class EquivalentEmbeddingBuilder {
             m_embedding.add_node();
             m_attributes.hide_node(wheel_node_id);
             for (size_t i = 0; i < face.number_of_edges(); ++i) {
-                const size_t new_node_id = face.node_id_at_position(i);
-                const size_t new_edge_id = face.edge_id_at_position(i);
+                const size_t new_node_id = face.get_node_id_at_position(i);
+                const size_t new_edge_id = face.get_edge_id_at_position(i);
                 const size_t wheel_edge_id = m_graph.add_edge(wheel_node_id, new_node_id);
                 m_attributes.set_edge_color(wheel_edge_id, WHEEL_EDGE_COLOR);
                 // m_attributes.hide_edge(wheel_edge_id);

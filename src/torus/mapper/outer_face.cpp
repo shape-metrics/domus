@@ -1,6 +1,6 @@
 #include "outer_face.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph.hpp"
@@ -84,7 +84,7 @@ OuterFace::OuterFace(const Graph& graph, Path&& path, std::array<Path, 3>&& repe
     for (size_t i = 0; i < m_repeated_paths.size(); i++) {
         const Path& repeated_path = m_repeated_paths[i];
         for (size_t j = 1; j < repeated_path.number_of_nodes() - 1; j++) {
-            const size_t node_id = repeated_path.node_id_at_position(j);
+            const size_t node_id = repeated_path.get_node_id_at_position(j);
             m_is_node_in_repeated_path.get_label(node_id).set(i);
         }
     }
@@ -125,7 +125,7 @@ OuterFace compute_outer_face_from_path(Path&& path, const Graph& graph) {
     std::vector<std::pair<size_t, size_t>> edges_ids;
     edges_ids.reserve(path.number_of_edges());
     for (size_t i = 0; i < path.number_of_edges(); i++)
-        edges_ids.push_back({path.edge_id_at_position(i), i});
+        edges_ids.push_back({path.get_edge_id_at_position(i), i});
     std::sort(edges_ids.begin(), edges_ids.end(), [](auto a, auto b) { return a.first < b.first; });
 
     std::vector<bool> did_handle_repeated_edge_at_position(path.number_of_edges(), false);
@@ -154,9 +154,9 @@ OuterFace compute_outer_face_from_path(Path&& path, const Graph& graph) {
             continue;
         }
         Path& repeated_path = repeated_paths[next_index_repeated_path++];
-        while (path.edge_id_at_position(pos_1) == path.edge_id_at_position(pos_2)) {
-            const size_t edge_id = path.edge_id_at_position(pos_1);
-            const size_t node_id = path.node_id_at_position(pos_1);
+        while (path.get_edge_id_at_position(pos_1) == path.get_edge_id_at_position(pos_2)) {
+            const size_t edge_id = path.get_edge_id_at_position(pos_1);
+            const size_t node_id = path.get_node_id_at_position(pos_1);
             repeated_path.push_back(graph, node_id, edge_id);
             did_handle_repeated_edge_at_position[pos_1] = true;
             did_handle_repeated_edge_at_position[pos_2] = true;
@@ -166,9 +166,10 @@ OuterFace compute_outer_face_from_path(Path&& path, const Graph& graph) {
 
         pos_1 = (positions[0] + path.number_of_edges() - 1) % path.number_of_edges();
         pos_2 = (positions[1] + 1) % path.number_of_edges();
-        while (path.edge_id_at_position(pos_1) == path.edge_id_at_position(pos_2)) {
-            const size_t edge_id = path.edge_id_at_position(pos_1);
-            const size_t node_id = path.node_id_at_position((pos_1 + 1) % path.number_of_edges());
+        while (path.get_edge_id_at_position(pos_1) == path.get_edge_id_at_position(pos_2)) {
+            const size_t edge_id = path.get_edge_id_at_position(pos_1);
+            const size_t node_id =
+                path.get_node_id_at_position((pos_1 + 1) % path.number_of_edges());
             repeated_path.push_front(graph, node_id, edge_id);
             did_handle_repeated_edge_at_position[pos_1] = true;
             did_handle_repeated_edge_at_position[pos_2] = true;

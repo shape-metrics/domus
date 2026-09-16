@@ -1,11 +1,11 @@
 #include "domus/core/graph/path.hpp"
 
 #include <algorithm>
-#include <print>
 
 #include "domus/core/graph/graph.hpp"
+#include "domus/core/print.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 namespace domus::graph {
 
@@ -99,32 +99,37 @@ size_t Path::number_of_nodes() const {
     return number_of_edges() + 1;
 }
 
-size_t Path::node_id_at_position(size_t position) const {
+size_t Path::get_node_id_at_position(size_t position) const {
     DOMUS_ASSERT(position <= number_of_edges(), "Path::node_id_at_position: out of range");
     if (position == number_of_edges())
         return get_last_node_id();
     return m_nodes_ids[position];
 }
 
-size_t Path::edge_id_at_position(size_t position) const {
+size_t Path::get_edge_id_at_position(size_t position) const {
     DOMUS_ASSERT(position < number_of_edges(), "Path::edge_id_at_position: out of range");
     return m_edges_ids[position];
 }
 
-std::string Path::to_string() const {
+std::string Path::to_string(bool print_edge_ids) const {
     if (number_of_edges() == 0)
         return "Empty Path\n";
     std::string result;
     auto out = std::back_inserter(result);
-    std::format_to(out, "Path:");
-    for (size_t i = 0; i < number_of_edges(); ++i) {
-        std::format_to(out, " {} <{}>", m_nodes_ids[i], m_edges_ids[i]);
-    }
-    std::format_to(out, " {}\n", m_last_node_id.value());
+    domus::format_to(out, "Path:");
+    if (print_edge_ids)
+        for (size_t i = 0; i < number_of_edges(); ++i)
+            std::format_to(out, " {} <{}>", m_nodes_ids[i], m_edges_ids[i]);
+    else
+        for (size_t i = 0; i < number_of_edges(); ++i)
+            std::format_to(out, " {} -", m_nodes_ids[i]);
+    std::format_to(out, " {}", m_last_node_id.value());
     return result;
 }
 
-void Path::print() const { std::print("{}", to_string()); }
+void Path::print(bool print_edge_ids) const { domus::print("{}", to_string(print_edge_ids)); }
+
+void Path::println(bool print_edge_ids) const { domus::println("{}", to_string(print_edge_ids)); }
 
 bool Path::operator==(const Path& other) const {
     return (m_nodes_ids == other.m_nodes_ids) && (m_edges_ids == other.m_edges_ids) &&
@@ -139,8 +144,8 @@ Path convert_path(
 ) {
     Path labeled_path;
     for (size_t i = 0; i < path.number_of_edges(); ++i) {
-        const size_t node_1 = path.node_id_at_position(i);
-        const size_t edge = path.edge_id_at_position(i);
+        const size_t node_1 = path.get_node_id_at_position(i);
+        const size_t edge = path.get_edge_id_at_position(i);
         const size_t labeled_node_id = node_labels.get_label(node_1);
         const size_t labeled_edge_id = edge_labels.get_label(edge);
         labeled_path.push_back(graph, labeled_node_id, labeled_edge_id);

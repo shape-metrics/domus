@@ -3,7 +3,7 @@
 #include <limits>
 
 #include "domus/core/color.hpp"
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"

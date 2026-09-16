@@ -7,7 +7,7 @@
 #include "domus/core/graph/attributes.hpp"
 #include "domus/orthogonal/drawing.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 namespace domus::orthogonal {
 using namespace graph;

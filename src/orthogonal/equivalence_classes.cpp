@@ -6,7 +6,7 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 namespace domus::orthogonal {
 using namespace domus::graph;

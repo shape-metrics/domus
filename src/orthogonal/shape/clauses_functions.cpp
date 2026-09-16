@@ -8,7 +8,7 @@
 #include "domus/orthogonal/shape/direction.hpp"
 #include "domus/sat/cnf.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "variables_handler.hpp"
 
 namespace domus::orthogonal::shape {

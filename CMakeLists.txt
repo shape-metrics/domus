@@ -102,6 +102,7 @@ set(COMMON_SRCS
     src/core/graph/generators.cpp
     src/core/utils.cpp
     src/core/csv.cpp
+    src/core/print.cpp
     src/planarity/auslander_parter.cpp
     src/planarity/tutte.cpp
     src/core/graph/embedding.cpp
@@ -112,6 +113,7 @@ set(COMMON_SRCS
     src/torus/embedder/utils.cpp
     src/torus/embedder/type_3.cpp
     src/torus/embedder/type_2.cpp
+    src/torus/test.cpp
     src/core/graph/test.cpp
 )
 

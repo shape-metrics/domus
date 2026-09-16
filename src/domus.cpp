@@ -17,6 +17,7 @@
 #include "domus/torus/embedder.hpp"
 #include "domus/torus/embedding_converter.hpp"
 #include "domus/torus/mapping.hpp"
+#include "domus/torus/test.hpp"
 
 using namespace domus;
 using namespace domus::graph;
@@ -70,7 +71,7 @@ auto load_graph() {
     std::string input_graph_filename = "graph.txt";
     const auto graph = loader::load_graph_from_txt_file(input_graph_filename);
     if (!graph) {
-        println("{}", graph.error());
+        std::println("{}", graph.error());
         std::terminate();
     }
     return graph.value();
@@ -126,46 +127,6 @@ void test_tutte_layout() {
     }
 }
 
-// void test_all_possible_embeddings(const Graph& graph) {
-//     std::vector<Embedding> embeddings = compute_all_possible_embeddings(graph);
-//     std::println("Number of embeddings: {}", embeddings.size());
-//     std::vector<size_t> genuses;
-//     std::vector<size_t> max_face_types;
-//     for (const Embedding& embedding : embeddings) {
-//         const std::vector<Path> faces = compute_faces_in_embedding(graph, embedding);
-//         const size_t g = compute_embedding_genus(
-//             graph.get_number_of_nodes(),
-//             graph.get_number_of_edges(),
-//             faces.size(),
-//             1
-//         );
-//         if (genuses.size() <= g)
-//             genuses.resize(g + 1);
-//         ++genuses[g];
-//         if (g == 1) {
-//             size_t max_face_type = 0;
-//             for (FaceType type : std::views::transform(faces, [&](const Path& path) {
-//                      return compute_face_from_path(Path(path), graph).type();
-//                  })) {
-//                 if (static_cast<size_t>(type) > max_face_type)
-//                     max_face_type = static_cast<size_t>(type);
-//             }
-
-//             if (max_face_types.size() <= static_cast<size_t>(max_face_type))
-//                 max_face_types.resize(static_cast<size_t>(max_face_type) + 1);
-//             ++max_face_types[static_cast<size_t>(max_face_type)];
-//         }
-//     }
-
-//     for (size_t i = 1; i < genuses.size(); ++i) {
-//         std::println("Genus: [{:>2}] Quantity: [{:>4}]", i, genuses[i]);
-//     }
-
-//     for (size_t i = 1; i < max_face_types.size(); ++i) {
-//         std::println("Case: [{:>2}] Quantity: [{:>4}]", i, max_face_types[i]);
-//     }
-// }
-
 int main() {
     // test_tutte_layout();
     // graph->print(true);
@@ -181,13 +142,12 @@ int main() {
     // std::println("k5");
     // test::subdivided_k_5.print(true);
 
-    toroidal_test(test::subdivided_k_3_3);
+    toroidal_test(graph::test::toroidal_cubic_graphs[0]);
 
-    // std::println("CASE ----- K_5 -------");
-    // test_all_possible_embeddings(test::subdivided_k_5);
+    // toroidal_test(graph::test::subdivided_k_3_3);
 
-    // std::println("\n\nCASE ----- K_3_3 -----");
-    // test_all_possible_embeddings(test::subdivided_k_3_3);
+    std::println("\n\nCASE ----- K_3_3 -----");
+    torus::test::test_all_possible_embeddings(graph::test::subdivided_k_3_3);
 
     // visualize_torus();
 

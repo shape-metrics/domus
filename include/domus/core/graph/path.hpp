@@ -26,8 +26,8 @@ class Path {
     size_t number_of_edges() const;
     size_t number_of_nodes() const;
 
-    size_t node_id_at_position(size_t position) const;
-    size_t edge_id_at_position(size_t position) const;
+    size_t get_node_id_at_position(size_t position) const;
+    size_t get_edge_id_at_position(size_t position) const;
 
     bool contains_node_id(size_t node_id) const;
     bool contains_edge_id(size_t edge_id) const;
@@ -41,8 +41,9 @@ class Path {
 
     auto get_edges() const; // edge_id, prev_node_id
 
-    std::string to_string() const;
-    void print() const;
+    std::string to_string(bool print_edge_ids = false) const;
+    void print(bool print_edge_ids = false) const;
+    void println(bool print_edge_ids = false) const;
 
     bool operator==(const Path& other) const;
 };

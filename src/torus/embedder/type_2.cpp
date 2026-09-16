@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/planarity/auslander_parter.hpp"
 #include "domus/sat/cnf.hpp"
@@ -25,8 +25,6 @@ struct Variable {
 
 enum class CylinderType { ONE_SIDED, TWO_SIDED };
 
-enum class InitializationOutcome { NO_SOLUTION, NOTHING_TO_DO, DONE };
-
 struct PiecesConflict {
     size_t p_1;
     size_t p_2;
@@ -41,6 +39,8 @@ struct PlanarCylinder {
 };
 
 class Type2Solver {
+    enum class InitializationOutcome { NO_SOLUTION, NOTHING_TO_DO, DONE };
+
     Graph& m_graph;
     Embedding& m_embedding;
     const std::vector<Face>& m_faces;
@@ -73,7 +73,7 @@ class Type2Solver {
             const Face& face = m_faces[i];
             nodes_in_face.emplace_back();
             for (size_t j = 0; j < face.path().number_of_nodes() - 1; ++j) {
-                const size_t node_id = face.path().node_id_at_position(j);
+                const size_t node_id = face.path().get_node_id_at_position(j);
                 if (!nodes_in_face[i].has_node(node_id))
                     nodes_in_face[i].add_node(node_id);
             }
@@ -123,7 +123,7 @@ class Type2Solver {
         std::vector<size_t> current_component;
 
         for (size_t i = 0; i < path.number_of_nodes() - 1; ++i) {
-            const size_t u = path.node_id_at_position(i);
+            const size_t u = path.get_node_id_at_position(i);
             if (!is_repeated.get_label(u).test(0)) {
                 current_component.push_back(u);
             } else {
@@ -138,8 +138,8 @@ class Type2Solver {
         }
 
         if (components.size() > 1) {
-            const size_t first_node = path.node_id_at_position(0);
-            const size_t last_node = path.node_id_at_position(path.number_of_nodes() - 2);
+            const size_t first_node = path.get_node_id_at_position(0);
+            const size_t last_node = path.get_node_id_at_position(path.number_of_nodes() - 2);
             if (!is_repeated.get_label(first_node).test(0) &&
                 !is_repeated.get_label(last_node).test(0)) {
                 components[0].insert(
@@ -296,7 +296,7 @@ class Type2Solver {
         const Path& path = m_faces[face_index].path();
 
         for (size_t i = 0; i < path.number_of_nodes() - 1; ++i) {
-            const size_t old_id = path.node_id_at_position(i);
+            const size_t old_id = path.get_node_id_at_position(i);
             if (std::binary_search(p_1_attachments.begin(), p_1_attachments.end(), old_id))
                 pos_1.push_back(i);
             if (std::binary_search(p_2_attachments.begin(), p_2_attachments.end(), old_id))
@@ -339,7 +339,7 @@ class Type2Solver {
         bool has_placed_special_attachment = false;
 
         for (size_t i = 0; i < path.number_of_nodes() - 1; ++i) {
-            const size_t old_id = path.node_id_at_position(i);
+            const size_t old_id = path.get_node_id_at_position(i);
 
             if (std::binary_search(p_1_attachments.begin(), p_1_attachments.end(), old_id))
                 pos_1.push_back(i);
@@ -423,9 +423,9 @@ class Type2Solver {
     PlanarCylinder build_planar_cylinder(const Face& face) {
         PlanarCylinder cylinder;
         for (size_t i = 0; i < face.path().number_of_edges(); i++) {
-            const size_t prev_node_id = face.path().node_id_at_position(i);
-            const size_t next_node_id = face.path().node_id_at_position(i + 1);
-            const size_t edge_id = face.path().edge_id_at_position(i);
+            const size_t prev_node_id = face.path().get_node_id_at_position(i);
+            const size_t next_node_id = face.path().get_node_id_at_position(i + 1);
+            const size_t edge_id = face.path().get_edge_id_at_position(i);
 
             if (!cylinder.node_old_to_new_id.has_label(prev_node_id)) {
                 const size_t new_node = cylinder.graph.add_node();
@@ -477,9 +477,54 @@ class Type2Solver {
         }
     }
 
-    void
-    add_special_pieces_to_embedding(Embedding& copy_embedding, const PlanarCylinder& cylinder) {
-        // TODO
+    void adjust_rotation_scheme(
+        Embedding& copy_embedding,
+        const PlanarCylinder& cylinder,
+        const Face& face,
+        Embedding& cylinder_embedding
+    ) {
+        // rotation scheme in copy_embedding
+        const size_t prev_old_node_id = face.repeated_paths()[0].get_first_node_id();
+        const size_t next_old_node_id = face.repeated_paths()[0].get_node_id_at_position(1);
+        const size_t old_edge_id = face.repeated_paths()[0].get_first_edge_id();
+
+        const auto old_next_edge =
+            copy_embedding.next_in_adjacency_list(prev_old_node_id, next_old_node_id, old_edge_id);
+        // rotation scheme in planar cylinder
+        const size_t prev_new_node_id = cylinder.node_old_to_new_id.get_label(prev_old_node_id);
+        const size_t next_new_node_id = cylinder.node_old_to_new_id.get_label(next_old_node_id);
+        const size_t new_edge_id = cylinder.edge_old_to_new_id.get_label(old_edge_id);
+        const auto new_next_edge = cylinder_embedding.next_in_adjacency_list(
+            prev_new_node_id,
+            next_new_node_id,
+            new_edge_id
+        );
+        if (old_next_edge.id != cylinder.edge_new_to_old_id.get_label(new_next_edge.id))
+            cylinder_embedding.reverse_all_circular_orders();
+    }
+
+    void add_special_pieces_to_embedding(
+        Embedding& copy_embedding,
+        const PlanarCylinder& cylinder,
+        const Face& face,
+        Embedding& cylinder_embedding
+    ) {
+        adjust_rotation_scheme(copy_embedding, cylinder, face, cylinder_embedding);
+        for (const size_t new_node_id : cylinder_embedding.get_nodes_ids()) {
+            const size_t old_node_id = cylinder.node_new_to_old_id.get_label(new_node_id);
+            if (face.is_node_in_repeated_path().get_label(old_node_id).test(0))
+                continue;
+            for (const auto new_edge : cylinder_embedding.get_edges(new_node_id)) {
+                const size_t old_neighbor_id =
+                    cylinder.node_new_to_old_id.get_label(new_edge.neighbor_id);
+                const size_t old_edge_id = cylinder.edge_new_to_old_id.get_label(new_edge.id);
+                copy_embedding.add_edge(old_node_id, old_neighbor_id, old_edge_id);
+            }
+        }
+        for (size_t i = 1; i < face.repeated_paths()[0].number_of_nodes() - 1; i++) {
+            const size_t old_node_id = face.repeated_paths()[0].get_node_id_at_position(i);
+            // TODO internal nodes of repeated paths
+        }
     }
 
     bool embed_special_pieces(Embedding& copy_embedding) {
@@ -497,7 +542,7 @@ class Type2Solver {
             auto result = planarity::compute_planar_embedding(cylinder.graph);
             if (!result.has_value())
                 return false;
-            add_special_pieces_to_embedding(copy_embedding, cylinder);
+            add_special_pieces_to_embedding(copy_embedding, cylinder, face, result.value());
         }
         return true;
     }
@@ -526,7 +571,11 @@ class Type2Solver {
                 return false;
             m_assigned_face_of_piece = solver_result_to_placement();
             Embedding copy_embedding(m_embedding);
-            return (embed_special_pieces(copy_embedding) && embed_ordinary_pieces(copy_embedding));
+            if (embed_special_pieces(copy_embedding) && embed_ordinary_pieces(copy_embedding)) {
+                m_embedding = std::move(copy_embedding);
+                return true;
+            }
+            return false;
         }
         m_cylinders_type_current_guess[done_guesses_of_cylinders] = CylinderType::ONE_SIDED;
         if (solve(done_guesses_of_cylinders + 1))

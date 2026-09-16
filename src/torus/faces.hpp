@@ -36,7 +36,7 @@ class Face {
     const graph::Path& path() const;
     const std::vector<graph::Path>& repeated_paths() const;
     const graph::utilities::NodesLabels<std::bitset<2>>& is_node_in_repeated_path() const;
-    std::string to_string() const;
+    const std::string to_string() const;
     void print() const;
 };
 

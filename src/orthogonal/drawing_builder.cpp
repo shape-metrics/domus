@@ -20,7 +20,7 @@
 #include "domus/orthogonal/shape/direction.hpp"
 #include "domus/orthogonal/shape/shape.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 namespace domus::orthogonal {
 using namespace domus::graph;

@@ -9,7 +9,7 @@
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 namespace domus::graph {
 using namespace graph::utilities;
@@ -200,6 +200,11 @@ void Embedding::reverse_circular_order(size_t node_id) {
     std::ranges::reverse(adj);
 }
 
+void Embedding::reverse_all_circular_orders() {
+    for (const size_t node_id : get_nodes_ids())
+        reverse_circular_order(node_id);
+}
+
 void Embedding::remove_edge(size_t from_id, size_t to_id, size_t edge_id) {
     DOMUS_ASSERT(
         has_node(from_id) && has_node(to_id),
@@ -210,7 +215,12 @@ void Embedding::remove_edge(size_t from_id, size_t to_id, size_t edge_id) {
     auto& adj = m_adjacency_list.at(from_id);
     auto it = std::ranges::find_if(adj, [edge_id](const EdgeIter& e) { return e.id == edge_id; });
     if (it == adj.end()) {
-        std::println("Embedding::remove_edge FAILED! from={} to={} edge_id={}", from_id, to_id, edge_id);
+        std::println(
+            "Embedding::remove_edge FAILED! from={} to={} edge_id={}",
+            from_id,
+            to_id,
+            edge_id
+        );
         DOMUS_ASSERT(it != adj.end(), "Embedding::remove_edge: edge does not exist");
     }
 

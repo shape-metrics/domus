@@ -6,6 +6,8 @@
 #include <ranges> // IWYU pragma: keep
 #include <set>    // IWYU pragma: keep
 
+#include "print.hpp" // IWYU pragma: keep
+
 #define DOMUS_ASSERT(condition, message, ...)                                                      \
     do {                                                                                           \
         if (!(condition)) {                                                                        \
@@ -19,9 +21,14 @@
         }                                                                                          \
     } while (0)
 
-#define DOMUS_DEBUG(message)                                                                       \
+#define DOMUS_DEBUG_LN(message, ...)                                                               \
     do {                                                                                           \
-        std::println("{}", message);                                                               \
+        domus::println(message __VA_OPT__(, ) __VA_ARGS__);                                        \
+    } while (0)
+
+#define DOMUS_DEBUG(message, ...)                                                                  \
+    do {                                                                                           \
+        domus::print(message __VA_OPT__(, ) __VA_ARGS__);                                          \
     } while (0)
 
 #define DOMUS_HAS_DUPLICATES(container)                                                            \
@@ -36,7 +43,9 @@
 
 #define DOMUS_ASSERT(condition, message, ...) ((void)0)
 
-#define DOMUS_DEBUG(message) ((void)0)
+#define DOMUS_DEBUG_LN(message, ...) ((void)0)
+
+#define DOMUS_DEBUG(message, ...) ((void)0)
 
 #define DOMUS_HAS_DUPLICATES(container) (false)
 

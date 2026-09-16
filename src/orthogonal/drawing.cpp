@@ -15,7 +15,7 @@
 #include "../nlohmann/json.hpp"
 #include "domus/orthogonal/shape/direction.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 namespace domus::orthogonal {
 

@@ -9,7 +9,7 @@
 #include "domus/sat/cnf.hpp"
 
 #include "../core/memory_file.hpp"
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 #include "glucose/src/SimpSolver.h"
 #include "glucose/src/SolverTypes.h"

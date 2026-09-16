@@ -100,4 +100,32 @@ Graph subdivided_k_3_3 = []() {
     return k_3_3;
 }();
 
+std::vector<Graph> toroidal_cubic_graphs{[]() {
+    Graph graph;
+    for (size_t i = 0; i < 14; i++)
+        graph.add_node();
+    graph.add_edge(0, 3);
+    graph.add_edge(0, 5);
+    graph.add_edge(1, 13);
+    graph.add_edge(1, 4);
+    graph.add_edge(2, 13);
+    graph.add_edge(3, 12);
+    graph.add_edge(4, 12);
+    graph.add_edge(13, 12);
+    graph.add_edge(4, 5);
+    graph.add_edge(2, 9);
+    graph.add_edge(7, 9);
+    graph.add_edge(7, 5);
+    graph.add_edge(0, 6);
+    graph.add_edge(1, 8);
+    graph.add_edge(6, 8);
+    graph.add_edge(6, 10);
+    graph.add_edge(8, 9);
+    graph.add_edge(7, 10);
+    graph.add_edge(10, 11);
+    graph.add_edge(11, 3);
+    graph.add_edge(2, 11);
+    return graph;
+}()};
+
 } // namespace domus::graph::test

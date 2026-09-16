@@ -11,7 +11,7 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "interlacement.hpp"
 #include "segment.hpp"
 

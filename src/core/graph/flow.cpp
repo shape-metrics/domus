@@ -5,7 +5,7 @@
 #include <optional>
 #include <queue>
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
@@ -270,7 +270,7 @@ std::vector<Path> max_vertex_disjoint_cycles(const Graph& graph, size_t node_id)
         }
 
         for (size_t i = 1; i <= p.number_of_edges(); ++i) {
-            size_t n = p.node_id_at_position(i);
+            size_t n = p.get_node_id_at_position(i);
             if (n != node_id)
                 used_node[n] = true;
         }

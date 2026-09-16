@@ -8,7 +8,7 @@
 
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 namespace domus::graph {
 
@@ -109,6 +109,15 @@ size_t Graph::remove_edge(size_t from_id, size_t to_id) {
     return edge_id;
 }
 
+/**
+ * @brief Subdivides an edge by edge_id. It is a O(1) time operation and it returns a struct with
+ * all the information needed about the edge subdivision. Since the graph is intended to be
+ * directed, the directions of the two resulting edges from the subdivision will inherit the
+ * direction of the original edge.
+ *
+ * @param edge_id the id of the edge that needs to be subdivided.
+ * @return Subdivision A struct summerizing the outcome of the subdivision.
+ */
 Subdivision Graph::subdivide_edge(size_t edge_id) {
     DOMUS_ASSERT(has_edge_id(edge_id), "Graph::subdivide_edge: edge does not exist");
     const auto [from_id, to_id] = m_edges[edge_id]->edge;

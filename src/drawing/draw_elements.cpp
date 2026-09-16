@@ -5,7 +5,7 @@
 #include <cstddef>
 
 #include "domus/core/color.hpp"
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 namespace domus::drawing {
 

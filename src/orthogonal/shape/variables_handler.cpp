@@ -1,11 +1,11 @@
 #include "variables_handler.hpp"
 
 #include <format>
-#include <print>
 
 #include "domus/core/graph/graph.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
+#include "domus/core/print.hpp"
 
 namespace domus::orthogonal::shape {
 
@@ -134,6 +134,6 @@ std::string VariablesHandler::to_string() const {
     return result;
 }
 
-void VariablesHandler::print() const { println("{}", to_string()); }
+void VariablesHandler::print() const { domus::println("{}", to_string()); }
 
 } // namespace domus::orthogonal::shape

@@ -3,16 +3,16 @@
 #include <algorithm>
 #include <functional>
 #include <optional>
-#include <print>
 #include <queue>
 #include <stack>
 
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/path.hpp"
+#include "domus/core/print.hpp"
 #include "domus/core/tree/tree_algorithms.hpp"
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 namespace domus::graph::algorithms {
 using namespace domus::graph;
@@ -414,7 +414,7 @@ std::string BiconnectedComponents::to_string() const {
     return result;
 }
 
-void BiconnectedComponents::print() const { println("{}", to_string()); }
+void BiconnectedComponents::print() const { domus::println("{}", to_string()); }
 
 bool dfs_bipartition(const Graph& graph, size_t node_id, Bipartition& bipartition) {
     bipartition.set_side(node_id, false);

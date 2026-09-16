@@ -3,12 +3,12 @@
 #include <algorithm>
 #include <format>
 #include <iterator>
-#include <print>
 #include <vector>
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/path.hpp"
+#include "domus/core/print.hpp"
 
 namespace domus::torus {
 using graph::Graph;
@@ -37,7 +37,7 @@ Face::Face(const Graph& graph, FaceType type, Path&& path, std::vector<Path>&& r
     for (size_t i = 0; i < m_repeated_paths.size(); i++) {
         const Path& repeated_path = m_repeated_paths[i];
         for (size_t j = 1; j < repeated_path.number_of_nodes() - 1; j++) {
-            const size_t node_id = repeated_path.node_id_at_position(j);
+            const size_t node_id = repeated_path.get_node_id_at_position(j);
             m_is_node_in_repeated_path.get_label(node_id).set(i);
         }
     }
@@ -72,24 +72,23 @@ std::optional<size_t> is_face_simple(const Path& path) {
     return std::nullopt;
 }
 
-std::string Face::to_string() const {
+const std::string Face::to_string() const {
     std::string result;
     auto out = std::back_inserter(result);
-    std::format_to(out, "Face\n");
-    std::format_to(out, "type: {}\n", face_type_to_string(type()));
-    std::format_to(out, "{}", path().to_string());
-    std::format_to(out, "Repeated paths:\n");
+    domus::format_to(out, "Face {}\n", face_type_to_string(type()));
+    domus::format_to(out, "{}\n", path().to_string());
+    domus::format_to(out, "Repeated paths:\n");
     for (const Path& path : repeated_paths())
-        std::format_to(out, "{}", path.to_string());
+        domus::format_to(out, "{}\n", path.to_string());
     return result;
 }
 
-void Face::print() const { std::print("{}", to_string()); }
+void Face::print() const { domus::print("{}", to_string()); }
 
 size_t node_id_count_in_path(const Path& path, const size_t node_id) {
     size_t count = 0;
     for (size_t i = 0; i < path.number_of_edges(); ++i)
-        if (path.node_id_at_position(i) == node_id)
+        if (path.get_node_id_at_position(i) == node_id)
             count++;
     return count;
 }
@@ -104,7 +103,7 @@ Face compute_face_from_path(Path&& path, const Graph& graph) {
     std::vector<std::pair<size_t, size_t>> edges_ids;
     edges_ids.reserve(path.number_of_edges());
     for (size_t i = 0; i < path.number_of_edges(); i++)
-        edges_ids.push_back({path.edge_id_at_position(i), i});
+        edges_ids.push_back({path.get_edge_id_at_position(i), i});
     std::sort(edges_ids.begin(), edges_ids.end(), [](auto a, auto b) { return a.first < b.first; });
 
     bool is_simple = true;
@@ -143,9 +142,9 @@ Face compute_face_from_path(Path&& path, const Graph& graph) {
         }
         repeated_paths.emplace_back();
         Path& repeated_path = repeated_paths.back();
-        while (path.edge_id_at_position(pos_1) == path.edge_id_at_position(pos_2)) {
-            const size_t edge_id = path.edge_id_at_position(pos_1);
-            const size_t node_id = path.node_id_at_position(pos_1);
+        while (path.get_edge_id_at_position(pos_1) == path.get_edge_id_at_position(pos_2)) {
+            const size_t edge_id = path.get_edge_id_at_position(pos_1);
+            const size_t node_id = path.get_node_id_at_position(pos_1);
             repeated_path.push_back(graph, node_id, edge_id);
             did_handle_repeated_edge_at_position[pos_1] = true;
             did_handle_repeated_edge_at_position[pos_2] = true;
@@ -155,9 +154,10 @@ Face compute_face_from_path(Path&& path, const Graph& graph) {
 
         pos_1 = (positions[0] + path.number_of_edges() - 1) % path.number_of_edges();
         pos_2 = (positions[1] + 1) % path.number_of_edges();
-        while (path.edge_id_at_position(pos_1) == path.edge_id_at_position(pos_2)) {
-            const size_t edge_id = path.edge_id_at_position(pos_1);
-            const size_t node_id = path.node_id_at_position((pos_1 + 1) % path.number_of_edges());
+        while (path.get_edge_id_at_position(pos_1) == path.get_edge_id_at_position(pos_2)) {
+            const size_t edge_id = path.get_edge_id_at_position(pos_1);
+            const size_t node_id =
+                path.get_node_id_at_position((pos_1 + 1) % path.number_of_edges());
             repeated_path.push_front(graph, node_id, edge_id);
             did_handle_repeated_edge_at_position[pos_1] = true;
             did_handle_repeated_edge_at_position[pos_2] = true;

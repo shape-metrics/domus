@@ -4,7 +4,7 @@
 #include <ogdf/basic/List.h>
 #include <ogdf/planarity/BoyerMyrvold.h>
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "domus/core/graph/graph.hpp"
 
 namespace domus::ogdf_utils {

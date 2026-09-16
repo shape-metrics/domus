@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "domus/drawing/draw_elements.hpp"
 
 namespace domus::torus::mapper {

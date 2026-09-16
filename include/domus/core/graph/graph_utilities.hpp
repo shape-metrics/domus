@@ -3,7 +3,7 @@
 #include <optional>
 #include <vector>
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 
 namespace domus::graph::utilities {
 

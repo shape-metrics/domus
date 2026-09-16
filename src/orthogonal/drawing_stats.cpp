@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/utils.hpp"

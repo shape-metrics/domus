@@ -16,7 +16,7 @@
 #include "domus/sat/sat.hpp"
 
 #include "clauses_functions.hpp"
-#include "domus/core/domus_debug.hpp"
+#include "domus/core/debug.hpp"
 #include "variables_handler.hpp"
 
 namespace domus::orthogonal::shape {
