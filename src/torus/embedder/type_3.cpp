@@ -9,6 +9,7 @@
 #include "domus/core/graph/path.hpp"
 #include "domus/core/print.hpp"
 #include "domus/core/utils.hpp"
+#include "domus/torus/embedding_converter.hpp"
 
 #include "../bridge.hpp"
 #include "../faces.hpp"
@@ -309,6 +310,7 @@ bool handle_type_3(Graph& graph, Embedding& embedding, const Face& face, const s
     // means we found an extension, otherwise no extension is possible
 
     DOMUS_DEBUG("{}", face.to_string());
+    mapper::build_equivalent_embedding(graph, embedding).to_torus_mapping().visualize();
     const std::vector<Bridge> bridges = Bridge::compute(graph, embedding);
     SplitterWithPath splitter(graph, embedding, face, jolly_id, bridges);
     return splitter.try_all_possible_splits_and_keep_extending();

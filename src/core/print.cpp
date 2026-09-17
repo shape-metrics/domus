@@ -23,9 +23,8 @@ constexpr size_t INDENT_STEP = 3;
 
 // Generates the indentation prefix ("┣━━━━┫ ") or empty string if print_depth == 0
 std::string get_indent_string() {
-    if (print_depth == 0) {
+    if (print_depth == 0)
         return "";
-    }
     // Each depth level adds INDENT_STEP dashes:
     // depth 1 -> "┣━━┫ "
     // depth 2 -> "┣━━━━━┫ "
