@@ -44,15 +44,18 @@ class BiconnectedComponents {
     std::vector<size_t> m_cutvertices;
     std::vector<Graph> m_components;
     std::vector<utilities::NodesLabels<size_t>> m_components_nodes_to_original_nodes;
+    std::vector<utilities::EdgesLabels<size_t>> m_components_edges_to_original_edges;
     BiconnectedComponents(
         std::vector<size_t>&& cutvertices,
         std::vector<Graph>&& components,
-        std::vector<utilities::NodesLabels<size_t>>&& components_to_original_nodes
+        std::vector<utilities::NodesLabels<size_t>>&& components_to_original_nodes,
+        std::vector<utilities::EdgesLabels<size_t>>&& components_to_original_edges
     );
 
   public:
     const std::vector<Graph>& get_components() const;
-    const utilities::NodesLabels<size_t>& get_labels_of_component(size_t component_id) const;
+    const utilities::NodesLabels<size_t>& get_node_labels_of_component(size_t component_id) const;
+    const utilities::EdgesLabels<size_t>& get_edge_labels_of_component(size_t component_id) const;
     std::string to_string() const;
     void print() const;
     static BiconnectedComponents compute(const Graph& graph);

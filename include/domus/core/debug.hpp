@@ -8,6 +8,11 @@
 
 #include "print.hpp" // IWYU pragma: keep
 
+#define DOMUS_DEBUG_EXEC(...)                                                                      \
+    do {                                                                                           \
+        __VA_ARGS__;                                                                               \
+    } while (0)
+
 #define DOMUS_ASSERT(condition, message, ...)                                                      \
     do {                                                                                           \
         if (!(condition)) {                                                                        \
@@ -46,5 +51,7 @@
 #define DOMUS_DEBUG(message, ...) ((void)0)
 
 #define DOMUS_DEBUG_INDENT() ((void)0)
+
+#define DOMUS_DEBUG_EXEC(...) ((void)0)
 
 #endif

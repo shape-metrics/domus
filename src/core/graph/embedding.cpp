@@ -342,7 +342,7 @@ bool is_embedding_planar(const Embedding& embedding) {
 // This function verifies that for every edge from_id-to_id there is the edge to_id-from_id
 // It is intended to be used only for debug purposes
 bool Embedding::is_consistent() const {
-    utilities::OrientedEdgesContainer edges;
+    OrientedEdgesContainer edges;
     for (const size_t node_id : get_nodes_ids()) {
         for (const EdgeIter edge : get_edges(node_id)) {
             if (edges.has_edge(edge.neighbor_id, node_id, edge.id))

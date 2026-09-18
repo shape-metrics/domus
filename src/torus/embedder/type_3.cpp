@@ -46,7 +46,7 @@ class SplitterWithPath {
 };
 
 bool are_attachments_in_same_repeated_path(
-    const NodesLabels<std::bitset<4>>& is_node_in_repeated_path,
+    const NodesLabels<std::bitset<8>>& is_node_in_repeated_path,
     const size_t attachment_id_1,
     const size_t attachment_id_2
 ) {
@@ -116,7 +116,7 @@ SplitterWithPath::SplitterWithPath(
 
 auto candidate_face_splitting_paths_in_bridge(
     const Bridge& bridge,
-    const NodesLabels<std::bitset<4>>& is_node_in_repeated_path,
+    const NodesLabels<std::bitset<8>>& is_node_in_repeated_path,
     const Graph& graph
 ) {
     return all_pairs_of_view(bridge.get_attachments()) | std::views::filter([&](const auto& pair) {
@@ -253,10 +253,14 @@ bool SplitterWithPath::try_face_splits_with_path(const Path& path) {
         "SplitterWithPath::try_face_splits_with_path: trying split with {}",
         path.to_string()
     );
+    DOMUS_DEBUG_LN("trying all possible ways of embedding the path (4).");
+    DOMUS_DEBUG_INDENT();
 
     insert_path_in_embedding(m_embedding, path);
-
-    for (auto& combination : domus::utilities::generate_all_bitsets<2>()) {
+    auto combinations = domus::utilities::generate_all_bitsets<2>();
+    for (size_t c = 0; c < combinations.size(); c++) {
+        const auto& combination = combinations[c];
+        DOMUS_DEBUG_LN("combination {}.", c);
         for (size_t i = 0; i < 2; i++)
             if (combination.test(i))
                 m_embedding.reverse_circular_order(
@@ -269,15 +273,15 @@ bool SplitterWithPath::try_face_splits_with_path(const Path& path) {
             faces.push_back(compute_face_from_path(std::move(face_path), m_graph));
         switch (is_split_good(faces)) {
         case SplitOutcome::SPLITS:
-            DOMUS_DEBUG_LN("this path combination splits.");
+            DOMUS_DEBUG_LN("this combination splits.");
             if (try_embedding_extension(faces))
                 return true;
             break;
         case SplitOutcome::DOES_NOT_SPLIT:
-            DOMUS_DEBUG_LN("this path combination does not split.");
+            DOMUS_DEBUG_LN("this combination does not split.");
             break;
         case SplitOutcome::NO_LONGER_TOROIDAL:
-            DOMUS_DEBUG_LN("this path combination is not toroidal.");
+            DOMUS_DEBUG_LN("this combination is not toroidal.");
             break;
         };
 

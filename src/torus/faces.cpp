@@ -28,8 +28,15 @@ std::string face_type_to_string(FaceType face_type) {
     return "";
 }
 
-Face::Face(const Graph& graph, FaceType type, Path&& path, std::vector<Path>&& repeated_paths)
-    : m_type(type), m_path(path), m_repeated_paths(repeated_paths) {
+Face::Face(
+    const Graph& graph,
+    FaceType type,
+    Path&& path,
+    std::vector<Path>&& repeated_paths,
+    std::vector<Path>&& non_repeated_paths
+)
+    : m_type(type), m_path(std::move(path)), m_repeated_paths(std::move(repeated_paths)),
+      m_non_repeated_paths(std::move(non_repeated_paths)) {
     if (m_repeated_paths.empty())
         return;
     for (const size_t node_id : graph.get_nodes_ids())
@@ -53,7 +60,9 @@ const Path& Face::path() const { return m_path; }
 
 const std::vector<Path>& Face::repeated_paths() const { return m_repeated_paths; }
 
-const NodesLabels<std::bitset<4>>& Face::is_node_in_repeated_path() const {
+const std::vector<Path>& Face::non_repeated_paths() const { return m_non_repeated_paths; }
+
+const NodesLabels<std::bitset<8>>& Face::is_node_in_repeated_path() const {
     return m_is_node_in_repeated_path;
 }
 
@@ -79,6 +88,9 @@ const std::string Face::to_string() const {
     domus::format_to(out, "{}\n", path().to_string());
     domus::format_to(out, "Repeated paths:\n");
     for (const Path& path : repeated_paths())
+        domus::format_to(out, "{}\n", path.to_string());
+    domus::format_to(out, "Non-repeated paths:\n");
+    for (const Path& path : non_repeated_paths())
         domus::format_to(out, "{}\n", path.to_string());
     return result;
 }
@@ -113,8 +125,11 @@ Face compute_face_from_path(Path&& path, const Graph& graph) {
     if (edges_ids.front() == edges_ids.back())
         is_simple = false;
 
-    if (is_simple)
-        return Face(graph, FaceType::TYPE_1, std::move(path), {});
+    if (is_simple) {
+        std::vector<Path> non_repeated_paths;
+        non_repeated_paths.push_back(path);
+        return Face(graph, FaceType::TYPE_1, std::move(path), {}, std::move(non_repeated_paths));
+    }
 
     std::vector<bool> did_handle_repeated_edge_at_position(path.number_of_edges(), false);
 
@@ -168,13 +183,63 @@ Face compute_face_from_path(Path&& path, const Graph& graph) {
         edges_ids.pop_back();
     }
 
+    std::vector<Path> non_repeated_paths;
+    std::optional<size_t> first_repeated_pos;
+    for (size_t i = 0; i < path.number_of_edges(); i++) {
+        if (did_handle_repeated_edge_at_position[i]) {
+            first_repeated_pos = i;
+            break;
+        }
+    }
+
+    if (!first_repeated_pos.has_value()) {
+        non_repeated_paths.push_back(path);
+    } else {
+        const size_t r = first_repeated_pos.value();
+        const size_t n = path.number_of_edges();
+        bool in_non_repeated = false;
+
+        for (size_t k = 0; k < n; k++) {
+            const size_t pos = (r + k) % n;
+            if (!did_handle_repeated_edge_at_position[pos]) {
+                if (!in_non_repeated) {
+                    non_repeated_paths.emplace_back();
+                    in_non_repeated = true;
+                }
+                non_repeated_paths.back().push_back(
+                    graph,
+                    path.get_node_id_at_position(pos),
+                    path.get_edge_id_at_position(pos)
+                );
+            } else {
+                in_non_repeated = false;
+            }
+        }
+    }
+
     FaceType face_type;
     if (repeated_paths.size() == 1)
         face_type = FaceType::TYPE_2;
     else
         face_type = FaceType::TYPE_3;
 
-    return Face(graph, face_type, std::move(path), std::move(repeated_paths));
+    size_t total_edges_accounted = 0;
+    for (const auto& rp : repeated_paths)
+        total_edges_accounted += rp.number_of_edges() * 2;
+    for (const auto& nrp : non_repeated_paths)
+        total_edges_accounted += nrp.number_of_edges();
+    DOMUS_ASSERT(
+        total_edges_accounted == path.number_of_edges(),
+        "compute_face_from_path: non-repeated paths and repeated paths do not partition face edges"
+    );
+
+    return Face(
+        graph,
+        face_type,
+        std::move(path),
+        std::move(repeated_paths),
+        std::move(non_repeated_paths)
+    );
 }
 
 } // namespace domus::torus

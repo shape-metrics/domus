@@ -36,12 +36,16 @@ Embedding merge_biconnected_components(
     for (size_t i = 0; i < biconnected_components.get_components().size(); ++i) {
         const Embedding& embedding = embeddings[i];
         const Graph& component = biconnected_components.get_components()[i];
-        const NodesLabels<size_t>& labels = biconnected_components.get_labels_of_component(i);
+        const NodesLabels<size_t>& node_labels =
+            biconnected_components.get_node_labels_of_component(i);
+        const EdgesLabels<size_t>& edge_labels =
+            biconnected_components.get_edge_labels_of_component(i);
         for (size_t node_id : component.get_nodes_ids()) {
-            size_t old_node_id = labels.get_label(node_id);
+            size_t old_node_id = node_labels.get_label(node_id);
             for (const EdgeIter component_edge : embedding.get_edges(node_id)) {
-                size_t old_neighbor_id = labels.get_label(component_edge.neighbor_id);
-                output.add_edge(old_node_id, old_neighbor_id, component_edge.id);
+                size_t old_neighbor_id = node_labels.get_label(component_edge.neighbor_id);
+                size_t original_edge_id = edge_labels.get_label(component_edge.id);
+                output.add_edge(old_node_id, old_neighbor_id, original_edge_id);
             }
         }
     }

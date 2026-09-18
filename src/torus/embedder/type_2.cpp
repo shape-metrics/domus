@@ -361,18 +361,26 @@ class Type2Solver {
         return do_attachments_alternate(pos_1, pos_2);
     }
 
+    // TODO TOO NAIVE! if the cylinder is two sided then, since there is no ordinary piece embedded
+    // across, every conflict ordinary-special is captured by any embedding of the special piece.
+    // but if the cylinder is guessed onesided then there can be ordinary acrosses pieces, however
+    // in this case a conflict between this possibly across piece DEPENDS on the choice of the
+    // special piece (which has at most 2 choices). this means that if the current guess of the
+    // cylinder is one-sided, we need to compute conflicts more carefully
+    // TODO can we cache the computation of conflicts?
     void conflicts_cylinder_face(size_t face_index) {
         const auto& ordinary = m_ordinary_pieces_in_faces[face_index];
         const auto& special = m_special_pieces_in_faces[face_index];
 
         // conflicts between ordinary pieces and special pieces
-        for (const size_t p_1 : ordinary)
-            for (const size_t p_2 : special)
-                if (are_ordinary_special_in_conflict(face_index, p_1, p_2)) {
+        for (const size_t s : special)
+            for (const size_t o : ordinary) {
+                if (are_ordinary_special_in_conflict(face_index, o, s)) {
                     // NOTE: if the ordinary piece is in conflict with any of the special pieces,
                     // then the ordinary piece cannot be embedded at all inside the face
-                    m_conflicts_in_face[face_index].emplace_back(p_1, p_2);
+                    m_conflicts_in_face[face_index].emplace_back(o, s);
                 }
+            }
 
         // conflicts between ordinary pieces
         if (ordinary.size() >= 2)
@@ -481,6 +489,7 @@ class Type2Solver {
         }
     }
 
+    // TODO currently bugged, this approach is too naive
     void adjust_rotation_scheme(
         Embedding& copy_embedding,
         const PlanarCylinder& cylinder,
@@ -522,7 +531,29 @@ class Type2Solver {
                 const size_t old_neighbor_id =
                     cylinder.node_new_to_old_id.get_label(new_edge.neighbor_id);
                 const size_t old_edge_id = cylinder.edge_new_to_old_id.get_label(new_edge.id);
-                copy_embedding.add_edge(old_node_id, old_neighbor_id, old_edge_id);
+                // copy_embedding.add_edge(old_node_id, old_neighbor_id, old_edge_id); // only this
+                // was here before ai put stuff
+
+                // TODO from here added by ai, nede to check
+                if (copy_embedding.has_edge(old_node_id, old_neighbor_id, old_edge_id))
+                    continue;
+                if (copy_embedding.get_degree_of_node(old_node_id) == 0) {
+                    copy_embedding.add_edge(old_node_id, old_neighbor_id, old_edge_id);
+                } else {
+                    const auto new_prev = cylinder_embedding.prev_in_adjacency_list(
+                        new_node_id,
+                        new_edge.neighbor_id,
+                        new_edge.id
+                    );
+                    const size_t old_prev_edge_id =
+                        cylinder.edge_new_to_old_id.get_label(new_prev.id);
+                    copy_embedding.add_edge_after(
+                        old_node_id,
+                        old_neighbor_id,
+                        old_edge_id,
+                        old_prev_edge_id
+                    );
+                }
             }
         }
         for (size_t i = 1; i < face.repeated_paths()[0].number_of_nodes() - 1; i++) {
@@ -541,7 +572,7 @@ class Type2Solver {
             const Face& face = m_faces[face_index];
             if (face.type() == FaceType::TYPE_1)
                 continue;
-            auto cylinder = build_planar_cylinder(face);
+            PlanarCylinder cylinder = build_planar_cylinder(face);
             add_special_pieces_to_cylinder(face_index, cylinder);
             auto result = planarity::compute_planar_embedding(cylinder.graph);
             if (!result.has_value())
@@ -570,7 +601,7 @@ class Type2Solver {
     bool solve(size_t done_guesses_of_cylinders) {
         if (done_guesses_of_cylinders == m_number_of_cylinders) {
             DOMUS_DEBUG_INDENT();
-            DOMUS_DEBUG_LN("guessed cylinders types.");
+            DOMUS_DEBUG_LN("attempting this guess.");
             build_cnf();
             DOMUS_DEBUG_LN("cnf built.");
             m_sat_result = solve_2_sat(m_cnf);
@@ -579,11 +610,19 @@ class Type2Solver {
                 return false;
             m_assigned_face_of_piece = solver_result_to_placement();
             Embedding copy_embedding(m_embedding);
-            if (embed_special_pieces(copy_embedding) && embed_ordinary_pieces(copy_embedding)) {
-                m_embedding = std::move(copy_embedding);
-                return true;
+            const bool embedded_special_pieces = embed_special_pieces(copy_embedding);
+            const bool embedded_ordinary_pieces = embed_ordinary_pieces(copy_embedding);
+            if (!embedded_special_pieces || !embedded_ordinary_pieces) {
+                DOMUS_DEBUG_LN("could not extend embedding.");
+                if (!embedded_special_pieces)
+                    DOMUS_DEBUG_LN("failed to embed special pieces.");
+                if (!embedded_ordinary_pieces)
+                    DOMUS_DEBUG_LN("failed to embed ordinary pieces.");
+                return false;
             }
-            return false;
+            m_embedding = std::move(copy_embedding);
+            DOMUS_DEBUG_LN("embedding extension found.");
+            return true;
         }
         m_cylinders_type_current_guess[done_guesses_of_cylinders] = CylinderType::ONE_SIDED;
         if (solve(done_guesses_of_cylinders + 1))
@@ -597,7 +636,6 @@ class Type2Solver {
   public:
     static bool solve_type_2(Graph& graph, Embedding& embedding, const std::vector<Face>& faces) {
         DOMUS_DEBUG_LN("trying to complete the embedding extension.");
-        // mapper::build_equivalent_embedding(graph, embedding).to_torus_mapping().visualize();
         Type2Solver solver(graph, embedding, faces);
         switch (solver.init()) {
         case InitializationOutcome::NO_SOLUTION:
@@ -612,6 +650,11 @@ class Type2Solver {
         case InitializationOutcome::DONE:
             DOMUS_DEBUG_LN("continuing to look for an extension.");
             DOMUS_DEBUG_LN("number of cylinders: {}", solver.m_number_of_cylinders);
+            DOMUS_DEBUG_EXEC(for (const Face& face : faces) {
+                if (face.type() == FaceType::TYPE_2)
+                    DOMUS_DEBUG("{}", face.to_string());
+            });
+            mapper::build_equivalent_embedding(graph, embedding).to_torus_mapping().visualize();
             return solver.solve(0);
         }
     }
