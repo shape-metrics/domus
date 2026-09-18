@@ -4,6 +4,7 @@
 #include <expected>
 #include <filesystem>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace domus::utilities {
@@ -24,6 +25,16 @@ template <size_t N> std::vector<std::bitset<N>> generate_all_bitsets() {
     for (size_t i = 0; i < num_combinations; ++i)
         result.push_back(std::bitset<N>(i));
     return result;
+}
+
+template <std::ranges::input_range R> bool has_duplicates(const R& range) {
+    using T = std::ranges::range_value_t<R>;
+    std::unordered_set<T> seen;
+    for (const auto& item : range) {
+        if (!seen.insert(item).second)
+            return true;
+    }
+    return false;
 }
 
 } // namespace domus::utilities

@@ -7,6 +7,7 @@
 #include "domus/planarity/auslander_parter.hpp"
 #include "domus/sat/cnf.hpp"
 #include "domus/sat/sat.hpp"
+#include "domus/torus/embedding_converter.hpp"
 
 #include "../bridge.hpp"
 #include "../faces.hpp"
@@ -197,20 +198,17 @@ class Type2Solver {
     }
 
     InitializationOutcome init() {
-        m_special_pieces_in_faces.resize(m_faces.size());
-        m_ordinary_pieces_in_faces.resize(m_faces.size());
-        m_is_across_in_a_cylinder = std::vector(m_pieces.size(), false);
-        m_piece_face_to_variable.resize(m_pieces.size());
-        for (size_t i = 0; i < m_pieces.size(); ++i) {
-            m_piece_face_to_variable.resize(m_faces.size());
-            for (size_t j = 0; j < m_piece_face_to_variable[i].size(); j++)
-                m_piece_face_to_variable[i][j] = 0;
-        }
-        m_variables.push_back({});
-
         m_pieces = Bridge::compute(m_graph, m_embedding);
         if (m_pieces.size() == 0)
             return InitializationOutcome::NOTHING_TO_DO;
+
+        m_special_pieces_in_faces.resize(m_faces.size());
+        m_ordinary_pieces_in_faces.resize(m_faces.size());
+        m_conflicts_in_face.resize(m_faces.size());
+        m_is_across_in_a_cylinder = std::vector(m_pieces.size(), false);
+        m_piece_face_to_variable.assign(m_pieces.size(), std::vector<int>(m_faces.size(), 0));
+        m_variables.push_back({});
+
         initialize_old_attachments_bridges();
         std::vector<NodesContainer> nodes_in_faces = compute_nodes_in_faces();
 
@@ -221,7 +219,7 @@ class Type2Solver {
                 adjacent_faces.size() <= 2,
                 "handle_type_2: in cubic graphs a piece cannot be adjacent to three or more faces"
             );
-            if (adjacent_faces.size() == 0)
+            if (adjacent_faces.size() == 0) // TODO: is this even possible?
                 return InitializationOutcome::NO_SOLUTION;
             initialize_variables(i, adjacent_faces);
             for (const size_t face_index : adjacent_faces) {
@@ -248,6 +246,8 @@ class Type2Solver {
                 conflicts_cylinder_face(i);
             }
         }
+
+        m_cylinders_type_current_guess.resize(m_number_of_cylinders);
 
         return InitializationOutcome::DONE;
     }
@@ -313,6 +313,8 @@ class Type2Solver {
     }
 
     void conflicts_simply_connected_face(size_t face_index) {
+        if (m_ordinary_pieces_in_faces[face_index].size() < 2)
+            return;
         for (size_t j1 = 0; j1 < m_ordinary_pieces_in_faces[face_index].size() - 1; j1++) {
             const size_t p_1 = m_ordinary_pieces_in_faces[face_index][j1];
             for (size_t j2 = j1 + 1; j2 < m_ordinary_pieces_in_faces[face_index].size(); j2++) {
@@ -360,28 +362,30 @@ class Type2Solver {
     }
 
     void conflicts_cylinder_face(size_t face_index) {
-        for (size_t j1 = 0; j1 < m_ordinary_pieces_in_faces[face_index].size() - 1; j1++) {
-            const size_t p_1 = m_ordinary_pieces_in_faces[face_index][j1];
+        const auto& ordinary = m_ordinary_pieces_in_faces[face_index];
+        const auto& special = m_special_pieces_in_faces[face_index];
 
-            // conflicts between ordinary pieces and special pieces
-            for (size_t j2 = 0; j2 < m_special_pieces_in_faces[face_index].size(); j2++) {
-                const size_t p_2 = m_special_pieces_in_faces[face_index][j2];
+        // conflicts between ordinary pieces and special pieces
+        for (const size_t p_1 : ordinary)
+            for (const size_t p_2 : special)
                 if (are_ordinary_special_in_conflict(face_index, p_1, p_2)) {
                     // NOTE: if the ordinary piece is in conflict with any of the special pieces,
                     // then the ordinary piece cannot be embedded at all inside the face
                     m_conflicts_in_face[face_index].emplace_back(p_1, p_2);
                 }
+
+        // conflicts between ordinary pieces
+        if (ordinary.size() >= 2)
+            for (size_t j1 = 0; j1 + 1 < ordinary.size(); j1++) {
+                const size_t p_1 = ordinary[j1];
+                for (size_t j2 = j1 + 1; j2 < ordinary.size(); j2++) {
+                    const size_t p_2 = ordinary[j2];
+                    if (are_ordinary_in_conflict(face_index, p_1, p_2))
+                        m_conflicts_in_face[face_index].emplace_back(p_1, p_2);
+                }
             }
 
-            // conflicts between ordinary pieces
-            for (size_t j2 = j1 + 1; j2 < m_ordinary_pieces_in_faces[face_index].size(); j2++) {
-                const size_t p_2 = m_ordinary_pieces_in_faces[face_index][j2];
-                if (are_ordinary_in_conflict(face_index, p_1, p_2))
-                    m_conflicts_in_face[face_index].emplace_back(p_1, p_2);
-            }
-
-            // conflicts between special pieces will be handled later...
-        }
+        // conflicts between special pieces will be handled later...
     }
 
     void build_cnf() {
@@ -565,8 +569,12 @@ class Type2Solver {
 
     bool solve(size_t done_guesses_of_cylinders) {
         if (done_guesses_of_cylinders == m_number_of_cylinders) {
+            DOMUS_DEBUG_INDENT();
+            DOMUS_DEBUG_LN("guessed cylinders types.");
             build_cnf();
+            DOMUS_DEBUG_LN("cnf built.");
             m_sat_result = solve_2_sat(m_cnf);
+            DOMUS_DEBUG_LN("{}", satSolverResultType_to_string(m_sat_result.result));
             if (m_sat_result.result == SatSolverResultType::UNSAT)
                 return false;
             m_assigned_face_of_piece = solver_result_to_placement();
@@ -588,13 +596,22 @@ class Type2Solver {
 
   public:
     static bool solve_type_2(Graph& graph, Embedding& embedding, const std::vector<Face>& faces) {
+        DOMUS_DEBUG_LN("trying to complete the embedding extension.");
+        // mapper::build_equivalent_embedding(graph, embedding).to_torus_mapping().visualize();
         Type2Solver solver(graph, embedding, faces);
         switch (solver.init()) {
         case InitializationOutcome::NO_SOLUTION:
+            DOMUS_DEBUG_LN(
+                "no solution: there is a piece that is not attached to any face (is it even "
+                "possible?)."
+            );
             return false;
         case InitializationOutcome::NOTHING_TO_DO:
+            DOMUS_DEBUG_LN("found solution: there are no pieces to embed.");
             return true;
         case InitializationOutcome::DONE:
+            DOMUS_DEBUG_LN("continuing to look for an extension.");
+            DOMUS_DEBUG_LN("number of cylinders: {}", solver.m_number_of_cylinders);
             return solver.solve(0);
         }
     }

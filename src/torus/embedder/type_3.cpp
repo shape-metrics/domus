@@ -9,7 +9,6 @@
 #include "domus/core/graph/path.hpp"
 #include "domus/core/print.hpp"
 #include "domus/core/utils.hpp"
-#include "domus/torus/embedding_converter.hpp"
 
 #include "../bridge.hpp"
 #include "../faces.hpp"
@@ -21,6 +20,8 @@ using namespace domus::graph::utilities;
 
 // this class models all the possible ways of splitting a type 3 face
 class SplitterWithPath {
+    enum class SplitOutcome { NO_LONGER_TOROIDAL, DOES_NOT_SPLIT, SPLITS };
+
     graph::Graph& m_graph;
     graph::Embedding& m_embedding;
     const Face& m_type_3_face;
@@ -29,7 +30,7 @@ class SplitterWithPath {
 
     bool try_embedding_extension(const std::vector<Face>& faces);
     bool try_face_splits_with_path(const graph::Path& path);
-    std::optional<std::vector<Face>> is_split_good(const std::vector<graph::Path>& faces);
+    SplitOutcome is_split_good(const std::vector<Face>& faces);
     bool try_paths_inside_graph();
     bool try_edges_not_in_graph();
 
@@ -45,12 +46,12 @@ class SplitterWithPath {
 };
 
 bool are_attachments_in_same_repeated_path(
-    const NodesLabels<std::bitset<2>>& is_node_in_repeated_path,
+    const NodesLabels<std::bitset<4>>& is_node_in_repeated_path,
     const size_t attachment_id_1,
     const size_t attachment_id_2
 ) {
-    const std::bitset<2>& repeated_paths_1 = is_node_in_repeated_path.get_label(attachment_id_1);
-    const std::bitset<2>& repeated_paths_2 = is_node_in_repeated_path.get_label(attachment_id_2);
+    const auto& repeated_paths_1 = is_node_in_repeated_path.get_label(attachment_id_1);
+    const auto& repeated_paths_2 = is_node_in_repeated_path.get_label(attachment_id_2);
     for (size_t i = 0; i < 2; i++)
         if (repeated_paths_1.test(i) && repeated_paths_2.test(i))
             return true;
@@ -115,7 +116,7 @@ SplitterWithPath::SplitterWithPath(
 
 auto candidate_face_splitting_paths_in_bridge(
     const Bridge& bridge,
-    const NodesLabels<std::bitset<2>>& is_node_in_repeated_path,
+    const NodesLabels<std::bitset<4>>& is_node_in_repeated_path,
     const Graph& graph
 ) {
     return all_pairs_of_view(bridge.get_attachments()) | std::views::filter([&](const auto& pair) {
@@ -157,7 +158,7 @@ bool SplitterWithPath::try_edges_not_in_graph() {
     DOMUS_DEBUG_LN(
         "SplitterWithPath::try_edges_not_in_graph: splitting type 3 face with paths not in graph."
     );
-    ScopedPrintIndent indent;
+    DOMUS_DEBUG_INDENT();
     for (size_t i = 0; i < m_type_3_face.path().number_of_nodes() - 1; i++) {
         const size_t node_id_1 = m_type_3_face.path().get_node_id_at_position(i);
         if (m_graph.get_degree_of_node(node_id_1) ==
@@ -194,7 +195,7 @@ bool SplitterWithPath::try_paths_inside_graph() {
     DOMUS_DEBUG_LN(
         "SplitterWithPath::try_paths_inside_graph: splitting type 3 face with paths from bridges."
     );
-    ScopedPrintIndent indent;
+    DOMUS_DEBUG_INDENT();
     for (const Bridge& bridge : m_bridges) {
         if (bridge.get_bridge().get_number_of_nodes() == 2) {
             const Path path = path_of_chord(m_graph, bridge);
@@ -213,25 +214,22 @@ bool SplitterWithPath::try_paths_inside_graph() {
     return false;
 }
 
-std::optional<std::vector<Face>> SplitterWithPath::is_split_good(const std::vector<Path>& paths) {
+SplitterWithPath::SplitOutcome SplitterWithPath::is_split_good(const std::vector<Face>& faces) {
     size_t isolated_nodes = 0;
     for (const size_t node_id : m_embedding.get_nodes_ids())
         if (m_embedding.get_degree_of_node(node_id) == 0)
             isolated_nodes++;
     if (compute_embedding_genus(
-            m_embedding.get_number_of_nodes(),
-            m_embedding.get_number_of_edges(),
-            paths.size(),
-            1 + isolated_nodes
+            m_embedding.get_number_of_nodes() - isolated_nodes,
+            m_embedding.get_number_of_edges() / 2,
+            faces.size(),
+            1
         ) > 1)
-        return std::nullopt;
-    std::vector<Face> faces;
-    for (Path path : paths)
-        faces.push_back(compute_face_from_path(std::move(path), m_graph));
-    for (auto& face : faces)
+        return SplitOutcome::NO_LONGER_TOROIDAL;
+    for (const Face& face : faces)
         if (face.type() == FaceType::TYPE_3)
-            return std::nullopt;
-    return faces;
+            return SplitOutcome::DOES_NOT_SPLIT;
+    return SplitOutcome::SPLITS;
 }
 
 bool SplitterWithPath::try_face_splits_with_path(const Path& path) {
@@ -264,11 +262,24 @@ bool SplitterWithPath::try_face_splits_with_path(const Path& path) {
                 m_embedding.reverse_circular_order(
                     path.get_node_id_at_position(i * path.number_of_edges())
                 );
-        std::vector<Path> paths = compute_faces_in_embedding(m_graph, m_embedding);
-        std::optional<std::vector<Face>> faces = is_split_good(paths);
-        if (faces.has_value())
-            if (try_embedding_extension(*faces))
+
+        std::vector<Path> face_paths = compute_faces_in_embedding(m_graph, m_embedding);
+        std::vector<Face> faces;
+        for (Path face_path : face_paths)
+            faces.push_back(compute_face_from_path(std::move(face_path), m_graph));
+        switch (is_split_good(faces)) {
+        case SplitOutcome::SPLITS:
+            DOMUS_DEBUG_LN("this path combination splits.");
+            if (try_embedding_extension(faces))
                 return true;
+            break;
+        case SplitOutcome::DOES_NOT_SPLIT:
+            DOMUS_DEBUG_LN("this path combination does not split.");
+            break;
+        case SplitOutcome::NO_LONGER_TOROIDAL:
+            DOMUS_DEBUG_LN("this path combination is not toroidal.");
+            break;
+        };
 
         for (size_t i = 0; i < 2; i++)
             if (combination.test(i))
@@ -286,10 +297,16 @@ bool SplitterWithPath::try_embedding_extension(const std::vector<Face>& faces) {
         compute_embedding_genus(m_embedding) == 1,
         "next_case: genus of embedding is not 1"
     );
+    DOMUS_DEBUG_INDENT();
     return handle_type_2(m_graph, m_embedding, faces);
 }
 
 bool SplitterWithPath::try_all_possible_splits_and_keep_extending() {
+    DOMUS_DEBUG_LN("Trying to split face:");
+    DOMUS_DEBUG("{}", m_type_3_face.to_string());
+    DOMUS_DEBUG_LN("Bridges:");
+    for (const Bridge& bridge : m_bridges)
+        DOMUS_DEBUG("{}", bridge.to_string());
     if (try_paths_inside_graph()) // first we try to split with paths that are already inside the
                                   // graph
         return true;
@@ -309,8 +326,6 @@ bool handle_type_3(Graph& graph, Embedding& embedding, const Face& face, const s
     // calling the procedure for type 2 faces next. if this pipeline eventually returns true, it
     // means we found an extension, otherwise no extension is possible
 
-    DOMUS_DEBUG("{}", face.to_string());
-    mapper::build_equivalent_embedding(graph, embedding).to_torus_mapping().visualize();
     const std::vector<Bridge> bridges = Bridge::compute(graph, embedding);
     SplitterWithPath splitter(graph, embedding, face, jolly_id, bridges);
     return splitter.try_all_possible_splits_and_keep_extending();

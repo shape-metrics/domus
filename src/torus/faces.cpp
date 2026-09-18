@@ -53,7 +53,7 @@ const Path& Face::path() const { return m_path; }
 
 const std::vector<Path>& Face::repeated_paths() const { return m_repeated_paths; }
 
-const NodesLabels<std::bitset<2>>& Face::is_node_in_repeated_path() const {
+const NodesLabels<std::bitset<4>>& Face::is_node_in_repeated_path() const {
     return m_is_node_in_repeated_path;
 }
 

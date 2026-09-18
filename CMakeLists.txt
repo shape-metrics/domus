@@ -115,6 +115,7 @@ set(COMMON_SRCS
     src/torus/embedder/type_2.cpp
     src/torus/test.cpp
     src/core/graph/test.cpp
+    src/force_layout/planarity_preserving_force_layout.cpp
 )
 
 add_library(core ${COMMON_SRCS})

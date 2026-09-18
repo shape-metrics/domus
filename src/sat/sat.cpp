@@ -11,6 +11,15 @@
 namespace domus::sat {
 using namespace graph;
 
+std::string satSolverResultType_to_string(SatSolverResultType type) {
+    switch (type) {
+    case SatSolverResultType::SAT:
+        return "SAT";
+    case SatSolverResultType::UNSAT:
+        return "UNSAT";
+    }
+}
+
 std::string SatSolverResult::to_string() const {
     std::string result_str;
     auto out = std::back_inserter(result_str);

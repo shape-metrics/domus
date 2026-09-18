@@ -22,7 +22,13 @@ class Face {
     FaceType m_type;
     graph::Path m_path;
     std::vector<graph::Path> m_repeated_paths;
-    graph::utilities::NodesLabels<std::bitset<2>> m_is_node_in_repeated_path;
+    graph::utilities::NodesLabels<std::bitset<4>>
+        m_is_node_in_repeated_path; // given a cubic biconnected graph, if the embedding is
+                                    // toroidal, a face can have up to 3 repeated paths, however to
+                                    // handle situations in which the embedding might temporarily
+                                    // have genus 2 we allow this variable to handle at most 4
+                                    // repeated paths, hoping that it is the max we have to deal
+                                    // with
 
   public:
     Face(
@@ -35,7 +41,7 @@ class Face {
     FaceType type() const;
     const graph::Path& path() const;
     const std::vector<graph::Path>& repeated_paths() const;
-    const graph::utilities::NodesLabels<std::bitset<2>>& is_node_in_repeated_path() const;
+    const graph::utilities::NodesLabels<std::bitset<4>>& is_node_in_repeated_path() const;
     const std::string to_string() const;
     void print() const;
 };

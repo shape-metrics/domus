@@ -11,6 +11,8 @@ class Cnf;
 
 enum class SatSolverResultType { SAT, UNSAT };
 
+std::string satSolverResultType_to_string(SatSolverResultType type);
+
 struct SatSolverResult {
     SatSolverResultType result;
     std::vector<int> numbers;

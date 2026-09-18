@@ -28,6 +28,12 @@ size_t Embedding::add_node() {
 
 bool Embedding::has_node(size_t node_id) const { return node_id < get_number_of_nodes(); }
 
+bool Embedding::has_edge(size_t from_id, size_t to_id, size_t edge_id) const {
+    if (!has_node(from_id) || !has_node(to_id))
+        return false;
+    return m_next_in_adjacency_list.has_label(from_id, to_id, edge_id);
+}
+
 bool Embedding::are_neighbors(size_t node_1_id, size_t node_2_id) const {
     DOMUS_ASSERT(node_1_id != node_2_id, "Embedding::are_neighbors: nodes are equal");
     for (EdgeIter edge : m_adjacency_list.at(node_1_id))

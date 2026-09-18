@@ -1,13 +1,12 @@
 #include "bridge.hpp"
 
-#include <print>
-
 #include "domus/core/debug.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/path.hpp"
 #include "domus/core/graph/subgraph.hpp"
+#include "domus/core/print.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -35,13 +34,13 @@ std::string Bridge::to_string() const {
     std::string result;
     auto out = std::back_inserter(result);
 
-    std::format_to(
+    domus::format_to(
         out,
         "{}",
         m_bridge.get_sub_graph().to_string(true, m_bridge.get_sub_graph_labels(), "Bridge")
     );
 
-    std::format_to(out, "Attachments:");
+    domus::format_to(out, "Attachments:");
     for (size_t node_id : m_bridge.get_sub_graph().get_nodes_ids())
         if (is_attachment(node_id))
             std::format_to(out, " {}", m_bridge.get_sub_graph_labels().get_label(node_id));
@@ -50,7 +49,7 @@ std::string Bridge::to_string() const {
     return result;
 }
 
-void Bridge::print() const { std::println("{}", to_string()); }
+void Bridge::print() const { domus::println("{}", to_string()); }
 
 class BridgeFactory {
     static Bridge create_bridge(const graph::SubGraph&& bridge);

@@ -8,6 +8,7 @@
 #include "domus/core/graph/path.hpp"
 
 #include "domus/core/debug.hpp"
+#include "domus/core/utils.hpp"
 
 namespace domus::graph {
 
@@ -21,7 +22,8 @@ Cycle::Cycle(const Path& path) {
         m_edges_ids.push_back(edge_id);
     }
     DOMUS_ASSERT(
-        !DOMUS_HAS_DUPLICATES(m_nodes_ids) && !DOMUS_HAS_DUPLICATES(m_edges_ids),
+        !domus::utilities::has_duplicates(m_nodes_ids) &&
+            !domus::utilities::has_duplicates(m_edges_ids),
         "Cycle::Cycle: class is for SIMPLE cycles only"
     );
 }

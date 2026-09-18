@@ -21,6 +21,8 @@ struct ColorRGB {
             static_cast<float>(b) / 255.0f
         };
     }
+
+    bool operator==(const ColorRGB& o) const = default;
 };
 
 #define RED_RGB domus::color::ColorRGB{1.0f, 0.0f, 0.0f}

@@ -20,6 +20,7 @@ class Embedding {
 
     size_t add_node();
     bool has_node(size_t node_id) const;
+    bool has_edge(size_t from_id, size_t to_id, size_t edge_id) const;
     bool are_neighbors(size_t node_1_id, size_t node_2_id) const;
 
     auto get_nodes_ids() const;

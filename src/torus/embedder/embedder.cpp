@@ -29,7 +29,7 @@ bool extend_embedding(
     for (const auto& face : faces) {
         if (face.type() == FaceType::TYPE_3) {
             DOMUS_DEBUG_LN("extend_embedding: extending case 3.");
-            ScopedPrintIndent indent;
+            DOMUS_DEBUG_INDENT();
             if (handle_type_3(graph, embedding, face, jolly_id))
                 return true;
             return false;

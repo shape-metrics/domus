@@ -10,6 +10,7 @@
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/drawing/draw_elements.hpp"
 #include "domus/drawing/linear_scale.hpp"
+#include "domus/force_layout/planarity_preserving_force_layout.hpp"
 #include "domus/planarity/tutte.hpp"
 #include "domus/torus/mapping.hpp"
 
@@ -406,6 +407,8 @@ class EquivalentEmbeddingBuilder {
                 continue;
             if (m_old_inner_node_to_new_node.has_label(old_node_id))
                 continue;
+            if (m_old_embedding.get_degree_of_node(old_node_id) == 0)
+                continue;
             add_inner_node(old_node_id);
         }
 
@@ -413,6 +416,8 @@ class EquivalentEmbeddingBuilder {
 
         for (const size_t old_node_id : m_old_graph.get_nodes_ids()) {
             if (m_is_border_old_node.has_node(old_node_id))
+                continue;
+            if (m_old_embedding.get_degree_of_node(old_node_id) == 0)
                 continue;
             const size_t new_node_id = m_old_inner_node_to_new_node.get_label(old_node_id);
             for (const auto old_edge : m_old_graph.get_out_edges(old_node_id)) {
@@ -438,6 +443,8 @@ class EquivalentEmbeddingBuilder {
 
         for (const size_t old_node_id : m_old_graph.get_nodes_ids()) {
             if (m_is_border_old_node.has_node(old_node_id))
+                continue;
+            if (m_old_embedding.get_degree_of_node(old_node_id) == 0)
                 continue;
             const size_t new_node_id = m_old_inner_node_to_new_node.get_label(old_node_id);
             if (m_embedding.get_degree_of_node(new_node_id) == 0) {
@@ -672,6 +679,13 @@ class EquivalentEmbeddingBuilder {
             equivalent_embedding.attributes
         );
 
+        force_layout::planarity_preserving_force_layout(
+            equivalent_embedding.graph,
+            equivalent_embedding.attributes,
+            equivalent_embedding.embedding,
+            builder.m_is_border_new_node
+        );
+
         builder.back_to_square();
 
         return equivalent_embedding;
@@ -679,10 +693,15 @@ class EquivalentEmbeddingBuilder {
 };
 
 EquivalentEmbedding build_equivalent_embedding(const Graph& graph, const Embedding& embedding) {
+    Graph embedded_graph = graph;
+    for (const auto& edge : graph.get_all_edges())
+        if (!embedding.has_edge(edge.edge.from_id, edge.edge.to_id, edge.id))
+            embedded_graph.remove_edge(edge.id);
+
     return EquivalentEmbeddingBuilder::build(
-        graph,
+        embedded_graph,
         embedding,
-        compute_outer_face(graph, embedding)
+        compute_outer_face(embedded_graph, embedding)
     );
 }
 
@@ -699,14 +718,29 @@ TorusMapping EquivalentEmbedding::to_torus_mapping() const {
             static_cast<size_t>(std::stoi(std::string(attributes.get_node_label(node_id))))
         );
     }
+    // Draw auxiliary wheel edges (triangulation helpers) first so they stay in background
     for (const EdgeId& edge : graph.get_all_edges()) {
         if (attributes.is_edge_hidden(edge.id))
             continue;
-        mapping.add_line(
-            {attributes.get_position(edge.edge.from_id),
-             attributes.get_position(edge.edge.to_id),
-             attributes.get_edge_color(edge.id)}
-        );
+        if (attributes.get_edge_color(edge.id) == WHEEL_EDGE_COLOR) {
+            mapping.add_line(
+                {attributes.get_position(edge.edge.from_id),
+                 attributes.get_position(edge.edge.to_id),
+                 attributes.get_edge_color(edge.id)}
+            );
+        }
+    }
+    // Draw real graph edges on top so they are never masked by wheel edges
+    for (const EdgeId& edge : graph.get_all_edges()) {
+        if (attributes.is_edge_hidden(edge.id))
+            continue;
+        if (attributes.get_edge_color(edge.id) != WHEEL_EDGE_COLOR) {
+            mapping.add_line(
+                {attributes.get_position(edge.edge.from_id),
+                 attributes.get_position(edge.edge.to_id),
+                 attributes.get_edge_color(edge.id)}
+            );
+        }
     }
     return mapping;
 }

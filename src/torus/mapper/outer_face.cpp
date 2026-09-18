@@ -33,8 +33,6 @@ OuterFace compute_outer_face(const Graph& graph, const Embedding& embedding) {
         new_to_old_edge.add_label(g.add_edge(n_id_1, n_id_2), edge_id);
     }
 
-    g.print(true);
-
     auto basis = algorithms::compute_cycle_basis(g);
 
     std::vector<EdgesContainer> edges_in_cycles;
@@ -51,7 +49,8 @@ OuterFace compute_outer_face(const Graph& graph, const Embedding& embedding) {
             Embedding e(embedding);
             for (const auto& edge : graph.get_all_edges()) {
                 if (!edges_in_cycles[i].has_edge(edge.id) &&
-                    !edges_in_cycles[j].has_edge(edge.id)) {
+                    !edges_in_cycles[j].has_edge(edge.id) &&
+                    e.has_edge(edge.edge.from_id, edge.edge.to_id, edge.id)) {
                     e.remove_edge(edge.edge.from_id, edge.edge.to_id, edge.id);
                     e.remove_edge(edge.edge.to_id, edge.edge.from_id, edge.id);
                 }

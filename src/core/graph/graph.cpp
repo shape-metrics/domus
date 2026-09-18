@@ -174,18 +174,18 @@ std::string Graph::to_string(
 ) const {
     std::string result;
     auto out = std::back_inserter(result);
-    std::format_to(out, "{}:\n", name);
+    domus::format_to(out, "{}:\n", name);
     for (const size_t node_id : get_nodes_ids()) {
         const size_t node_label = labels.get_label(node_id);
         if (undirected) {
-            std::format_to(out, "{}: [ ", node_label);
+            domus::format_to(out, "{}: [ ", node_label);
             for (const size_t neighbor_id : get_neighbors(node_id)) {
                 const size_t neighbor_label = labels.get_label(neighbor_id);
                 std::format_to(out, "{} ", neighbor_label);
             }
             std::format_to(out, "]\n");
         } else {
-            std::format_to(out, "{}: out[ ", node_label);
+            domus::format_to(out, "{}: out[ ", node_label);
             for (size_t neighbor_id : get_out_neighbors(node_id)) {
                 const size_t neighbor_label = labels.get_label(neighbor_id);
                 std::format_to(out, "{} ", neighbor_label);
