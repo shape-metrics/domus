@@ -112,6 +112,10 @@ class Type2Solver {
         for (size_t face_index = 0; face_index < m_faces.size(); face_index++)
             if (is_piece_in_face(nodes_in_faces[face_index], bridge))
                 adjacent_faces.push_back(face_index);
+        DOMUS_ASSERT(
+            adjacent_faces.size() > 0,
+            "Type2Solver::compute_adjacent_faces: piece need to be adjacent to at least one face\n"
+        );
         return adjacent_faces;
     }
 
@@ -242,10 +246,9 @@ class Type2Solver {
                 compute_adjacent_faces(m_pieces[i], nodes_in_faces);
             DOMUS_ASSERT(
                 adjacent_faces.size() <= 2,
-                "handle_type_2: in cubic graphs a piece cannot be adjacent to three or more faces"
+                "Type2Solver::init: in cubic graphs a piece cannot be adjacent to three or more "
+                "faces"
             );
-            if (adjacent_faces.size() == 0) // TODO: is this even possible?
-                return InitializationOutcome::NO_SOLUTION;
             initialize_variables(i, adjacent_faces);
             for (const size_t face_index : adjacent_faces) {
                 if (m_faces[face_index].type() == FaceType::TYPE_2) {
