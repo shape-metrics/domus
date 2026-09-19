@@ -4,15 +4,15 @@
 #include <utility>
 #include <vector>
 
+#include "domus/core/debug.hpp"
 #include "domus/core/graph/concept.hpp"
 #include "domus/core/graph/cycle.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
+#include "domus/planarity/interlacement.hpp"
 
-#include "domus/core/debug.hpp"
-#include "interlacement.hpp"
 #include "segment.hpp"
 
 namespace domus::planarity {

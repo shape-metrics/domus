@@ -1,28 +1,97 @@
-#include "interlacement.hpp"
+#include "domus/planarity/interlacement.hpp"
 
-#include <stddef.h>
-
-#include "domus/core/graph/cycle.hpp"
-#include "segment.hpp"
+#include <algorithm>
+#include <cstddef>
 
 #include "domus/core/debug.hpp"
+#include "domus/core/graph/cycle.hpp"
+#include "segment.hpp"
 
 namespace domus::planarity {
 using domus::graph::Cycle;
 
-std::vector<int> compute_cycle_labels(const Segment& segment, const Cycle& cycle) {
-    std::vector<int> cycle_labels(cycle.size());
-    int found_attachments = 0;
-    const int total_attachments = static_cast<int>(segment.number_of_attachments());
-    for (size_t i = 0; i < cycle.size(); ++i) {
-        if (segment.is_attachment(i))
-            cycle_labels[i] = 2 * (found_attachments++);
-        else if (found_attachments == 0)
-            cycle_labels[i] = 2 * total_attachments - 1;
-        else
-            cycle_labels[i] = 2 * found_attachments - 1;
+void CycleConflictDetector::init(size_t cycle_size, std::span<const size_t> pos_1) {
+    if (pos_1.size() < 2) {
+        m_number_of_labels = 0;
+        return;
     }
-    return cycle_labels;
+
+    std::vector<size_t> sorted_pos(pos_1.begin(), pos_1.end());
+    if (!std::ranges::is_sorted(sorted_pos)) {
+        std::ranges::sort(sorted_pos);
+    }
+    auto [first, last] = std::ranges::unique(sorted_pos);
+    sorted_pos.erase(first, last);
+
+    if (sorted_pos.size() < 2) {
+        m_number_of_labels = 0;
+        return;
+    }
+
+    const size_t total_attachments = sorted_pos.size();
+    m_number_of_labels = 2 * total_attachments;
+    m_cycle_labels.assign(cycle_size, 0);
+    m_labels.assign(m_number_of_labels, 0);
+
+    const int wrap_label = static_cast<int>(2 * total_attachments - 1);
+
+    // Positions strictly before the first attachment get wrap_label
+    std::fill(
+        m_cycle_labels.begin(),
+        m_cycle_labels.begin() + static_cast<std::ptrdiff_t>(sorted_pos[0]),
+        wrap_label
+    );
+
+    for (size_t i = 0; i < total_attachments; ++i) {
+        const size_t curr = sorted_pos[i];
+        m_cycle_labels[curr] = 2 * static_cast<int>(i);
+
+        const size_t next = (i + 1 < total_attachments) ? sorted_pos[i + 1] : cycle_size;
+        const int path_label =
+            (i + 1 < total_attachments) ? (2 * static_cast<int>(i) + 1) : wrap_label;
+
+        std::fill(
+            m_cycle_labels.begin() + static_cast<std::ptrdiff_t>(curr + 1),
+            m_cycle_labels.begin() + static_cast<std::ptrdiff_t>(next),
+            path_label
+        );
+    }
+}
+
+bool CycleConflictDetector::in_conflict(std::span<const size_t> pos_2) {
+    if (m_number_of_labels == 0 || pos_2.size() < 2)
+        return false;
+
+    int sum = 0;
+    for (const size_t att_idx : pos_2) {
+        DOMUS_ASSERT(
+            att_idx < m_cycle_labels.size(),
+            "CycleConflictDetector::in_conflict: attachment index out of cycle bounds"
+        );
+        const size_t label_idx = static_cast<size_t>(m_cycle_labels[att_idx]);
+        if (m_labels[label_idx] == 0) {
+            m_labels[label_idx] = 1;
+            ++sum;
+        }
+    }
+
+    int part_sum = m_labels[0] + m_labels[1] + m_labels[2];
+    bool conflict = true;
+    for (size_t k = 0; k <= m_number_of_labels - 2; k += 2) {
+        if (part_sum == sum) {
+            conflict = false;
+            break;
+        }
+        part_sum = part_sum + m_labels[(3 + k) % m_number_of_labels] +
+                   m_labels[(4 + k) % m_number_of_labels];
+        part_sum = part_sum - m_labels[k] - m_labels[(1 + k) % m_number_of_labels];
+    }
+
+    for (const size_t att_idx : pos_2) {
+        m_labels[static_cast<size_t>(m_cycle_labels[att_idx])] = 0;
+    }
+
+    return conflict;
 }
 
 void compute_conflicts(
@@ -31,36 +100,9 @@ void compute_conflicts(
     if (segments.size() <= 1)
         return;
     for (size_t i = 0; i < segments.size() - 1; ++i) {
-        const Segment& segment = segments[i];
-        std::vector<int> cycle_labels = compute_cycle_labels(segment, cycle);
-        const size_t number_of_labels = 2 * segment.number_of_attachments();
-        std::vector<int> labels(number_of_labels);
+        CycleConflictDetector detector(cycle.size(), segments[i].get_attachments());
         for (size_t j = i + 1; j < segments.size(); ++j) {
-            const Segment& other_segment = segments[j];
-            for (size_t k = 0; k < number_of_labels; ++k)
-                labels[k] = 0;
-            for (size_t k = 0; k < cycle.size(); ++k) {
-                if (!other_segment.is_attachment(k))
-                    continue;
-                const int cycle_label = cycle_labels[k];
-                DOMUS_ASSERT(cycle_label >= 0, "compute_conflicts: internal errors");
-                labels[static_cast<size_t>(cycle_label)] = 1;
-            }
-            int sum = 0;
-            for (size_t k = 0; k < number_of_labels; ++k)
-                sum += labels[k];
-            int part_sum = labels[0] + labels[1] + labels[2];
-            bool are_in_conflict = true;
-            for (size_t k = 0; k <= number_of_labels - 2; k += 2) {
-                if (part_sum == sum) {
-                    are_in_conflict = false;
-                    break;
-                }
-                part_sum = part_sum + labels[(3 + k) % number_of_labels] +
-                           labels[(4 + k) % number_of_labels];
-                part_sum = part_sum - labels[k] - labels[(1 + k) % number_of_labels];
-            }
-            if (are_in_conflict)
+            if (detector.in_conflict(segments[j].get_attachments()))
                 interlacement_graph.add_edge(i, j);
         }
     }

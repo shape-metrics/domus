@@ -29,8 +29,11 @@ void Segment::add_attachment(const size_t attachment_id) {
     if (is_attachment(attachment_id))
         return;
     m_is_attachment.add_node(attachment_id);
+    m_attachments.push_back(attachment_id);
     ++m_number_of_attachments;
 }
+
+const std::vector<size_t>& Segment::get_attachments() const { return m_attachments; }
 
 const NodesLabels<size_t>& Segment::get_new_id_to_old_id() const { return m_new_id_to_old_id; }
 

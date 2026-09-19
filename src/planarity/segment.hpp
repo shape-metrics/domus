@@ -19,6 +19,7 @@ class Segment {
     utilities::NodesLabels<size_t> m_new_id_to_old_id;
     utilities::NodesContainer m_is_attachment;
     utilities::EdgesLabels<size_t> m_new_edge_id_to_old_id;
+    std::vector<size_t> m_attachments;
     size_t m_number_of_attachments = 0;
     size_t m_cycle_size;
 
@@ -60,6 +61,7 @@ class Segment {
     size_t get_cycle_size() const;
     const utilities::NodesLabels<size_t>& get_new_id_to_old_id() const;
     const utilities::EdgesLabels<size_t>& get_new_edge_id_to_old_id() const;
+    const std::vector<size_t>& get_attachments() const;
     size_t number_of_attachments() const;
     bool is_attachment(size_t node_id) const;
     std::string to_string() const;
