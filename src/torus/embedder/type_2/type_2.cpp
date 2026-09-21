@@ -161,31 +161,13 @@ class Type2Solver {
         return cylinder;
     }
 
-    // TODO currently bugged, this approach is too naive
     void adjust_rotation_scheme(
         const Embedding& copy_embedding,
         const PlanarCylinder& cylinder,
         const Face& face,
         Embedding& cylinder_embedding
     ) {
-        // rotation scheme in copy_embedding
-        const size_t prev_old_node_id = face.repeated_paths()[0].get_first_node_id();
-        const size_t next_old_node_id = face.repeated_paths()[0].get_node_id_at_position(1);
-        const size_t old_edge_id = face.repeated_paths()[0].get_first_edge_id();
-
-        const auto old_next_edge =
-            copy_embedding.next_in_adjacency_list(prev_old_node_id, next_old_node_id, old_edge_id);
-        // rotation scheme in planar cylinder
-        const size_t prev_new_node_id = cylinder.node_old_to_new_id.get_label(prev_old_node_id);
-        const size_t next_new_node_id = cylinder.node_old_to_new_id.get_label(next_old_node_id);
-        const size_t new_edge_id = cylinder.edge_old_to_new_id.get_label(old_edge_id);
-        const auto new_next_edge = cylinder_embedding.next_in_adjacency_list(
-            prev_new_node_id,
-            next_new_node_id,
-            new_edge_id
-        );
-        if (old_next_edge.id != cylinder.edge_new_to_old_id.get_label(new_next_edge.id))
-            cylinder_embedding.reverse_all_circular_orders();
+        // TODO
     }
 
     std::optional<CachedOrdinaryEmbedding> cache_ordinary_embedding(size_t piece_index) {

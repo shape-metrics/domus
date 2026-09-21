@@ -295,6 +295,7 @@ class EquivalentEmbeddingBuilder {
     }
 
     void add_inner_edges(
+        const Path& inner_face,
         const size_t new_node_id,
         const size_t old_node_id,
         const size_t old_next_node_id,
@@ -316,22 +317,70 @@ class EquivalentEmbeddingBuilder {
                 break;
             current_old_edge = e.id;
             old_neighbor_id = e.neighbor_id;
-            DOMUS_ASSERT(
-                [&]() {
-                    if (m_is_border_old_node.has_node(old_neighbor_id)) {
-                        m_old_embedding.print();
-                        m_outer_face.print();
-                        std::println("{} {} {}", old_prev_node_id, old_node_id, old_next_node_id);
-                        std::println("{}", old_neighbor_id);
-                        return false;
+
+            if (m_is_border_old_node.has_node(old_neighbor_id)) {
+                if (m_old_inner_edge_to_new_edge.has_label(e.id)) {
+                    const size_t new_e_id = m_old_inner_edge_to_new_edge.get_label(e.id);
+                    const auto edge = m_graph.get_edge(new_e_id);
+                    const size_t target_new_node_id =
+                        (edge.from_id == new_node_id) ? edge.to_id : edge.from_id;
+                    m_embedding.add_edge_before(
+                        new_node_id, target_new_node_id, new_e_id, prev_new_edge
+                    );
+                    prev_new_edge = new_e_id;
+                } else {
+                    size_t target_new_node_id = std::numeric_limits<size_t>::max();
+                    for (size_t j = 0; j < inner_face.number_of_edges(); ++j) {
+                        const size_t cand_id = inner_face.get_node_id_at_position(j);
+                        if (m_node_id_to_old.get_label(cand_id) != old_neighbor_id)
+                            continue;
+                        const size_t cand_next_id = inner_face.get_node_id_at_position(j + 1);
+                        const size_t cand_prev_id = (j == 0)
+                            ? inner_face.get_node_id_at_position(inner_face.number_of_edges() - 1)
+                            : inner_face.get_node_id_at_position(j - 1);
+                        const size_t cand_next_old = m_node_id_to_old.get_label(cand_next_id);
+                        const size_t cand_prev_old = m_node_id_to_old.get_label(cand_prev_id);
+                        const size_t cand_edge_old =
+                            m_edge_id_to_old.get_label(inner_face.get_edge_id_at_position(j));
+
+                        size_t curr_cand_edge = cand_edge_old;
+                        size_t curr_cand_nbr = cand_next_old;
+                        while (true) {
+                            EdgeIter it = m_old_embedding.prev_in_adjacency_list(
+                                old_neighbor_id,
+                                curr_cand_nbr,
+                                curr_cand_edge
+                            );
+                            if (it.neighbor_id == cand_prev_old)
+                                break;
+                            if (it.id == e.id) {
+                                target_new_node_id = cand_id;
+                                break;
+                            }
+                            curr_cand_edge = it.id;
+                            curr_cand_nbr = it.neighbor_id;
+                        }
+                        if (target_new_node_id != std::numeric_limits<size_t>::max())
+                            break;
                     }
-                    return true;
-                }(),
-                "not supposed to happen for now"
-            );
+                    DOMUS_ASSERT(
+                        target_new_node_id != std::numeric_limits<size_t>::max(),
+                        "add_inner_edges: target border node for chord not found"
+                    );
+                    const size_t new_e_id =
+                        add_line(EDGE_DEFAULT_COLOR, new_node_id, target_new_node_id, e.id);
+                    m_old_inner_edge_to_new_edge.add_label(e.id, new_e_id);
+                    m_embedding.add_edge_before(
+                        new_node_id, target_new_node_id, new_e_id, prev_new_edge
+                    );
+                    prev_new_edge = new_e_id;
+                }
+                continue;
+            }
+
             size_t new_inner_node_id =
                 (m_old_inner_node_to_new_node.has_label(old_neighbor_id))
-                    ? new_inner_node_id = m_old_inner_node_to_new_node.get_label(old_neighbor_id)
+                    ? m_old_inner_node_to_new_node.get_label(old_neighbor_id)
                     : add_inner_node(old_neighbor_id);
             const size_t new_e_id =
                 add_line(EDGE_DEFAULT_COLOR, new_node_id, new_inner_node_id, e.id);
@@ -339,8 +388,6 @@ class EquivalentEmbeddingBuilder {
             m_embedding.add_edge_before(new_node_id, new_inner_node_id, new_e_id, prev_new_edge);
             prev_new_edge = new_e_id;
             m_embedding.add_edge(new_inner_node_id, new_node_id, new_e_id);
-            e = m_old_embedding
-                    .prev_in_adjacency_list(old_node_id, old_neighbor_id, current_old_edge);
         }
     }
 
@@ -385,6 +432,7 @@ class EquivalentEmbeddingBuilder {
             const size_t old_prev_node_id = m_node_id_to_old.get_label(new_prev_node_id);
 
             add_inner_edges(
+                inner_face,
                 new_node_id,
                 old_node_id,
                 old_next_node_id,
