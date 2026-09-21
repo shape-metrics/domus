@@ -335,6 +335,8 @@ class Type2Solver {
             auto piece_to_assigned_face = m_conflicts.solve(m_cylinders_type_current_guess);
             if (!piece_to_assigned_face.has_value())
                 return false;
+            DOMUS_DEBUG_LN("found a solution.");
+            exit(1);
             embed_special_pieces_two_sided_cylinder();
             embed_ordinary_pieces();
             DOMUS_DEBUG_LN("embedding extension found.");
@@ -356,17 +358,15 @@ class Type2Solver {
         if (pieces.size() == 0)
             return true;
         const auto adjacencies = Adjacencies::build_adjacencies(pieces, faces, graph);
-        if (!adjacencies.has_value())
+        if (!adjacencies.has_value()) {
             return false;
+        }
         const Conflicts conflicts(*adjacencies);
 
         Type2Solver solver(graph, embedding, faces, pieces, *adjacencies, conflicts);
         switch (solver.init()) {
         case InitializationOutcome::NO_SOLUTION:
-            DOMUS_DEBUG_LN(
-                "no solution: there is a piece that is not attached to any face (is it even "
-                "possible?)."
-            );
+            DOMUS_DEBUG_LN("no solution: there is a piece that cannot be embedded.");
             return false;
         case InitializationOutcome::NOTHING_TO_DO:
             DOMUS_DEBUG_LN("found solution: there are no pieces to embed.");

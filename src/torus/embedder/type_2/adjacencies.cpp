@@ -23,6 +23,7 @@ bool Adjacencies::compute_piece_to_adjacent_faces(
 ) {
     m_pieces_adjacencies.reserve(m_pieces.size());
     m_is_across_in_a_cylinder.reserve(m_pieces.size());
+    m_is_ordinary.resize(m_pieces.size(), false);
     m_faces_adjacencies.resize(m_faces.size());
 
     for (size_t bridge_index = 0; bridge_index < m_pieces.size(); bridge_index++) {
@@ -81,6 +82,7 @@ bool Adjacencies::compute_piece_to_adjacent_faces(
 
         bool is_across = false;
         if (!is_special_piece) {
+            m_is_ordinary[bridge_index] = true;
             for (const size_t face_index : m_pieces_adjacencies.back().adjacent_faces) {
                 if (is_ordinary_piece_cutting_cylinder(bridge_index, face_index)) {
                     is_across = true;
@@ -97,6 +99,11 @@ bool Adjacencies::compute_piece_to_adjacent_faces(
                 m_faces_adjacencies[face_index].ordinary_pieces.push_back(bridge_index);
         }
     }
+
+    for (size_t piece_index = 0; piece_index < m_pieces.size(); piece_index++)
+        if (m_is_ordinary[piece_index])
+            m_ordinary_pieces.push_back(piece_index);
+
     return true;
 }
 
@@ -212,5 +219,9 @@ const std::vector<size_t>& Adjacencies::special_pieces_in_face(size_t face_index
 const std::vector<size_t>& Adjacencies::ordinary_pieces_in_face(size_t face_index) const {
     return m_faces_adjacencies[face_index].ordinary_pieces;
 }
+
+const std::vector<size_t>& Adjacencies::all_ordinary_pieces() const { return m_ordinary_pieces; }
+
+bool Adjacencies::is_ordinary_piece(size_t piece_index) const { return m_is_ordinary[piece_index]; }
 
 } // namespace domus::torus

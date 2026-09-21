@@ -33,6 +33,8 @@ class Adjacencies {
     std::vector<PieceAdjacency> m_pieces_adjacencies;
     std::vector<std::optional<CylinderBoundaryComponents>> m_cylinder_components;
 
+    std::vector<bool> m_is_ordinary;
+    std::vector<size_t> m_ordinary_pieces;
     std::vector<bool>
         m_is_across_in_a_cylinder; // is it true that if an ordinary piece is embedded across in a
     // cylinder, it is across in all (at most 2) of them? should be
@@ -56,6 +58,8 @@ class Adjacencies {
     const graph::Graph& get_graph() const;
     const std::vector<size_t>& special_pieces_in_face(size_t face_index) const;
     const std::vector<size_t>& ordinary_pieces_in_face(size_t face_index) const;
+    const std::vector<size_t>& all_ordinary_pieces() const;
+    bool is_ordinary_piece(size_t piece_index) const;
     bool is_ordinary_piece_cutting_cylinder(size_t p_index, size_t face_index) const;
 };
 
