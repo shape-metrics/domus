@@ -97,15 +97,12 @@ bool CycleConflictDetector::in_conflict(std::span<const size_t> pos_2) {
 void compute_conflicts(
     const std::vector<Segment>& segments, const Cycle& cycle, Graph& interlacement_graph
 ) {
-    if (segments.size() <= 1)
-        return;
-    for (size_t i = 0; i < segments.size() - 1; ++i) {
-        CycleConflictDetector detector(cycle.size(), segments[i].get_attachments());
-        for (size_t j = i + 1; j < segments.size(); ++j) {
-            if (detector.in_conflict(segments[j].get_attachments()))
-                interlacement_graph.add_edge(i, j);
-        }
-    }
+    compute_conflicts(
+        cycle.size(),
+        segments,
+        [&](size_t i, size_t j) { interlacement_graph.add_edge(i, j); },
+        [](const Segment& seg) -> std::span<const size_t> { return seg.get_attachments(); }
+    );
 }
 
 Graph compute_interlacement_graph(const std::vector<Segment>& segments, const Cycle& cycle) {

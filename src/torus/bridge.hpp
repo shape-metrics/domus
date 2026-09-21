@@ -28,6 +28,7 @@ class Bridge {
     size_t number_of_attachments() const;
     bool is_attachment(size_t node_id) const;
     const std::vector<size_t>& get_attachments() const;
+    auto get_old_attachments() const;
     std::string to_string() const;
     void print() const;
     static std::vector<Bridge> compute(const graph::Graph& graph, const graph::SubGraph& subgraph);
@@ -42,6 +43,12 @@ inline auto compute_all_feet_in_bridge(const Bridge& bridge) {
                auto [from_id, to_id] = edge.edge;
                return (bridge.is_attachment(from_id)) || (bridge.is_attachment(to_id));
            });
+}
+
+inline auto Bridge::get_old_attachments() const {
+    return std::views::transform(m_attachments, [&](size_t attachment_id) {
+        return get_new_id_to_old_id().get_label(attachment_id);
+    });
 }
 
 } // namespace domus::torus

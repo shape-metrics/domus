@@ -112,7 +112,9 @@ set(COMMON_SRCS
     src/torus/faces.cpp
     src/torus/embedder/utils.cpp
     src/torus/embedder/type_3.cpp
-    src/torus/embedder/type_2.cpp
+    src/torus/embedder/type_2/type_2.cpp
+    src/torus/embedder/type_2/conflicts.cpp
+    src/torus/embedder/type_2/adjacencies.cpp
     src/torus/test.cpp
     src/core/graph/test.cpp
     src/force_layout/planarity_preserving_force_layout.cpp

@@ -12,7 +12,7 @@
 
 #include "../bridge.hpp"
 #include "../faces.hpp"
-#include "type_2.hpp"
+#include "type_2/type_2.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;

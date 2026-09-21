@@ -10,6 +10,9 @@ namespace domus::graph {
 class Cycle;
 }
 
+#include <functional>
+#include <iterator>
+
 namespace domus::planarity {
 class Segment;
 
@@ -46,6 +49,30 @@ inline bool are_attachments_in_conflict(
 ) {
     CycleConflictDetector detector(cycle_size, pos_1);
     return detector.in_conflict(pos_2);
+}
+
+/**
+ * @brief Computes conflicts (interlacements) between items along a cycle.
+ *
+ * Calls on_conflict(i, j) for every pair (i, j) with i < j whose attachments interlace.
+ */
+template <typename Range, typename ConflictCallback, typename Projection = std::identity>
+void compute_conflicts(
+    size_t cycle_size,
+    const Range& items,
+    ConflictCallback&& on_conflict,
+    Projection proj = {}
+) {
+    const size_t count = static_cast<size_t>(std::size(items));
+    if (count <= 1)
+        return;
+    for (size_t i = 0; i < count - 1; ++i) {
+        CycleConflictDetector detector(cycle_size, std::invoke(proj, items[i]));
+        for (size_t j = i + 1; j < count; ++j) {
+            if (detector.in_conflict(std::invoke(proj, items[j])))
+                on_conflict(i, j);
+        }
+    }
 }
 
 void compute_conflicts(

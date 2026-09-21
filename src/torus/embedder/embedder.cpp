@@ -13,7 +13,7 @@
 #include "domus/ogdf_utils.hpp"
 
 #include "../faces.hpp"
-#include "type_2.hpp"
+#include "type_2/type_2.hpp"
 #include "type_3.hpp"
 
 namespace domus::torus {

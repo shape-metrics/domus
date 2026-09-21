@@ -37,10 +37,10 @@ Face::Face(
 )
     : m_type(type), m_path(std::move(path)), m_repeated_paths(std::move(repeated_paths)),
       m_non_repeated_paths(std::move(non_repeated_paths)) {
-    if (m_repeated_paths.empty())
-        return;
     for (const size_t node_id : graph.get_nodes_ids())
         m_is_node_in_repeated_path.add_label(node_id, {});
+    if (m_repeated_paths.empty())
+        return;
     for (size_t i = 0; i < m_repeated_paths.size(); i++) {
         const Path& repeated_path = m_repeated_paths[i];
         for (size_t j = 1; j < repeated_path.number_of_nodes() - 1; j++) {
