@@ -474,10 +474,17 @@ Conflicts::solve(const std::vector<CylinderType>& cylinders_type_current_guess) 
     }
     // adding clauses -> at least one face per ordinary piece
     for (size_t piece_index : m_adjacencies.all_ordinary_pieces()) {
-        std::vector<int> clause;
+        std::vector<int> clause_at_least_one_face;
         for (const size_t var : pieces_to_variables[piece_index])
-            clause.push_back(static_cast<int>(var));
-        cnf.add_clause(clause);
+            clause_at_least_one_face.push_back(static_cast<int>(var));
+        cnf.add_clause(clause_at_least_one_face);
+
+        if (pieces_to_variables[piece_index].size() > 1) {
+            std::vector<int> clause_at_most_one_face;
+            for (const size_t var : pieces_to_variables[piece_index])
+                clause_at_most_one_face.push_back(-static_cast<int>(var));
+            cnf.add_clause(clause_at_most_one_face);
+        }
     }
 
     SatSolverResult result = sat::solve_2_sat(cnf);

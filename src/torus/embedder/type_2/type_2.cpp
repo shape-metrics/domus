@@ -189,7 +189,6 @@ class Type2Solver {
     }
 
     std::optional<CachedOrdinaryEmbedding> cache_ordinary_embedding(size_t piece_index) {
-        // TODO
         size_t face_index = m_adjacencies.get_adjacency(piece_index)
                                 .adjacent_faces[0]; // any face is good since if it is adjacent to
                                                     // any other face then the circular order of the
@@ -260,72 +259,141 @@ class Type2Solver {
         return cached;
     }
 
-    void add_special_pieces_to_embedding(
-        Embedding& copy_embedding,
-        const PlanarCylinder& cylinder,
-        const Face& face,
-        const Embedding& cylinder_embedding
-    ) const {
-        for (const size_t new_node_id : cylinder_embedding.get_nodes_ids()) {
-            const size_t old_node_id = cylinder.node_new_to_old_id.get_label(new_node_id);
-            if (face.is_node_in_repeated_path().get_label(old_node_id).test(0))
+    // we may have not tested yet if the special pieces can be embedded one-sided inside one-sided
+    // cylinders. this function does this, and caches the result in case they might be needed in
+    // next function calls. hence why this function returns a bool: in case the one-sided assigned
+    // special pieces cannot be embedded in a one-sided way, the function returns false
+    bool embed_special_pieces_one_sided_cylinder(const PiecesAssignment& assignment) const {
+        size_t found_cylinders = 0;
+        for (size_t face_index = 0; face_index < m_adjacencies.get_faces().size(); face_index++) {
+            const Face& face = m_adjacencies.get_faces()[face_index];
+            if (face.type() == FaceType::TYPE_1)
                 continue;
-            for (const auto new_edge : cylinder_embedding.get_edges(new_node_id)) {
-                const size_t old_neighbor_id =
-                    cylinder.node_new_to_old_id.get_label(new_edge.neighbor_id);
-                const size_t old_edge_id = cylinder.edge_new_to_old_id.get_label(new_edge.id);
-                // copy_embedding.add_edge(old_node_id, old_neighbor_id, old_edge_id); // only this
-                // was here before ai put stuff
+            if (m_cylinders_type_current_guess[found_cylinders++] == CylinderType::TWO_SIDED)
+                continue;
+            // TODO
+            return false;
+        }
+        return true;
+    }
 
-                // TODO from here added by ai, nede to check
-                if (copy_embedding.has_edge(old_node_id, old_neighbor_id, old_edge_id))
+    // any embeddability without constraints of special pieces in a cylinder is guaranteed to
+    // work, since we tested this in advance. hence why this function is void
+    void embed_special_pieces_two_sided_cylinder(const PiecesAssignment& assignment) const {
+        size_t found_cylinders = 0;
+        for (size_t face_index = 0; face_index < m_adjacencies.get_faces().size(); face_index++) {
+            const Face& face = m_adjacencies.get_faces()[face_index];
+            if (face.type() == FaceType::TYPE_1)
+                continue;
+            if (m_cylinders_type_current_guess[found_cylinders++] == CylinderType::ONE_SIDED)
+                continue;
+            // TODO
+        }
+    }
+
+    size_t get_incoming_edge_to_node_in_face(const Face& face, size_t node_id) const {
+        const auto& path = face.path();
+        for (size_t i = 0; i < path.number_of_edges(); ++i) {
+            if (path.get_node_id_at_position(i) == node_id) {
+                const size_t in_pos = (i == 0) ? (path.number_of_edges() - 1) : (i - 1);
+                return path.get_edge_id_at_position(in_pos);
+            }
+        }
+        DOMUS_ASSERT(false, "get_incoming_edge_to_node_in_face: node not found in face");
+        return 0;
+    }
+
+    bool is_embedding_consistant_with_face(
+        const CachedOrdinaryEmbedding& cached_embedding, const Bridge& bridge
+    ) const {
+        // TODO does this work even if the face is a cylinder? it should
+        const Face& face = m_faces[cached_embedding.embedded_face_index];
+        const size_t old_attachment = *bridge.get_old_attachments().begin();
+        const auto& path = face.path();
+
+        size_t pos = 0;
+        for (size_t i = 0; i < path.number_of_edges(); ++i) {
+            if (path.get_node_id_at_position(i) == old_attachment) {
+                pos = i;
+                break;
+            }
+        }
+        const size_t in_pos = (pos == 0) ? (path.number_of_edges() - 1) : (pos - 1);
+        const size_t u = path.get_node_id_at_position(in_pos);
+        const size_t e_in = path.get_edge_id_at_position(in_pos);
+        const size_t e_out = path.get_edge_id_at_position(pos);
+
+        const size_t new_attachment = cached_embedding.node_old_to_new_id.get_label(old_attachment);
+        const size_t new_u = cached_embedding.node_old_to_new_id.get_label(u);
+        const size_t new_e_in = cached_embedding.edge_old_to_new_id.get_label(e_in);
+        const size_t new_e_out = cached_embedding.edge_old_to_new_id.get_label(e_out);
+
+        const EdgeIter next_edge =
+            cached_embedding.embedding.next_in_adjacency_list(new_attachment, new_u, new_e_in);
+        return (next_edge.id != new_e_out);
+    }
+
+    // any embeddability of ordinary pieces is guaranteed to work, since we tested this in
+    // advance. hence why this function is void
+    void embed_ordinary_pieces(const PiecesAssignment& assignment) {
+        for (size_t ordinary_piece_index : m_adjacencies.all_ordinary_pieces()) {
+            const CachedOrdinaryEmbedding& cached_embedding =
+                *m_cached_ordinary_piece_embedding[ordinary_piece_index];
+            const Bridge& bridge = m_pieces[ordinary_piece_index];
+            size_t face_index = std::get<size_t>(assignment[ordinary_piece_index]);
+            bool same_face = (face_index == cached_embedding.embedded_face_index);
+            // the fact that the face is the same does not guarantee that the cached embedding is
+            // consistant with where we need to insert it. at a surface level, if the face is not
+            // the same then we might need to reverse all the circular orders of the cached
+            // embedded, before we can use. however this can be the case even if the face is
+            // actually the same, since the embedder might have actually embedded the piece
+            // "outside" of the intended face.
+            bool is_consistant_with_face =
+                is_embedding_consistant_with_face(cached_embedding, bridge);
+            bool rotate_circular_order = (same_face != is_consistant_with_face);
+
+            Embedding piece_embedding = cached_embedding.embedding;
+            if (rotate_circular_order)
+                piece_embedding.reverse_all_circular_orders();
+
+            // embed internal nodes and their incident edges into m_embedding
+            for (const size_t bridge_node_id : bridge.get_bridge().get_nodes_ids()) {
+                if (bridge.is_attachment(bridge_node_id))
                     continue;
-                if (copy_embedding.get_degree_of_node(old_node_id) == 0) {
-                    copy_embedding.add_edge(old_node_id, old_neighbor_id, old_edge_id);
-                } else {
-                    const auto new_prev = cylinder_embedding.prev_in_adjacency_list(
-                        new_node_id,
-                        new_edge.neighbor_id,
-                        new_edge.id
-                    );
-                    const size_t old_prev_edge_id =
-                        cylinder.edge_new_to_old_id.get_label(new_prev.id);
-                    copy_embedding.add_edge_after(
-                        old_node_id,
-                        old_neighbor_id,
-                        old_edge_id,
-                        old_prev_edge_id
-                    );
+                const size_t old_node_id = bridge.get_new_id_to_old_id().get_label(bridge_node_id);
+                const size_t new_node_id =
+                    cached_embedding.node_old_to_new_id.get_label(old_node_id);
+
+                for (const auto edge : piece_embedding.get_edges(new_node_id)) {
+                    const size_t old_neighbor_id =
+                        cached_embedding.node_new_to_old_id.get_label(edge.neighbor_id);
+                    const size_t old_edge_id =
+                        cached_embedding.edge_new_to_old_id.get_label(edge.id);
+                    m_embedding.add_edge(old_node_id, old_neighbor_id, old_edge_id);
+                }
+            }
+
+            // embed bridge edges incident to attachments into m_embedding
+            const Face& assigned_face = m_faces[face_index];
+            for (const auto bridge_edge : bridge.get_bridge().get_all_edges()) {
+                const size_t old_edge_id =
+                    bridge.get_new_edge_id_to_old_id().get_label(bridge_edge.id);
+                const size_t old_from_id =
+                    bridge.get_new_id_to_old_id().get_label(bridge_edge.edge.from_id);
+                const size_t old_to_id =
+                    bridge.get_new_id_to_old_id().get_label(bridge_edge.edge.to_id);
+
+                if (bridge.is_attachment(bridge_edge.edge.from_id)) {
+                    const size_t e_in =
+                        get_incoming_edge_to_node_in_face(assigned_face, old_from_id);
+                    m_embedding.add_edge_after(old_from_id, old_to_id, old_edge_id, e_in);
+                }
+                if (bridge.is_attachment(bridge_edge.edge.to_id)) {
+                    const size_t e_in = get_incoming_edge_to_node_in_face(assigned_face, old_to_id);
+                    m_embedding.add_edge_after(old_to_id, old_from_id, old_edge_id, e_in);
                 }
             }
         }
-        for (size_t i = 1; i < face.repeated_paths()[0].number_of_nodes() - 1; i++) {
-            const size_t old_node_id = face.repeated_paths()[0].get_node_id_at_position(i);
-            // TODO internal nodes of repeated paths
-        }
-    }
-
-    void embed_special_pieces_two_sided_cylinder() const {
-        // Special pieces are verified planar and cached during init().
-        // Here we just apply the cached cylinder embeddings to copy_embedding.
-        // for (size_t face_index = 0; face_index < m_faces.size(); face_index++) {
-        //     const Face& face = m_faces[face_index];
-        //     if (face.type() == FaceType::TYPE_1)
-        //         continue;
-        //     const auto& cached = m_cached_cylinder_embeddings[face_index].value();
-        //     add_special_pieces_to_embedding(
-        //         copy_embedding,
-        //         cached.cylinder,
-        //         face,
-        //         cached.embedding
-        //     );
-        // }
-        // TODO
-    }
-
-    bool embed_ordinary_pieces() {
-        // TODO
-        return false;
     }
 
     bool solve(size_t done_guesses_of_cylinders) {
@@ -335,11 +403,12 @@ class Type2Solver {
             auto piece_to_assigned_face = m_conflicts.solve(m_cylinders_type_current_guess);
             if (!piece_to_assigned_face.has_value())
                 return false;
-            DOMUS_DEBUG_LN("found a solution.");
-            exit(1);
-            embed_special_pieces_two_sided_cylinder();
-            embed_ordinary_pieces();
-            DOMUS_DEBUG_LN("embedding extension found.");
+            DOMUS_DEBUG_LN("found a potential solution.");
+            if (!embed_special_pieces_one_sided_cylinder(*piece_to_assigned_face))
+                return false;
+            embed_special_pieces_two_sided_cylinder(*piece_to_assigned_face);
+            embed_ordinary_pieces(*piece_to_assigned_face);
+            DOMUS_DEBUG_LN("embedding extension computed.");
             return true;
         }
         m_cylinders_type_current_guess[done_guesses_of_cylinders] = CylinderType::ONE_SIDED;
@@ -378,7 +447,8 @@ class Type2Solver {
                 if (face.type() == FaceType::TYPE_2)
                     DOMUS_DEBUG("{}", face.to_string());
             });
-            mapper::build_equivalent_embedding(graph, embedding).to_torus_mapping().visualize();
+            // mapper::build_equivalent_embedding(graph,
+            // embedding).to_torus_mapping().visualize();
             return solver.solve(0);
         }
     }

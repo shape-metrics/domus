@@ -82,7 +82,7 @@ SatSolverResult solve_2_sat(const cnf::Cnf& cnf) {
             return result;
         }
 
-        if (scc_pos > scc_neg)
+        if (scc_pos < scc_neg)
             result.numbers[i] = static_cast<int>(i + 1); // x_i is TRUE
         else
             result.numbers[i] = -static_cast<int>(i + 1); // x_i is FALSE
