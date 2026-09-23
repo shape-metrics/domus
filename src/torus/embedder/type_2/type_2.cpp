@@ -15,7 +15,7 @@ namespace domus::torus {
 using namespace domus::graph;
 using namespace domus::graph::utilities;
 
-struct PlanarCylinder {
+struct PlanarizedCylinder {
     Graph graph;
     NodesLabels<size_t> node_new_to_old_id;
     NodesLabels<size_t> node_old_to_new_id;
@@ -24,7 +24,7 @@ struct PlanarCylinder {
 };
 
 struct CachedCylinderEmbedding {
-    PlanarCylinder cylinder;
+    PlanarizedCylinder cylinder;
     Embedding embedding;
 };
 
@@ -78,7 +78,7 @@ class Type2Solver {
             if (face.type() == FaceType::TYPE_1)
                 continue;
             m_number_of_cylinders++;
-            PlanarCylinder cylinder = build_planarized_cylinder(face_index);
+            PlanarizedCylinder cylinder = build_planarized_cylinder(face_index);
             auto result = planarity::compute_planar_embedding(cylinder.graph);
             if (!result.has_value())
                 return InitializationOutcome::NO_SOLUTION;
@@ -102,8 +102,8 @@ class Type2Solver {
         return InitializationOutcome::DONE;
     }
 
-    PlanarCylinder build_planarized_cylinder(size_t face_index) {
-        PlanarCylinder cylinder;
+    PlanarizedCylinder build_planarized_cylinder(size_t face_index) {
+        PlanarizedCylinder cylinder;
         const Face& face = m_faces[face_index];
         for (size_t i = 0; i < face.path().number_of_edges(); i++) {
             const size_t prev_node_id = face.path().get_node_id_at_position(i);
@@ -163,7 +163,7 @@ class Type2Solver {
 
     void adjust_rotation_scheme(
         const Embedding& copy_embedding,
-        const PlanarCylinder& cylinder,
+        const PlanarizedCylinder& cylinder,
         const Face& face,
         Embedding& cylinder_embedding
     ) {
@@ -241,10 +241,22 @@ class Type2Solver {
         return cached;
     }
 
-    // we may have not tested yet if the special pieces can be embedded one-sided inside one-sided
-    // cylinders. this function does this, and caches the result in case they might be needed in
-    // next function calls. hence why this function returns a bool: in case the one-sided assigned
-    // special pieces cannot be embedded in a one-sided way, the function returns false
+    // we have not tested yet if the special pieces can be embedded in a one-sided way inside
+    // one-sided cylinders. hence why this function returns a bool: in case the one-sided assigned
+    // special pieces cannot be embedded in a one-sided way, the function returns false, otherwise
+    // it returns true
+
+    // first, might be useful to check whether that cylinder actually received an ordinary piece
+    // which is across in the cylinder, because in case it did not, then there is no point in
+    // forcing special pieces to be one-sided in the particular cylinder.
+
+    // then, in case it actually received an across ordinary piece (at least one): we already know
+    // that these across pieces are not in conflict with any of the special pieces in the cylinder,
+    // since it was tested by the Conflict class. What we might do, at this point, is construct yet
+    // another PlanarizedCylinder, putting all the special pieces but this time we also insert the
+    // across pieces inside.
+
+    // TODO I don't really know if there is a point, however, in caching the result this time.
     bool embed_special_pieces_one_sided_cylinder(const PiecesAssignment& assignment) const {
         size_t found_cylinders = 0;
         for (size_t face_index = 0; face_index < m_adjacencies.get_faces().size(); face_index++) {
@@ -281,14 +293,17 @@ class Type2Solver {
                 return path.get_edge_id_at_position(in_pos);
             }
         }
-        DOMUS_ASSERT(false, "get_incoming_edge_to_node_in_face: node not found in face");
+        DOMUS_ASSERT(
+            false,
+            "Type2Solver::get_incoming_edge_to_node_in_face: node not found in face"
+        );
         return 0;
     }
 
     bool is_embedding_consistant_with_face(
         const CachedOrdinaryEmbedding& cached_embedding, const Bridge& bridge
     ) const {
-        // TODO does this work even if the face is a cylinder? it should
+        // TODO does this work even if the face is a cylinder? it should??
         const Face& face = m_faces[cached_embedding.embedded_face_index];
         const size_t old_attachment = *bridge.get_old_attachments().begin();
         const auto& path = face.path();
@@ -356,6 +371,7 @@ class Type2Solver {
             }
 
             // embed bridge edges incident to attachments into m_embedding
+            // TODO this loop can probably made more efficient by looping on just the attachments
             const Face& assigned_face = m_faces[face_index];
             for (const auto bridge_edge : bridge.get_bridge().get_all_edges()) {
                 const size_t old_edge_id =
@@ -429,8 +445,7 @@ class Type2Solver {
                 if (face.type() == FaceType::TYPE_2)
                     DOMUS_DEBUG("{}", face.to_string());
             });
-            // mapper::build_equivalent_embedding(graph,
-            // embedding).to_torus_mapping().visualize();
+            // mapper::build_equivalent_embedding(graph, embedding).to_torus_mapping().visualize();
             return solver.solve(0);
         }
     }

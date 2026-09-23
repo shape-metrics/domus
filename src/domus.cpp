@@ -61,8 +61,8 @@ void toroidal_test(const Graph& graph) {
         );
         std::println("genus: {}", compute_embedding_genus(embedding.value()));
 
-        EquivalentEmbedding eq_embedding = build_equivalent_embedding(graph, *embedding);
-        eq_embedding.to_torus_mapping().visualize();
+        // EquivalentEmbedding eq_embedding = build_equivalent_embedding(graph, *embedding);
+        // eq_embedding.to_torus_mapping().visualize();
     } else
         std::println("Embedding not found");
 }

@@ -116,8 +116,8 @@ std::vector<size_t> Conflicts::conflicts_non_across_ordinary_pieces(
                 const size_t cycle_pos = node_to_cycle_pos[old_att_id];
                 DOMUS_ASSERT(
                     cycle_pos != std::numeric_limits<size_t>::max(),
-                    "Conflicts::conflicts_non_across_ordinary_pieces_VS_special_pieces: "
-                    "attachment node not found in face path"
+                    "Conflicts::conflicts_non_across_ordinary_pieces: attachment node not found in "
+                    "face path"
                 );
                 positions[j].push_back(cycle_pos);
             }
@@ -126,8 +126,8 @@ std::vector<size_t> Conflicts::conflicts_non_across_ordinary_pieces(
             positions[j].erase(first, last);
             DOMUS_ASSERT(
                 positions[j].size() > 1,
-                "Conflicts::conflicts_non_across_ordinary_pieces_VS_special_pieces: piece has "
-                "fewer than 2 attachments"
+                "Conflicts::conflicts_non_across_ordinary_pieces: piece has fewer than 2 "
+                "attachments"
             );
         }
         return positions;
@@ -161,14 +161,17 @@ extract_piece_positions(const Bridge& bridge, const std::vector<size_t>& mapping
         const size_t cycle_pos = mapping[old_att_id];
         DOMUS_ASSERT(
             cycle_pos != std::numeric_limits<size_t>::max(),
-            "Conflicts: attachment node not found in face path"
+            "Conflicts::extract_piece_positions: attachment node not found in face path"
         );
         pos.push_back(cycle_pos);
     }
     std::ranges::sort(pos);
     auto [first, last] = std::ranges::unique(pos);
     pos.erase(first, last);
-    DOMUS_ASSERT(pos.size() > 1, "Conflicts: piece has fewer than 2 attachments");
+    DOMUS_ASSERT(
+        pos.size() > 1,
+        "Conflicts::extract_piece_positions: piece has fewer than 2 attachments"
+    );
     return pos;
 }
 
@@ -513,7 +516,7 @@ Conflicts::solve(const std::vector<CylinderType>& cylinders_type_current_guess) 
                 DOMUS_ASSERT(
                     !m_adjacencies.is_ordinary_piece(piece_index),
                     "Conflicts::solve: should be special piece, in particular adjacent to "
-                    "two-sided cylinder, since those are the only one with only one choice at the "
+                    "two-sided cylinder, since those are the only ones with only one choice at the "
                     "moment, so they dont have corresponding variables"
                 );
                 assignment.push_back(m_adjacencies.get_adjacency(piece_index).adjacent_faces[0]);
@@ -525,17 +528,5 @@ Conflicts::solve(const std::vector<CylinderType>& cylinders_type_current_guess) 
     }
     return std::nullopt;
 }
-
-/*
-
-
-SatSolverResult m_sat_result;
-std::vector<std::optional<size_t>> m_assigned_face_of_piece;
-
-
-
-
-
-*/
 
 } // namespace domus::torus
