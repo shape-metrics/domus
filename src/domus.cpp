@@ -1,9 +1,10 @@
 #include <expected>
+#include <filesystem>
 #include <optional>
 #include <print>
 #include <string>
+#include <vector>
 
-#include "domus/core/graph/attributes.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/file_loader.hpp"
 #include "domus/core/graph/flow.hpp"
@@ -15,8 +16,6 @@
 #include "domus/planarity/auslander_parter.hpp"
 #include "domus/planarity/tutte.hpp"
 #include "domus/torus/embedder.hpp"
-#include "domus/torus/embedding_converter.hpp"
-#include "domus/torus/mapping.hpp"
 #include "domus/torus/test.hpp"
 
 using namespace domus;
@@ -24,21 +23,7 @@ using namespace domus::graph;
 using namespace domus::planarity;
 using namespace domus::orthogonal;
 using namespace domus::torus;
-using namespace domus::torus::mapper;
 using namespace domus::drawing;
-
-void planarity_test(const graph::Graph& graph) {
-    const std::optional<Embedding> embedding = compute_planar_embedding(graph);
-    if (embedding.has_value()) {
-        std::println("Embedding found");
-        embedding->print();
-        std::println(
-            "number of faces: {}",
-            compute_number_of_faces_in_embedding(embedding.value())
-        );
-    } else
-        std::println("Embedding not found");
-}
 
 void make_orthogonal(const Graph& graph) {
     static constexpr std::string svg_filename = "drawing.svg";
@@ -50,21 +35,25 @@ void make_orthogonal(const Graph& graph) {
     std::println("Number of useless bends: {}", result.number_of_useless_bends);
 }
 
-void toroidal_test(const Graph& graph) {
+bool is_toroidal_hard_check(const Graph& graph) {
+    for (const Embedding& embedding : compute_all_possible_embeddings(graph))
+        if (compute_embedding_genus(embedding) == 1)
+            return true;
+    return false;
+}
+
+bool is_toroidal(const Graph& graph) {
     const std::optional<Embedding> embedding = torus::compute_toroidal_embedding(graph);
     if (embedding.has_value()) {
-        std::println("Embedding found");
-        embedding->print();
-        std::println(
-            "number of faces: {}",
-            compute_number_of_faces_in_embedding(embedding.value())
+        DOMUS_ASSERT(
+            compute_embedding_genus(embedding.value()) == 1,
+            "toroidal_test: found embedding should have genus 1"
         );
-        std::println("genus: {}", compute_embedding_genus(embedding.value()));
-
         // EquivalentEmbedding eq_embedding = build_equivalent_embedding(graph, *embedding);
         // eq_embedding.to_torus_mapping().visualize();
-    } else
-        std::println("Embedding not found");
+        return true;
+    }
+    return false;
 }
 
 auto load_graph() {
@@ -77,79 +66,23 @@ auto load_graph() {
     return graph.value();
 }
 
-void test_tutte_layout() {
-    Graph graph;
-    for (int i = 0; i < 14; i++)
-        graph.add_node();
-    graph.add_edge(0, 1);
-    graph.add_edge(0, 13);
-    graph.add_edge(0, 2);
-    graph.add_edge(0, 3);
-    graph.add_edge(1, 9);
-    graph.add_edge(1, 12);
-    graph.add_edge(1, 13);
-    graph.add_edge(2, 5);
-    graph.add_edge(3, 4);
-    graph.add_edge(3, 13);
-    graph.add_edge(4, 5);
-    graph.add_edge(4, 10);
-    graph.add_edge(5, 6);
-    graph.add_edge(5, 11);
-    graph.add_edge(6, 7);
-    graph.add_edge(6, 8);
-    graph.add_edge(8, 9);
-    graph.add_edge(9, 12);
-    graph.add_edge(10, 11);
-    graph.add_edge(10, 12);
-    graph.add_edge(11, 12);
-    graph.add_edge(8, 7);
-    graph.add_edge(7, 2);
-    graph.add_edge(9, 2);
-    Attributes attributes;
-    attributes.add_attribute(Attribute::NODES_POSITION);
-    attributes.set_position(0, 0, 0);
-    attributes.set_position(1, 0, 400);
-    attributes.set_position(2, 600, 0);
-    attributes.set_position(9, 600, 400);
-    compute_nodes_positions(graph, attributes);
-    auto res = attributes.build_drawer(graph).save_to_file("daje.svg");
-    if (!res)
-        std::println("{}", res.error());
-    auto cycles = flow::max_vertex_disjoint_cycles(graph, 12);
-    std::println("Number of vertex-disjoint cycles: {}", cycles.size());
-    for (const auto& cycle : cycles) {
-        cycle.print();
-    }
-    auto paths = flow::max_vertex_disjoint_paths(graph, 0, 9);
-    std::println("Number of vertex-disjoint paths: {}", paths.size());
-    for (const auto& path : paths) {
-        path.print();
-    }
-}
-
 int main() {
-    // test_tutte_layout();
-    // graph->print(true);
-    // std::println("{}", generators::code_to_generate_graph(*graph));
-
-    // planarity_test(*graph);
-    // for (const auto& forbidden_minor : test::forbidden_minors)
-    //     planarity_test(forbidden_minor);
-
-    // make_orthogonal(test::subdivided_k_5);
-    //  toroidal_test(test::two_cycle_graphs[2]);
-
-    // std::println("k5");
-    // test::subdivided_k_5.print(true);
-
-    toroidal_test(graph::test::toroidal_cubic_graphs[0]);
-
-    // toroidal_test(graph::test::subdivided_k_3_3);
-
-    std::println("\n\nCASE ----- K_3_3 -----");
-    torus::test::test_all_possible_embeddings(graph::test::subdivided_k_3_3);
-
-    // visualize_torus();
+    const auto graphs = loader::load_graphs_from_asc_file("10_3_3.asc");
+    if (!graphs) {
+        std::println("error: {}", graphs.error());
+        return 1;
+    }
+    for (size_t i = 0; i < graphs->size(); ++i) {
+        const Graph& g = (*graphs)[i];
+        std::print("{} ", i);
+        if (is_graph_planar(g)) {
+            std::println("is planar");
+            continue;
+        }
+        bool is_toroidal_smart = is_toroidal(g);
+        bool ground_truth = is_toroidal_hard_check(g);
+        std::println("{} {}", is_toroidal_smart, ground_truth);
+    }
 
     return 0;
 }

@@ -124,4 +124,99 @@ std::expected<void, std::string> save_graph_to_graphml_file(
     return {};
 }
 
+// Nodes in the file are 1-based; they get internally converted to 0-based.
+//
+// The .asc format for each graph block is:
+//
+//   Graph N:
+//
+//   1 : v1 v2 ...       <- adjacency section
+//   ...
+//   Taillenweite: K     <- separator: adjacency ends here
+//
+//   a : p1 p2 ...       <- automorphism permutations (ignored)
+//   Ordnung: M
+//
+// We use "Taillenweite:" as the boundary: only lines between "Graph N:" and
+// "Taillenweite:" are parsed as adjacency rows. This avoids any assumption
+// about the number of nodes.
+std::expected<std::vector<Graph>, std::string>
+load_graphs_from_asc_file(const std::filesystem::path& path) {
+    std::ifstream infile(path);
+    if (!infile)
+        return std::unexpected(
+            std::format("load_graphs_from_asc_file: cannot open: {}", path.string())
+        );
+
+    std::vector<Graph> graphs;
+    Graph* current = nullptr;
+    bool in_adjacency_section = false;
+    std::string line;
+
+    while (std::getline(infile, line)) {
+        // Strip trailing CR (Windows line endings)
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+
+        if (line.empty())
+            continue;
+
+        // New graph block
+        if (line.rfind("Graph ", 0) == 0) {
+            graphs.emplace_back();
+            current = &graphs.back();
+            in_adjacency_section = true;
+            continue;
+        }
+
+        if (current == nullptr)
+            continue;
+
+        // "Taillenweite:" marks the end of the adjacency section
+        if (line.rfind("Taillenweite:", 0) == 0) {
+            in_adjacency_section = false;
+            continue;
+        }
+
+        if (!in_adjacency_section)
+            continue;
+
+        // Adjacency line must start with a digit
+        if (!std::isdigit(static_cast<unsigned char>(line[0])))
+            continue;
+
+        const auto colon_pos = line.find(':');
+        if (colon_pos == std::string::npos)
+            continue;
+
+        std::istringstream left_ss(line.substr(0, colon_pos));
+        size_t node_1based{};
+        if (!(left_ss >> node_1based))
+            continue;
+
+        std::istringstream right_ss(line.substr(colon_pos + 1));
+        std::vector<size_t> neighbors;
+        size_t v;
+        while (right_ss >> v)
+            neighbors.push_back(v);
+
+        // Ensure the source node exists
+        while (current->get_number_of_nodes() < node_1based)
+            current->add_node();
+
+        const size_t from = node_1based - 1; // convert to 0-based
+        for (const size_t neighbor_1based : neighbors) {
+            const size_t to = neighbor_1based - 1;
+            // Ensure the destination node exists
+            while (current->get_number_of_nodes() <= to)
+                current->add_node();
+            // Undirected: add each edge only once
+            if (from < to)
+                current->add_edge(from, to);
+        }
+    }
+
+    return graphs;
+}
+
 } // namespace domus::graph::loader

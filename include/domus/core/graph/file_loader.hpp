@@ -12,6 +12,9 @@ class Attributes;
 
 namespace domus::graph::loader {
 
+std::expected<std::vector<Graph>, std::string>
+load_graphs_from_asc_file(const std::filesystem::path& path);
+
 std::expected<Graph, std::string> load_graph_from_txt_file(std::filesystem::path path);
 
 std::expected<void, std::string> save_graph_to_file(const Graph& graph, std::filesystem::path path);
