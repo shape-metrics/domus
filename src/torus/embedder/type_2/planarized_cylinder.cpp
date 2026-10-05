@@ -192,7 +192,8 @@ bool PlanarizedCylinder::is_consistent(
     const size_t old_last_edge_id = non_repeated_path.get_last_edge_id();
 
     for (const size_t n_id : component.get_nodes_ids()) {
-        const size_t old_n_id = component_node_labels.get_label(n_id);
+        const size_t cylinder_n_id = component_node_labels.get_label(n_id);
+        const size_t old_n_id = node_new_to_old_id.get_label(cylinder_n_id);
         if (old_node_id != old_n_id)
             continue;
         if (component.get_degree_of_node(n_id) == 2)
