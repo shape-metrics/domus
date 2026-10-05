@@ -143,7 +143,9 @@ class Type2Solver {
                 // special pieces to be one-sided in this particular cylinder, we would get the
                 // exact same result in some other computation in which we guessed this cylinder to
                 // be two-sided
-                return false; // so let us procrastinate until that guess happens
+                return false;
+                // so let us procrastinate until that guess happens
+                // TODO maybe not the smartest thing? definitely the easiest tho
             } else {
                 // In case it actually received at least one across ordinary piece:
                 // Construct a PlanarizedCylinder putting all special pieces and across pieces
@@ -167,7 +169,7 @@ class Type2Solver {
 
     // any embeddability without constraints of special pieces in a cylinder is guaranteed to
     // work, since we tested this in advance. hence why this function is void
-    void embed_special_pieces_two_sided_cylinder(const PiecesAssignment& assignment) const {
+    void embed_special_pieces_two_sided_cylinder() const {
         size_t found_cylinders = 0;
         for (size_t face_index = 0; face_index < m_adjacencies.get_faces().size(); face_index++) {
             const Face& face = m_adjacencies.get_faces()[face_index];
@@ -175,7 +177,12 @@ class Type2Solver {
                 continue;
             if (m_cylinders_type_current_guess[found_cylinders++] == CylinderType::ONE_SIDED)
                 continue;
-            // TODO
+
+            const auto& special_pieces = m_adjacencies.special_pieces_in_face(face_index);
+            if (special_pieces.empty())
+                continue;
+
+            m_cylinder_embeddings[face_index]->merge_into_embedding(m_adjacencies, m_embedding);
         }
     }
 
@@ -262,7 +269,7 @@ class Type2Solver {
             DOMUS_DEBUG_LN("found a potential solution.");
             if (!embed_special_pieces_one_sided_cylinder(*piece_to_assigned_face))
                 return false;
-            embed_special_pieces_two_sided_cylinder(*piece_to_assigned_face);
+            embed_special_pieces_two_sided_cylinder();
             embed_ordinary_pieces(*piece_to_assigned_face);
             DOMUS_DEBUG_LN("embedding extension computed.");
             return true;
