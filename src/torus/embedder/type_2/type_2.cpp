@@ -33,6 +33,8 @@ class Type2Solver {
 
     std::vector<std::optional<PlanarizedCylinder>> m_cylinder_embeddings;
     std::vector<std::optional<CachedOrdinaryEmbedding>> m_cached_ordinary_piece_embedding;
+    std::vector<NodesLabels<size_t>> m_face_node_to_pos;
+    std::vector<NodesLabels<size_t>> m_face_incoming_edges;
 
     Type2Solver(
         Embedding& embedding,
@@ -47,6 +49,23 @@ class Type2Solver {
     InitializationOutcome init() {
         if (m_pieces.size() == 0)
             return InitializationOutcome::NOTHING_TO_DO;
+
+        // Precompute node-to-position and incoming edge for each face in O(n) total time
+        m_face_node_to_pos.resize(m_faces.size());
+        m_face_incoming_edges.resize(m_faces.size());
+        for (size_t face_index = 0; face_index < m_faces.size(); ++face_index) {
+            const auto& path = m_faces[face_index].path();
+            for (size_t i = 0; i < path.number_of_edges(); ++i) {
+                const size_t node_id = path.get_node_id_at_position(i);
+                if (!m_face_node_to_pos[face_index].has_label(node_id)) {
+                    m_face_node_to_pos[face_index].add_label(node_id, i);
+                    const size_t in_pos = (i == 0) ? (path.number_of_edges() - 1) : (i - 1);
+                    m_face_incoming_edges[face_index].add_label(
+                        node_id, path.get_edge_id_at_position(in_pos)
+                    );
+                }
+            }
+        }
 
         m_cylinder_embeddings.resize(m_faces.size());
         for (size_t face_index = 0; face_index < m_faces.size(); ++face_index) {
@@ -77,7 +96,9 @@ class Type2Solver {
             const Face& face = m_faces[face_index];
 
             m_cached_ordinary_piece_embedding[piece_index] =
-                CachedOrdinaryEmbedding::cache_ordinary_embedding(face_index, face, bridge);
+                CachedOrdinaryEmbedding::cache_ordinary_embedding(
+                    face_index, face, bridge, m_face_node_to_pos[face_index]
+                );
             if (!m_cached_ordinary_piece_embedding[piece_index].has_value())
                 return InitializationOutcome::NO_SOLUTION;
         }
@@ -196,19 +217,12 @@ class Type2Solver {
         );
     }
 
-    size_t get_incoming_edge_to_node_in_face(const Face& face, size_t node_id) const {
-        const auto& path = face.path();
-        for (size_t i = 0; i < path.number_of_edges(); ++i) {
-            if (path.get_node_id_at_position(i) == node_id) {
-                const size_t in_pos = (i == 0) ? (path.number_of_edges() - 1) : (i - 1);
-                return path.get_edge_id_at_position(in_pos);
-            }
-        }
+    size_t get_incoming_edge_to_node_in_face(size_t face_index, size_t node_id) const {
         DOMUS_ASSERT(
-            false,
+            m_face_incoming_edges[face_index].has_label(node_id),
             "Type2Solver::get_incoming_edge_to_node_in_face: node not found in face"
         );
-        return 0;
+        return m_face_incoming_edges[face_index].get_label(node_id);
     }
 
     // any embeddability of ordinary pieces is guaranteed to work, since we tested this in
@@ -247,7 +261,6 @@ class Type2Solver {
 
             // embed bridge edges incident to attachments into m_embedding
             // TODO this loop can probably made more efficient by looping on just the attachments
-            const Face& assigned_face = m_faces[face_index];
             for (const auto bridge_edge : bridge.get_bridge().get_all_edges()) {
                 const size_t old_edge_id =
                     bridge.get_new_edge_id_to_old_id().get_label(bridge_edge.id);
@@ -258,11 +271,12 @@ class Type2Solver {
 
                 if (bridge.is_attachment(bridge_edge.edge.from_id)) {
                     const size_t e_in =
-                        get_incoming_edge_to_node_in_face(assigned_face, old_from_id);
+                        get_incoming_edge_to_node_in_face(face_index, old_from_id);
                     m_embedding.add_edge_after(old_from_id, old_to_id, old_edge_id, e_in);
                 }
                 if (bridge.is_attachment(bridge_edge.edge.to_id)) {
-                    const size_t e_in = get_incoming_edge_to_node_in_face(assigned_face, old_to_id);
+                    const size_t e_in =
+                        get_incoming_edge_to_node_in_face(face_index, old_to_id);
                     m_embedding.add_edge_after(old_to_id, old_from_id, old_edge_id, e_in);
                 }
             }
