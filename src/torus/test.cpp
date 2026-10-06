@@ -1,5 +1,7 @@
 #include "domus/torus/test.hpp"
 
+#include <print>
+
 #include "domus/core/graph/embedding.hpp"
 
 #include "faces.hpp"

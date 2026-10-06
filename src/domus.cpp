@@ -68,10 +68,12 @@ auto load_graph() {
 
 int main() {
     const auto graphs = loader::load_graphs_from_asc_file("10_3_3.asc");
+
     if (!graphs) {
         std::println("error: {}", graphs.error());
         return 1;
     }
+
     for (size_t i = 0; i < graphs->size(); ++i) {
         const Graph& g = (*graphs)[i];
         std::print("{} ", i);

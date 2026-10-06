@@ -7,6 +7,7 @@
 #include "domus/core/graph/graph_utilities.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
+#include "domus/core/print.hpp"
 #include "domus/ogdf_utils.hpp"
 
 namespace domus::torus::mapper {
