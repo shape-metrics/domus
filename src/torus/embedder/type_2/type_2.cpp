@@ -279,18 +279,14 @@ class Type2Solver {
                 compute_embedding_genus(m_embedding) == 1,
                 "Type2Solver::solve: initial embedding should have genus 1"
             );
-            DOMUS_DEBUG_INDENT();
-            DOMUS_DEBUG_LN("attempting this guess.");
             auto piece_to_assigned_face = m_conflicts.solve(m_cylinders_type_current_guess);
             if (!piece_to_assigned_face.has_value())
                 return false;
-            DOMUS_DEBUG_LN("found a potential solution.");
             if (!embed_special_pieces_one_sided_cylinder(*piece_to_assigned_face))
                 return false;
 
             embed_special_pieces_two_sided_cylinder();
             embed_ordinary_pieces(*piece_to_assigned_face);
-            DOMUS_DEBUG_LN("embedding extension computed.");
             return true;
         }
         m_cylinders_type_current_guess[done_guesses_of_cylinders] = CylinderType::ONE_SIDED;
@@ -304,7 +300,6 @@ class Type2Solver {
 
   public:
     static bool solve_type_2(Graph& graph, Embedding& embedding, const std::vector<Face>& faces) {
-        DOMUS_DEBUG_LN("trying to complete the embedding extension.");
         std::vector<Bridge> pieces = Bridge::compute(graph, embedding);
         if (pieces.size() == 0)
             return true;
@@ -317,19 +312,10 @@ class Type2Solver {
         Type2Solver solver(embedding, faces, pieces, *adjacencies, conflicts);
         switch (solver.init()) {
         case InitializationOutcome::NO_SOLUTION:
-            DOMUS_DEBUG_LN("no solution: there is a piece that cannot be embedded.");
             return false;
         case InitializationOutcome::NOTHING_TO_DO:
-            DOMUS_DEBUG_LN("found solution: there are no pieces to embed.");
             return true;
         case InitializationOutcome::DONE:
-            DOMUS_DEBUG_LN("continuing to look for an extension.");
-            DOMUS_DEBUG_LN("number of cylinders: {}", solver.m_number_of_cylinders);
-            DOMUS_DEBUG_EXEC(for (const Face& face : faces) {
-                if (face.type() == FaceType::TYPE_2)
-                    DOMUS_DEBUG("{}", face.to_string());
-            });
-            // mapper::build_equivalent_embedding(graph, embedding).to_torus_mapping().visualize();
             return solver.solve(0);
         }
     }

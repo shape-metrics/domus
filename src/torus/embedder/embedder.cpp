@@ -11,6 +11,7 @@
 #include "domus/core/graph/path.hpp"
 #include "domus/core/utils.hpp"
 #include "domus/ogdf_utils.hpp"
+#include "domus/planarity/auslander_parter.hpp"
 
 #include "../faces.hpp"
 #include "type_2/type_2.hpp"
@@ -23,20 +24,16 @@ using namespace domus::graph::utilities;
 bool extend_embedding(
     Graph& graph, Embedding& embedding, const size_t jolly_id, const std::vector<Face>& faces
 ) {
-    DOMUS_DEBUG_LN("extend_embedding: attempting to extend embedding.");
     // if at least one face is of type 3 then call the procedure for type 3 faces
     // (note that, however, at most one face can be of type 3 in any toroidal embedding)
     for (const auto& face : faces) {
         if (face.type() == FaceType::TYPE_3) {
-            DOMUS_DEBUG_LN("extend_embedding: extending case 3.");
-            DOMUS_DEBUG_INDENT();
             if (handle_type_3(graph, embedding, face, jolly_id))
                 return true;
             return false;
         }
     }
     // otherwise call the procedure for the type 2 faces
-    DOMUS_DEBUG_LN("extend_embedding: extending case 2.");
     if (handle_type_2(graph, embedding, faces))
         return true;
     return false;
@@ -110,7 +107,7 @@ Embedding remove_added_edges(
     return clean_embedding;
 }
 
-std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
+std::optional<Embedding> compute_toroidal_embedding_biconnected(const Graph& graph) {
     if (graph.get_number_of_edges() > 3 * graph.get_number_of_nodes())
         return std::nullopt;
     DOMUS_ASSERT(
@@ -179,14 +176,7 @@ std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
     // them. since the input graph is subcubic, the kuratowski subdivision must be a K_{3,3}
     // this also allows us to compute all possible embeddings just by flipping the circular order of
     // the edges at each node (only 2 circular orders are possible with degree 3 nodes)
-    size_t number_of_embedding = 0;
     for (auto& combination : domus::utilities::generate_all_bitsets<6>()) {
-        number_of_embedding++;
-
-        DOMUS_DEBUG_LN(
-            "compute_toroidal_embedding: testing embedding number {}.",
-            number_of_embedding
-        );
         // here we do the flips of the circular orders to obtain one specific possible embedding
         for (size_t i = 0; i < 6; i++)
             if (combination.test(i))
@@ -200,7 +190,6 @@ std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
                 paths.size(),
                 1
             ) == 1) { // if we produced a non toroidal graph, skip the extension attempt
-            DOMUS_DEBUG("{}", embedding.to_string());
             std::vector<Face> faces;
             for (Path f : paths)
                 faces.push_back(compute_face_from_path(std::move(f), graph_copy));
@@ -217,8 +206,6 @@ std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
                 ); // we want to remove the added subdivided edges to obtain an embedding of the
                    // original graph
             }
-        } else {
-            DOMUS_DEBUG_LN("compute_toroidal_embedding: non toroidal embedding. Skipping.");
         }
 
         // here we reverse the flips of the circular orders we just did, so we can try the next
@@ -229,6 +216,27 @@ std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
     }
 
     return std::nullopt;
+}
+
+bool is_toroidal(const Graph& graph) {
+    auto blocks = algorithms::BiconnectedComponents::compute(graph).get_components();
+    size_t non_planar_blocks_count = 0;
+
+    for (const auto& B : blocks) {
+        if (B.get_number_of_edges() <= 2)
+            continue;
+
+        if (!planarity::is_graph_planar(B)) {
+            non_planar_blocks_count++;
+            if (non_planar_blocks_count > 1)
+                return false;
+            if (!compute_toroidal_embedding_biconnected(B).has_value()) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 } // namespace domus::torus
