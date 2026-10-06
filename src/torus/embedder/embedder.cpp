@@ -65,10 +65,20 @@ get_other_edge_id(const Embedding& graph, size_t node_id, size_t neighbor_id) {
 }
 
 Embedding remove_added_edges(
-    const Graph& graph, const Embedding& embedding, const EdgesLabels<size_t>& subdivided_old_edge
+    const Graph& graph, Embedding& embedding, const EdgesLabels<size_t>& subdivided_old_edge
 ) {
-    Embedding clean_embedding(graph);
     const size_t jolly_id = embedding.get_number_of_nodes() - 1;
+
+    // Remove all fictitious edges incident to jolly_id
+    std::vector<EdgeIter> jolly_edges;
+    for (const auto& edge : embedding.get_edges(jolly_id))
+        jolly_edges.push_back(edge);
+    for (const auto& edge : jolly_edges) {
+        embedding.remove_edge(jolly_id, edge.neighbor_id, edge.id);
+        embedding.remove_edge(edge.neighbor_id, jolly_id, edge.id);
+    }
+
+    Embedding clean_embedding(graph);
     for (const size_t node_id : graph.get_nodes_ids()) {
         for (const auto& edge : embedding.get_edges(node_id)) {
             if (edge.neighbor_id == jolly_id)
@@ -195,13 +205,18 @@ std::optional<Embedding> compute_toroidal_embedding(const Graph& graph) {
             for (Path f : paths)
                 faces.push_back(compute_face_from_path(std::move(f), graph_copy));
 
-            if (extend_embedding(graph_copy, embedding, jolly_id, faces))
+            if (extend_embedding(graph_copy, embedding, jolly_id, faces)) {
+                DOMUS_ASSERT(
+                    compute_embedding_genus(embedding) == 1,
+                    "compote_toroidal_embedding: found embedding should have genus 1"
+                );
                 return remove_added_edges(
                     graph,
                     embedding,
                     subdivided_old_edge
                 ); // we want to remove the added subdivided edges to obtain an embedding of the
                    // original graph
+            }
         } else {
             DOMUS_DEBUG_LN("compute_toroidal_embedding: non toroidal embedding. Skipping.");
         }

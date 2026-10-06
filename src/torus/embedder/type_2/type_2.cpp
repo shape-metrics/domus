@@ -164,6 +164,11 @@ class Type2Solver {
         for (const OneSidedCylinderToEmbed& item : cylinders_to_embed)
             item.cylinder.merge_into_embedding(m_adjacencies, m_embedding);
 
+        DOMUS_ASSERT(
+            compute_embedding_genus(m_embedding) == 1,
+            "Type2Solver::embed_special_pieces_one_sided_cylinder: found embedding should have "
+            "genus 1"
+        );
         return true;
     }
 
@@ -184,6 +189,11 @@ class Type2Solver {
 
             m_cylinder_embeddings[face_index]->merge_into_embedding(m_adjacencies, m_embedding);
         }
+        DOMUS_ASSERT(
+            compute_embedding_genus(m_embedding) == 1,
+            "Type2Solver::embed_special_pieces_two_sided_cylinder: found embedding should have "
+            "genus 1"
+        );
     }
 
     size_t get_incoming_edge_to_node_in_face(const Face& face, size_t node_id) const {
@@ -257,10 +267,18 @@ class Type2Solver {
                 }
             }
         }
+        DOMUS_ASSERT(
+            compute_embedding_genus(m_embedding) == 1,
+            "Type2Solver::embed_ordinary_pieces: found embedding should have genus 1"
+        );
     }
 
     bool solve(size_t done_guesses_of_cylinders) {
         if (done_guesses_of_cylinders == m_number_of_cylinders) {
+            DOMUS_ASSERT(
+                compute_embedding_genus(m_embedding) == 1,
+                "Type2Solver::solve: initial embedding should have genus 1"
+            );
             DOMUS_DEBUG_INDENT();
             DOMUS_DEBUG_LN("attempting this guess.");
             auto piece_to_assigned_face = m_conflicts.solve(m_cylinders_type_current_guess);
@@ -269,6 +287,7 @@ class Type2Solver {
             DOMUS_DEBUG_LN("found a potential solution.");
             if (!embed_special_pieces_one_sided_cylinder(*piece_to_assigned_face))
                 return false;
+
             embed_special_pieces_two_sided_cylinder();
             embed_ordinary_pieces(*piece_to_assigned_face);
             DOMUS_DEBUG_LN("embedding extension computed.");

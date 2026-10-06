@@ -417,6 +417,11 @@ Conflicts::solve(const std::vector<CylinderType>& cylinders_type_current_guess) 
                 pieces_to_variables[piece_index].push_back(m_variables.size());
                 m_variables.push_back(OrdinaryPieceVariable{piece_index, face_index});
             }
+            for (const Conflict& conflict : conflicts.ordinary_pieces) {
+                int var_1 = static_cast<int>(pieces_to_variables[conflict.p_1].back());
+                int var_2 = static_cast<int>(pieces_to_variables[conflict.p_2].back());
+                cnf.add_clause({-var_1, -var_2});
+            }
             for (size_t piece_index : conflicts.non_across_ordinary_pieces) {
                 if (m_adjacencies.get_adjacency(piece_index).adjacent_faces.size() == 1)
                     return std::nullopt;
