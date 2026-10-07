@@ -10,6 +10,8 @@
 #include <thread>
 
 #include "domus/core/graph/embedding.hpp"
+#include "domus/core/graph/graphs_algorithms.hpp"
+#include "domus/ogdf_utils.hpp"
 #include "domus/planarity/auslander_parter.hpp"
 #include "domus/torus/embedder.hpp"
 
@@ -76,16 +78,19 @@ bool is_minimal_obstruction(const Graph& graph) {
     return true;
 }
 
-std::vector<std::pair<Graph, bool>> find_minimal_obstructions(const std::vector<Graph>& graphs) {
+std::vector<ObstructionResult> find_minimal_obstructions(const std::vector<Graph>& graphs) {
     const size_t total_graphs = graphs.size();
 
     std::atomic<size_t> current_idx{0};
+
+    std::atomic<size_t> planar{0};
     std::atomic<size_t> toroidal{0};
     std::atomic<size_t> non_toroidal{0};
+    std::atomic<size_t> non_biconnected{0};
     std::atomic<size_t> minimal_obstruction{0};
     std::atomic<size_t> processed{0};
 
-    std::vector<std::pair<Graph, bool>> non_toroidals; // bool is true if obstruction is minimal
+    std::vector<ObstructionResult> non_toroidals(graphs.size(), GraphType::Uncomputed{});
     std::mutex mutex;
 
     const unsigned int num_threads = std::max(1u, std::thread::hardware_concurrency());
@@ -99,17 +104,27 @@ std::vector<std::pair<Graph, bool>> find_minimal_obstructions(const std::vector<
             }
 
             const Graph& g = (graphs)[idx];
-            if (is_toroidal(g)) {
+            if (!algorithms::is_biconnected(g)) {
+                non_biconnected.fetch_add(1, std::memory_order_relaxed);
+                std::lock_guard lock(mutex);
+                non_toroidals[idx] = GraphType::NonBiconnected{};
+            } else if (ogdf_utils::is_graph_planar(g)) {
+                planar.fetch_add(1, std::memory_order_relaxed);
+                std::lock_guard lock(mutex);
+                non_toroidals[idx] = GraphType::Planar{};
+            } else if (is_toroidal_biconnected(g)) {
                 toroidal.fetch_add(1, std::memory_order_relaxed);
+                std::lock_guard lock(mutex);
+                non_toroidals[idx] = GraphType::Toroidal{};
             } else {
                 non_toroidal.fetch_add(1, std::memory_order_relaxed);
                 if (is_minimal_obstruction(g)) {
                     minimal_obstruction.fetch_add(1, std::memory_order_relaxed);
                     std::lock_guard lock(mutex);
-                    non_toroidals.emplace_back(g, true);
+                    non_toroidals[idx] = GraphType::MinimalNonToroidal{};
                 } else {
                     std::lock_guard lock(mutex);
-                    non_toroidals.emplace_back(g, false);
+                    non_toroidals[idx] = GraphType::NonToroidal{};
                 }
             }
 
@@ -117,12 +132,15 @@ std::vector<std::pair<Graph, bool>> find_minimal_obstructions(const std::vector<
             if (count % 25 == 0 || count == total_graphs) {
                 std::lock_guard lock(mutex);
                 std::print(
-                    "\r [{}/{}] toroidal [{}] non toroidal [{}] minimal obstruction [{}]",
+                    "\r [{}/{}] toroidal [{}] non toroidal [{}] minimal obstruction [{}] planar "
+                    "[{}] non biconnected [{}]",
                     count,
                     total_graphs,
                     toroidal.load(std::memory_order_relaxed),
                     non_toroidal.load(std::memory_order_relaxed),
-                    minimal_obstruction.load(std::memory_order_relaxed)
+                    minimal_obstruction.load(std::memory_order_relaxed),
+                    planar.load(std::memory_order_relaxed),
+                    non_biconnected.load(std::memory_order_relaxed)
                 );
                 std::fflush(stdout);
             }
@@ -143,10 +161,13 @@ std::vector<std::pair<Graph, bool>> find_minimal_obstructions(const std::vector<
 
     std::println();
     std::println(
-        "Finished: toroidal [{}] non toroidal [{}] minimal obstruction [{}]",
+        "Finished: toroidal [{}] non toroidal [{}] minimal obstruction [{}] planar [{}] non "
+        "biconnected [{}]",
         toroidal.load(),
         non_toroidal.load(),
-        minimal_obstruction.load()
+        minimal_obstruction.load(),
+        planar.load(),
+        non_biconnected.load()
     );
 
     return non_toroidals;
@@ -243,7 +264,7 @@ bool compare_with_ground_truth(const std::vector<Graph>& graphs) {
             }
 
             const Graph& g = graphs[idx];
-            if (is_toroidal(g) != is_toroidal_ground_truth(g)) {
+            if (is_toroidal_biconnected(g) != is_toroidal_ground_truth(g)) {
                 all_match.store(false, std::memory_order_relaxed);
                 break;
             }

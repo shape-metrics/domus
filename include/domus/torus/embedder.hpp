@@ -18,6 +18,8 @@ namespace domus::torus {
  */
 std::optional<graph::Embedding> compute_toroidal_embedding_biconnected(const graph::Graph& graph);
 
+bool is_toroidal(const graph::Graph& graph);
+
 bool is_toroidal_biconnected(const graph::Graph& graph);
 
 } // namespace domus::torus

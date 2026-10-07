@@ -230,13 +230,20 @@ bool is_toroidal(const Graph& graph) {
             non_planar_blocks_count++;
             if (non_planar_blocks_count > 1)
                 return false;
-            if (!compute_toroidal_embedding_biconnected(B).has_value()) {
+            if (!compute_toroidal_embedding_biconnected(B).has_value())
                 return false;
-            }
         }
     }
 
     return true;
+}
+
+bool is_toroidal_biconnected(const Graph& graph) {
+    DOMUS_ASSERT(
+        algorithms::is_biconnected(graph),
+        "is_toroidal_biconnected: input graph is not biconnected"
+    );
+    return compute_toroidal_embedding_biconnected(graph).has_value();
 }
 
 } // namespace domus::torus
