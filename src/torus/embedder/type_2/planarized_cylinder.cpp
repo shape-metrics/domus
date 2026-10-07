@@ -2,7 +2,7 @@
 
 #include "domus/core/debug.hpp"
 #include "domus/core/graph/graphs_algorithms.hpp"
-#include "domus/planarity/auslander_parter.hpp"
+#include "domus/ogdf_utils.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -54,7 +54,7 @@ std::optional<PlanarizedCylinder> PlanarizedCylinder::build(
         cylinder.add_piece(adjacencies.get_pieces()[piece_index]);
     }
 
-    auto result = planarity::compute_planar_embedding(cylinder.get_graph());
+    auto result = ogdf_utils::compute_planar_embedding(cylinder.get_graph());
     if (!result.has_value())
         return std::nullopt;
 
