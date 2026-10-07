@@ -195,7 +195,7 @@ bool SplitterWithPath::try_paths_inside_graph() {
         } else {
             for (const Path& path : candidate_face_splitting_paths_in_bridge(
                      bridge,
-                     m_type_3_face.is_node_in_repeated_path(),
+                     m_type_3_face.is_node_repeated_in_face(),
                      m_graph
                  ))
                 if (try_face_splits_with_path(path))
@@ -230,14 +230,6 @@ bool SplitterWithPath::try_face_splits_with_path(const Path& path) {
     );
 
     DOMUS_ASSERT(path.number_of_edges() > 0, "FaceSplitter::try_face_splits_with_path: empty path");
-    DOMUS_ASSERT(
-        m_embedding.get_degree_of_node(first_id) > 1,
-        "FaceSplitter::try_face_splits_with_path: first node degree <= 1"
-    );
-    DOMUS_ASSERT(
-        m_embedding.get_degree_of_node(last_id) > 1,
-        "FaceSplitter::try_face_splits_with_path: last node degree <= 1"
-    );
 
     insert_path_in_embedding(m_embedding, path);
     auto combinations = domus::utilities::generate_all_bitsets<2>();

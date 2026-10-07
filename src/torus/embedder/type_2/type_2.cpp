@@ -9,6 +9,7 @@
 #include "../utils.hpp"
 #include "adjacencies.hpp"
 #include "conflicts.hpp"
+#include "nodes_positions.hpp"
 #include "ordinary_pieces.hpp"
 #include "planarized_cylinder.hpp"
 
@@ -25,6 +26,7 @@ class Type2Solver {
     const std::vector<Bridge>& m_pieces;
     const Adjacencies& m_adjacencies;
     const Conflicts& m_conflicts;
+    const NodesPositions m_nodes_positions;
 
     size_t m_number_of_cylinders = 0;
     std::vector<CylinderType> m_cylinders_type_current_guess;
@@ -42,7 +44,7 @@ class Type2Solver {
         const Conflicts& conflicts
     )
         : m_embedding(embedding), m_faces(faces), m_pieces(pieces), m_adjacencies(adjacencies),
-          m_conflicts(conflicts) {}
+          m_conflicts(conflicts), m_nodes_positions(adjacencies) {}
 
     InitializationOutcome init() {
         if (m_pieces.size() == 0)

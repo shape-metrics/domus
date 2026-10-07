@@ -117,6 +117,7 @@ set(COMMON_SRCS
     src/torus/embedder/type_2/adjacencies.cpp
     src/torus/embedder/type_2/planarized_cylinder.cpp
     src/torus/embedder/type_2/ordinary_pieces.cpp
+    src/torus/embedder/type_2/nodes_positions.cpp
     src/torus/test.cpp
     src/core/graph/test.cpp
     src/force_layout/planarity_preserving_force_layout.cpp

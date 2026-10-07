@@ -58,7 +58,7 @@ bool Adjacencies::compute_piece_to_adjacent_faces(
             if (m_faces[face_id].type() == FaceType::TYPE_2) {
                 for (const size_t old_attachment_id : bridge.get_old_attachments()) {
                     if (m_faces[face_id]
-                            .is_node_in_repeated_path()
+                            .is_node_repeated_in_face()
                             .get_label(old_attachment_id)
                             .test(0)) {
                         special_face_id = face_id;
@@ -119,7 +119,7 @@ void Adjacencies::compute_cylinders_boundary_components() {
             "faces"
         );
         const Path& path = face.path();
-        const auto& is_repeated = face.is_node_in_repeated_path();
+        const auto& is_repeated = face.is_node_repeated_in_face();
 
         std::vector<std::vector<size_t>> components;
         std::vector<size_t> current_component;
