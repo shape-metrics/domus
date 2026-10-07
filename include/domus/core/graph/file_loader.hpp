@@ -4,6 +4,9 @@
 #include <filesystem>
 #include <string>
 
+#include <vector>
+
+#include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph.hpp"
 
 namespace domus::graph {
@@ -22,5 +25,13 @@ std::expected<void, std::string> save_graph_to_file(const Graph& graph, std::fil
 std::expected<void, std::string> save_graph_to_graphml_file(
     const Graph& graph, const Attributes& attributes, std::filesystem::path path
 );
+
+std::expected<Embedding, std::string> load_embedding_from_file(std::filesystem::path path);
+
+std::expected<Embedding, std::string>
+load_embedding_from_file(const Graph& graph, std::filesystem::path path);
+
+std::expected<void, std::string>
+save_embedding_to_file(const Embedding& embedding, std::filesystem::path path);
 
 } // namespace domus::graph::loader

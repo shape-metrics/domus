@@ -1,8 +1,11 @@
 #include "domus/core/graph/file_loader.hpp"
 
+#include <algorithm>
 #include <expected>
 #include <fstream>
+#include <map>
 #include <sstream>
+#include <utility>
 
 #include "domus/core/color.hpp"
 #include "domus/core/graph/attributes.hpp"
@@ -217,6 +220,237 @@ load_graphs_from_asc_file(const std::filesystem::path& path) {
     }
 
     return graphs;
+}
+
+std::expected<void, std::string>
+save_embedding_to_file(const Embedding& embedding, std::filesystem::path path) {
+    std::ofstream outfile(path);
+    if (!outfile) {
+        return std::unexpected(
+            std::format("save_embedding_to_file: could not write to file: {}", path.string())
+        );
+    }
+    outfile << "nodes:\n";
+    for (const size_t node_id : embedding.get_nodes_ids()) {
+        outfile << node_id << '\n';
+    }
+
+    outfile << "embedding:\n";
+    for (const size_t node_id : embedding.get_nodes_ids()) {
+        outfile << node_id << ":";
+        for (const size_t neighbor_id : embedding.get_neighbors(node_id)) {
+            outfile << ' ' << neighbor_id;
+        }
+        outfile << '\n';
+    }
+    return {};
+}
+
+struct ParsedEmbeddingData {
+    std::vector<size_t> nodes;
+    std::map<size_t, std::vector<size_t>> adj_map;
+    size_t num_nodes = 0;
+};
+
+static std::expected<ParsedEmbeddingData, std::string>
+parse_embedding_file(const std::filesystem::path& path) {
+    std::ifstream infile(path);
+    if (!infile) {
+        return std::unexpected(
+            std::format("load_embedding_from_file: cannot open: {}", path.string())
+        );
+    }
+
+    ParsedEmbeddingData data;
+    enum Section { NONE, NODES, EMBEDDING } section = NONE;
+    std::string line;
+
+    while (std::getline(infile, line)) {
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
+
+        if (line.empty())
+            continue;
+
+        if (line == "nodes:" || line == "NODES:") {
+            section = NODES;
+            continue;
+        } else if (line == "embedding:" || line == "Embedding:" || line == "EMBEDDING:") {
+            section = EMBEDDING;
+            continue;
+        }
+
+        const auto colon_pos = line.find(':');
+        if (colon_pos != std::string::npos) {
+            std::string left_str = line.substr(0, colon_pos);
+            std::istringstream left_iss(left_str);
+            size_t node_id{};
+            if (left_iss >> node_id) {
+                std::string right_str = line.substr(colon_pos + 1);
+                std::istringstream right_iss(right_str);
+                std::string token;
+                std::vector<size_t> neighbors;
+                while (right_iss >> token) {
+                    if (token == "[" || token == "]")
+                        continue;
+                    try {
+                        size_t neighbor_id = std::stoull(token);
+                        neighbors.push_back(neighbor_id);
+                    } catch (...) {
+                        return std::unexpected(
+                            std::format(
+                                "load_embedding_from_file: invalid neighbor token '{}' in {}",
+                                token,
+                                path.string()
+                            )
+                        );
+                    }
+                }
+                data.adj_map[node_id] = std::move(neighbors);
+                continue;
+            }
+        }
+
+        if (section == NODES) {
+            std::istringstream iss(line);
+            size_t node_id{};
+            if (iss >> node_id) {
+                data.nodes.push_back(node_id);
+            }
+        }
+    }
+
+    for (const size_t n : data.nodes)
+        data.num_nodes = std::max(data.num_nodes, n + 1);
+    for (const auto& [u, nbrs] : data.adj_map) {
+        data.num_nodes = std::max(data.num_nodes, u + 1);
+        for (const size_t v : nbrs)
+            data.num_nodes = std::max(data.num_nodes, v + 1);
+    }
+
+    return data;
+}
+
+std::expected<Embedding, std::string> load_embedding_from_file(std::filesystem::path path) {
+    auto parsed = parse_embedding_file(path);
+    if (!parsed)
+        return std::unexpected(parsed.error());
+
+    const auto& [nodes, adj_map, num_nodes] = *parsed;
+
+    Embedding embedding;
+    while (embedding.get_number_of_nodes() < num_nodes)
+        embedding.add_node();
+
+    std::map<std::pair<size_t, size_t>, size_t> edge_ids;
+    size_t next_edge_id = 0;
+
+    for (const auto& [u, nbrs] : adj_map) {
+        for (const size_t v : nbrs) {
+            if (u == v) {
+                return std::unexpected(
+                    std::format(
+                        "load_embedding_from_file: self-loop on node {} in {}",
+                        u,
+                        path.string()
+                    )
+                );
+            }
+            auto edge_key = std::make_pair(std::min(u, v), std::max(u, v));
+            if (!edge_ids.contains(edge_key)) {
+                edge_ids[edge_key] = next_edge_id++;
+            }
+        }
+    }
+
+    for (size_t u = 0; u < num_nodes; ++u) {
+        auto it = adj_map.find(u);
+        if (it != adj_map.end()) {
+            for (const size_t v : it->second) {
+                auto edge_key = std::make_pair(std::min(u, v), std::max(u, v));
+                size_t edge_id = edge_ids.at(edge_key);
+                embedding.add_edge(u, v, edge_id);
+            }
+        }
+    }
+
+    if (!embedding.is_consistent()) {
+        return std::unexpected(
+            std::format(
+                "load_embedding_from_file: embedding is not consistent (asymmetric edges) in {}",
+                path.string()
+            )
+        );
+    }
+
+    return embedding;
+}
+
+std::expected<Embedding, std::string>
+load_embedding_from_file(const Graph& graph, std::filesystem::path path) {
+    auto parsed = parse_embedding_file(path);
+    if (!parsed)
+        return std::unexpected(parsed.error());
+
+    const auto& [nodes, adj_map, num_nodes] = *parsed;
+
+    if (num_nodes != graph.get_number_of_nodes()) {
+        return std::unexpected(
+            std::format(
+                "load_embedding_from_file: node count mismatch (file has {}, graph has {}) in {}",
+                num_nodes,
+                graph.get_number_of_nodes(),
+                path.string()
+            )
+        );
+    }
+
+    Embedding embedding(graph);
+
+    for (size_t u = 0; u < num_nodes; ++u) {
+        auto it = adj_map.find(u);
+        if (it != adj_map.end()) {
+            for (const size_t v : it->second) {
+                if (u == v) {
+                    return std::unexpected(
+                        std::format(
+                            "load_embedding_from_file: self-loop on node {} in {}",
+                            u,
+                            path.string()
+                        )
+                    );
+                }
+                std::optional<size_t> found_edge_id;
+                for (const auto edge : graph.get_edges(u)) {
+                    if (edge.neighbor_id == v) {
+                        found_edge_id = edge.id;
+                        break;
+                    }
+                }
+                if (!found_edge_id) {
+                    return std::unexpected(
+                        std::format(
+                            "load_embedding_from_file: edge ({}, {}) does not exist in graph",
+                            u,
+                            v
+                        )
+                    );
+                }
+                embedding.add_edge(u, v, *found_edge_id);
+            }
+        }
+    }
+
+    if (!embedding.is_consistent()) {
+        return std::unexpected(
+            std::format(
+                "load_embedding_from_file: embedding is not consistent in {}",
+                path.string()
+            )
+        );
+    }
+
+    return embedding;
 }
 
 } // namespace domus::graph::loader

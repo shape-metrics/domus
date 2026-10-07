@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "domus/core/graph/embedding.hpp"
+
 namespace domus::graph {
 class Graph;
 }
@@ -16,7 +18,27 @@ bool compare_with_ground_truth(const std::vector<graph::Graph>& graphs);
 
 bool is_minimal_obstruction(const graph::Graph& graph);
 
-std::vector<std::pair<graph::Graph, bool>>
-find_minimal_obstructions(const std::vector<graph::Graph>& graphs);
+namespace GraphType {
+struct Planar {
+    graph::Embedding embedding;
+};
+struct Toroidal {
+    graph::Embedding embedding;
+};
+struct NonToroidal {};
+struct MinimalNonToroidal {};
+struct NonBiconnected {};
+struct Uncomputed {};
+} // namespace GraphType
+
+using ObstructionResult = std::variant<
+    GraphType::Planar,
+    GraphType::Toroidal,
+    GraphType::NonToroidal,
+    GraphType::MinimalNonToroidal,
+    GraphType::NonBiconnected,
+    GraphType::Uncomputed>;
+
+std::vector<ObstructionResult> find_minimal_obstructions(const std::vector<graph::Graph>& graphs);
 
 } // namespace domus::torus::test

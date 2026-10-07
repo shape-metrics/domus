@@ -434,6 +434,10 @@ std::string BiconnectedComponents::to_string() const {
 
 void BiconnectedComponents::print() const { domus::println("{}", to_string()); }
 
+bool is_biconnected(const Graph& graph) {
+    return BiconnectedComponents::compute(graph).get_components().size() == 1;
+}
+
 bool dfs_bipartition(const Graph& graph, size_t node_id, Bipartition& bipartition) {
     bipartition.set_side(node_id, false);
     std::stack<size_t> stack;

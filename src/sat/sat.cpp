@@ -53,12 +53,16 @@ SatSolverResult solve_2_sat(const cnf::Cnf& cnf) {
             row.clause.size() <= 2,
             "solve_2_sat: clause cannot have more than 2 literals"
         );
+        auto add_implication = [&](size_t from, size_t to) {
+            if (from != to && !graph.has_edge(from, to))
+                graph.add_edge(from, to);
+        };
         if (row.clause.size() == 1) {
-            graph.add_edge(variable_to_node_id(-row.clause[0]), variable_to_node_id(row.clause[0]));
+            add_implication(variable_to_node_id(-row.clause[0]), variable_to_node_id(row.clause[0]));
         }
         if (row.clause.size() == 2) {
-            graph.add_edge(variable_to_node_id(-row.clause[0]), variable_to_node_id(row.clause[1]));
-            graph.add_edge(variable_to_node_id(-row.clause[1]), variable_to_node_id(row.clause[0]));
+            add_implication(variable_to_node_id(-row.clause[0]), variable_to_node_id(row.clause[1]));
+            add_implication(variable_to_node_id(-row.clause[1]), variable_to_node_id(row.clause[0]));
         }
     }
 

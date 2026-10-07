@@ -1,0 +1,8 @@
+3-regular obstructions: 206
+1 graphs with 12 vertices
+9 graphs with 14 vertices
+20 graphs with 16 vertices
+133 graphs with 18 vertices
+39 graphs with 20 vertices
+2 graphs with 22 vertices
+2 graphs with 24 vertices

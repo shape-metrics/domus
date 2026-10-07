@@ -1,0 +1,19 @@
+time ./domus datasets/16.asc datasets/16
+
+Processing 4060 graphs using 8 threads...
+ [4060/4060] toroidal [3871] non toroidal [189] minimal obstruction [12]
+Finished: toroidal [3871] non toroidal [189] minimal obstruction [12]
+
+1. Baseline originale:
+   real    2m 23.639s
+   user   16m 08.533s (968.5s)
+   sys     0m 37.466s
+
+2. Con contrazione Tipo 1:
+   real    2m 23.9s
+   user   15m 12.4s (912.4s, -5.8%)
+
+3. Con contrazione completa (Tipo 1 + Tipo 2 non-across + Tipo 2 across):
+   real    2m 01.023s (-22.6s, -15.7%)
+   user   12m 39.926s (759.9s, -208.6s, -21.5% di CPU time)
+   sys     0m 46.156s

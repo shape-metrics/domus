@@ -61,6 +61,8 @@ class BiconnectedComponents {
     static BiconnectedComponents compute(const Graph& graph);
 };
 
+bool is_biconnected(const Graph& graph);
+
 class Bipartition {
   private:
     size_t m_size;
