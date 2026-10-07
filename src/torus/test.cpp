@@ -62,7 +62,7 @@ void test_all_possible_embeddings(const Graph& graph) {
 
 bool is_toroidal_ground_truth(const Graph& graph) {
     for (const Embedding& embedding : compute_all_possible_embeddings(graph))
-        if (compute_embedding_genus(embedding) == 1)
+        if (compute_embedding_genus(embedding) <= 1)
             return true;
     return false;
 }

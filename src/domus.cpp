@@ -1,5 +1,4 @@
 #include <filesystem>
-#include <iostream>
 #include <string>
 
 #include "domus/core/graph/file_loader.hpp"
@@ -8,20 +7,6 @@
 using namespace domus;
 using namespace domus::graph;
 using namespace domus::torus;
-
-// int main(int argc, char* argv[]) {
-//     if (argc < 2)
-//         return 0;
-
-//     std::filesystem::path dataset_folder = argv[1];
-//     std::vector<Graph> graphs;
-//     for (auto& entry : std::filesystem::directory_iterator(dataset_folder))
-//         graphs.push_back(loader::load_graph_from_txt_file(entry.path()).value());
-
-//     std::cout << std::boolalpha << torus::test::compare_with_ground_truth(graphs) << std::endl;
-
-//     return 0;
-// }
 
 namespace GraphType = domus::torus::test::GraphType;
 
@@ -56,8 +41,12 @@ int main(int argc, char* argv[]) {
         std::filesystem::path path;
         if (std::holds_alternative<GraphType::MinimalNonToroidal>(result[i])) {
             path = minimals / (std::to_string(i) + ".txt");
+            if (domus::torus::test::is_toroidal_ground_truth(graphs[i]))
+                std::print("Error: {} labeled minimal non-toroidal but is toroidal\n", i);
         } else if (std::holds_alternative<GraphType::NonToroidal>(result[i])) {
             path = non_toroidals / (std::to_string(i) + ".txt");
+            if (domus::torus::test::is_toroidal_ground_truth(graphs[i]))
+                std::print("Error: {} labeled non-toroidal but is toroidal\n", i);
         } else if (std::holds_alternative<GraphType::Planar>(result[i])) {
             const auto embedding = std::get<GraphType::Planar>(result[i]).embedding;
             path = planars / (std::to_string(i) + ".txt");
