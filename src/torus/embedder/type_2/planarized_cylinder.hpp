@@ -12,6 +12,12 @@ class Embedding;
 
 namespace domus::torus {
 
+struct CircularOrder {
+    size_t center_id;
+    std::array<size_t, 3> neighbors_ids;
+    static CircularOrder at_vertex(size_t node_id, const graph::Embedding& embedding);
+};
+
 class PlanarizedCylinder {
     size_t face_index;
     graph::Graph graph;
@@ -22,24 +28,14 @@ class PlanarizedCylinder {
     graph::utilities::EdgesLabels<size_t> edge_old_to_new_id;
 
     void add_piece(const Bridge& bridge);
-    const graph::Path* non_repeated_path_in_component(
-        const graph::Graph& component,
-        const Face& face,
-        const graph::utilities::EdgesLabels<size_t>& component_edge_labels
-    );
-    bool is_consistent(
-        const graph::Graph& component,
-        const graph::utilities::NodesLabels<size_t>& component_node_labels,
-        const graph::Path& non_repeated_path
-    );
-    void adjust_rotation_scheme(const Face& face);
 
   public:
     static std::optional<PlanarizedCylinder>
-    build(size_t face_index, const Adjacencies& adjacencies);
+    build(size_t face_index, const Adjacencies& adjacencies, const graph::Embedding& partial);
     static std::optional<PlanarizedCylinder> build(
         size_t face_index,
         const Adjacencies& adjacencies,
+        const graph::Embedding& partial,
         const std::vector<size_t>& across_ordinary_pieces
     );
 
@@ -53,6 +49,8 @@ class PlanarizedCylinder {
     void merge_into_embedding(
         const Adjacencies& adjacencies, graph::Embedding& destination_embedding
     ) const;
+
+    std::string to_string() const;
 };
 
 } // namespace domus::torus

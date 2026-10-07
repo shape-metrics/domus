@@ -25,9 +25,9 @@ struct SimpleFaceConflicts {
 };
 
 struct CylinderConflicts {
-    std::vector<Conflict> ordinary_pieces; // ✔
+    std::vector<Conflict> ordinary_pieces;
 
-    std::vector<size_t> non_across_ordinary_pieces; // ✔
+    std::vector<size_t> non_across_ordinary_pieces;
 
     std::vector<ConflictOneSided> onesided_special_pieces;
 

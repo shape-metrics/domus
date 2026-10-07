@@ -2,7 +2,6 @@
 
 #include "domus/core/debug.hpp"
 #include "domus/core/graph/embedding.hpp"
-#include "domus/core/graph/graph_utilities.hpp"
 
 #include "../../bridge.hpp"
 #include "../../faces.hpp"
@@ -56,7 +55,7 @@ class Type2Solver {
             if (face.type() == FaceType::TYPE_1)
                 continue;
             m_number_of_cylinders++;
-            auto cylinder = PlanarizedCylinder::build(face_index, m_adjacencies);
+            auto cylinder = PlanarizedCylinder::build(face_index, m_adjacencies, m_embedding);
             if (!cylinder.has_value())
                 return InitializationOutcome::NO_SOLUTION;
             m_cylinder_embeddings[face_index] = std::move(cylinder);
@@ -79,9 +78,24 @@ class Type2Solver {
             const Face& face = m_faces[face_index];
 
             m_cached_ordinary_piece_embedding[piece_index] =
-                CachedOrdinaryEmbedding::cache_ordinary_embedding(face_index, face, bridge);
+                CachedOrdinaryEmbedding::cache_ordinary_embedding(
+                    face_index,
+                    face,
+                    bridge,
+                    m_nodes_positions
+                );
             if (!m_cached_ordinary_piece_embedding[piece_index].has_value())
                 return InitializationOutcome::NO_SOLUTION;
+            DOMUS_ASSERT(
+                [&]() {
+                    Embedding copy = m_embedding;
+                    m_cached_ordinary_piece_embedding[piece_index]
+                        ->insert_into_embedding(face_index, face, copy);
+                    return (compute_embedding_genus(copy) == 1);
+                }(),
+                "InitializationOutcome init: inserting the cached embedding in the total embedding "
+                "changed the genus."
+            );
         }
 
         return InitializationOutcome::DONE;
@@ -106,11 +120,7 @@ class Type2Solver {
     // the destination embedding of the whole graph, otherwise it returns false and no modification
     // is done on the destination embedding
     bool embed_special_pieces_one_sided_cylinder(const PiecesAssignment& assignment) const {
-        struct OneSidedCylinderToEmbed {
-            size_t face_index;
-            PlanarizedCylinder cylinder;
-        };
-        std::vector<OneSidedCylinderToEmbed> cylinders_to_embed;
+        std::vector<PlanarizedCylinder> cylinders_to_embed;
 
         size_t found_cylinders = 0;
         for (size_t face_index = 0; face_index < m_adjacencies.get_faces().size(); face_index++) {
@@ -147,24 +157,39 @@ class Type2Solver {
                 // be two-sided
                 return false;
                 // so let us procrastinate until that guess happens
-                // TODO maybe not the smartest thing? definitely the easiest tho
+                // TODO maybe not the smartest thing? its definitely the easiest tho
             } else {
                 // In case it actually received at least one across ordinary piece:
                 // Construct a PlanarizedCylinder putting all special pieces and across pieces
                 // inside.
-                auto cylinder = PlanarizedCylinder::build(face_index, m_adjacencies, across_pieces);
+                // TODO probably even just one across piece is enough
+                auto cylinder = PlanarizedCylinder::build(
+                    face_index,
+                    m_adjacencies,
+                    m_embedding,
+                    across_pieces
+                );
                 if (!cylinder.has_value())
                     return false;
-
-                cylinders_to_embed.push_back(
-                    OneSidedCylinderToEmbed{face_index, std::move(*cylinder)}
+                DOMUS_ASSERT(
+                    [&]() {
+                        Embedding copy = m_embedding;
+                        cylinder->merge_into_embedding(m_adjacencies, copy);
+                        return compute_embedding_genus(copy) == 1;
+                    }(),
+                    "Type2Solver::embed_special_pieces_one_sided_cylinder: merging this one sided "
+                    "planarized cylinder into the embedding changes its genus.\n{}\n{}",
+                    face.to_string(),
+                    cylinder->to_string()
                 );
+
+                cylinders_to_embed.push_back(std::move(*cylinder));
             }
         }
 
         // All one-sided cylinders succeeded. Now embed the special pieces into m_embedding.
-        for (const OneSidedCylinderToEmbed& item : cylinders_to_embed)
-            item.cylinder.merge_into_embedding(m_adjacencies, m_embedding);
+        for (const PlanarizedCylinder& cylinder : cylinders_to_embed)
+            cylinder.merge_into_embedding(m_adjacencies, m_embedding);
 
         DOMUS_ASSERT(
             compute_embedding_genus(m_embedding) == 1,
@@ -198,81 +223,22 @@ class Type2Solver {
         );
     }
 
-    size_t get_incoming_edge_to_node_in_face(const Face& face, size_t node_id) const {
-        const auto& path = face.path();
-        for (size_t i = 0; i < path.number_of_edges(); ++i) {
-            if (path.get_node_id_at_position(i) == node_id) {
-                const size_t in_pos = (i == 0) ? (path.number_of_edges() - 1) : (i - 1);
-                return path.get_edge_id_at_position(in_pos);
-            }
-        }
-        DOMUS_ASSERT(
-            false,
-            "Type2Solver::get_incoming_edge_to_node_in_face: node not found in face"
-        );
-        return 0;
-    }
-
     // any embeddability of ordinary pieces is guaranteed to work, since we tested this in
     // advance. hence why this function is void
     void embed_ordinary_pieces(const PiecesAssignment& assignment) {
         for (size_t ordinary_piece_index : m_adjacencies.all_ordinary_pieces()) {
             CachedOrdinaryEmbedding& cached_embedding =
                 *m_cached_ordinary_piece_embedding[ordinary_piece_index];
-            const Bridge& bridge = m_pieces[ordinary_piece_index];
-            size_t face_index = std::get<size_t>(assignment[ordinary_piece_index]);
-            bool same_face =
-                (face_index ==
-                 cached_embedding.embedded_face_index); // TODO check also if it actually got placed
-                                                        // inside the face! might be outside of it!
-
-            if (!same_face)
-                cached_embedding.embedding.reverse_all_circular_orders();
-            const Embedding& piece_embedding = cached_embedding.embedding;
-
-            // embed internal nodes and their incident edges into m_embedding
-            for (const size_t bridge_node_id : bridge.get_bridge().get_nodes_ids()) {
-                if (bridge.is_attachment(bridge_node_id))
-                    continue;
-                const size_t old_node_id = bridge.get_new_id_to_old_id().get_label(bridge_node_id);
-                const size_t new_node_id =
-                    cached_embedding.node_old_to_new_id.get_label(old_node_id);
-
-                for (const auto edge : piece_embedding.get_edges(new_node_id)) {
-                    const size_t old_neighbor_id =
-                        cached_embedding.node_new_to_old_id.get_label(edge.neighbor_id);
-                    const size_t old_edge_id =
-                        cached_embedding.edge_new_to_old_id.get_label(edge.id);
-                    m_embedding.add_edge(old_node_id, old_neighbor_id, old_edge_id);
-                }
-            }
-
-            // embed bridge edges incident to attachments into m_embedding
-            // TODO this loop can probably made more efficient by looping on just the attachments
-            const Face& assigned_face = m_faces[face_index];
-            for (const auto bridge_edge : bridge.get_bridge().get_all_edges()) {
-                const size_t old_edge_id =
-                    bridge.get_new_edge_id_to_old_id().get_label(bridge_edge.id);
-                const size_t old_from_id =
-                    bridge.get_new_id_to_old_id().get_label(bridge_edge.edge.from_id);
-                const size_t old_to_id =
-                    bridge.get_new_id_to_old_id().get_label(bridge_edge.edge.to_id);
-
-                if (bridge.is_attachment(bridge_edge.edge.from_id)) {
-                    const size_t e_in =
-                        get_incoming_edge_to_node_in_face(assigned_face, old_from_id);
-                    m_embedding.add_edge_after(old_from_id, old_to_id, old_edge_id, e_in);
-                }
-                if (bridge.is_attachment(bridge_edge.edge.to_id)) {
-                    const size_t e_in = get_incoming_edge_to_node_in_face(assigned_face, old_to_id);
-                    m_embedding.add_edge_after(old_to_id, old_from_id, old_edge_id, e_in);
-                }
-            }
+            size_t assigned_face_index = std::get<size_t>(assignment[ordinary_piece_index]);
+            const Face& assigned_face = m_faces[assigned_face_index];
+            cached_embedding.insert_into_embedding(assigned_face_index, assigned_face, m_embedding);
+            DOMUS_ASSERT(
+                compute_embedding_genus(m_embedding) == 1,
+                "Type2Solver::embed_ordinary_pieces: found embedding should have genus 1 but it "
+                "has {}",
+                compute_embedding_genus(m_embedding)
+            );
         }
-        DOMUS_ASSERT(
-            compute_embedding_genus(m_embedding) == 1,
-            "Type2Solver::embed_ordinary_pieces: found embedding should have genus 1"
-        );
     }
 
     bool solve(size_t done_guesses_of_cylinders) {

@@ -247,7 +247,6 @@ bool SplitterWithPath::try_face_splits_with_path(const Path& path) {
             faces.push_back(compute_face_from_path(std::move(face_path), m_graph));
         switch (is_split_good(faces)) {
         case SplitOutcome::SPLITS:
-            DOMUS_DEBUG_LN("this combination splits.");
             if (try_embedding_extension(faces))
                 return true;
             break;

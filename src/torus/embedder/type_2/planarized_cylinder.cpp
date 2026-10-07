@@ -1,17 +1,17 @@
 #include "planarized_cylinder.hpp"
 
 #include "domus/core/debug.hpp"
-#include "domus/core/graph/graphs_algorithms.hpp"
-#include "domus/ogdf_utils.hpp"
+
+#include "fixed_rotation_planarity.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
-using domus::graph::algorithms::BiconnectedComponents;
 using namespace domus::graph::utilities;
 
 std::optional<PlanarizedCylinder> PlanarizedCylinder::build(
     size_t face_index,
     const Adjacencies& adjacencies,
+    const graph::Embedding& partial,
     const std::vector<size_t>& across_ordinary_pieces
 ) {
     PlanarizedCylinder cylinder;
@@ -54,19 +54,40 @@ std::optional<PlanarizedCylinder> PlanarizedCylinder::build(
         cylinder.add_piece(adjacencies.get_pieces()[piece_index]);
     }
 
-    auto result = ogdf_utils::compute_planar_embedding(cylinder.get_graph());
+    size_t fixed_0 = face.repeated_paths()[0].get_first_node_id();
+    std::array<size_t, 3> fixed_rotation_0;
+    size_t i = 0;
+    for (const size_t n_id : partial.get_neighbors(fixed_0))
+        fixed_rotation_0[i++] = cylinder.node_old_to_new_id.get_label(n_id);
+    DOMUS_ASSERT(i == 3, "PlanarizedCylinder::build: fixed node does not have 3 neighbors");
+
+    size_t fixed_1 = face.repeated_paths()[0].get_last_node_id();
+    std::array<size_t, 3> fixed_rotation_1;
+    i = 0;
+    for (const size_t n_id : partial.get_neighbors(fixed_1))
+        fixed_rotation_1[i++] = cylinder.node_old_to_new_id.get_label(n_id);
+    DOMUS_ASSERT(i == 3, "PlanarizedCylinder::build: fixed node does not have 3 neighbors");
+
+    auto result = frp::planar_with_fixed_rotations(
+        cylinder.get_graph(),
+        cylinder.node_old_to_new_id.get_label(fixed_0),
+        fixed_rotation_0,
+        cylinder.node_old_to_new_id.get_label(fixed_1),
+        fixed_rotation_1
+    );
+
     if (!result.has_value())
         return std::nullopt;
 
     cylinder.embedding = std::move(result.value());
-    cylinder.adjust_rotation_scheme(face);
 
     return cylinder;
 }
 
-std::optional<PlanarizedCylinder>
-PlanarizedCylinder::build(size_t face_index, const Adjacencies& adjacencies) {
-    return PlanarizedCylinder::build(face_index, adjacencies, {});
+std::optional<PlanarizedCylinder> PlanarizedCylinder::build(
+    size_t face_index, const Adjacencies& adjacencies, const graph::Embedding& partial
+) {
+    return PlanarizedCylinder::build(face_index, adjacencies, partial, {});
 }
 
 void PlanarizedCylinder::add_piece(const Bridge& bridge) {
@@ -164,106 +185,18 @@ void PlanarizedCylinder::merge_into_embedding(
     }
 }
 
-const Path* PlanarizedCylinder::non_repeated_path_in_component(
-    const Graph& component, const Face& face, const EdgesLabels<size_t>& component_edge_labels
-) {
-    const size_t edge_id_non_repeated_path_0 = face.non_repeated_paths()[0].get_first_edge_id();
-    const size_t edge_id_non_repeated_path_1 = face.non_repeated_paths()[1].get_first_edge_id();
-
-    for (const EdgeId edge : component.get_all_edges()) {
-        const size_t true_edge_id =
-            edge_new_to_old_id.get_label(component_edge_labels.get_label(edge.id));
-        if (true_edge_id == edge_id_non_repeated_path_0)
-            return &face.non_repeated_paths()[0];
-        if (true_edge_id == edge_id_non_repeated_path_1)
-            return &face.non_repeated_paths()[1];
-    }
-
-    return nullptr;
-}
-
-bool PlanarizedCylinder::is_consistent(
-    const Graph& component,
-    const NodesLabels<size_t>& component_node_labels,
-    const Path& non_repeated_path
-) {
-    const size_t old_node_id = non_repeated_path.get_first_node_id();
-    const size_t old_first_edge_id = non_repeated_path.get_first_edge_id();
-    const size_t old_last_edge_id = non_repeated_path.get_last_edge_id();
-
-    for (const size_t n_id : component.get_nodes_ids()) {
-        const size_t cylinder_n_id = component_node_labels.get_label(n_id);
-        const size_t old_n_id = node_new_to_old_id.get_label(cylinder_n_id);
-        if (old_node_id != old_n_id)
-            continue;
-        if (component.get_degree_of_node(n_id) == 2)
-            return true;
-
-        const size_t embedding_node_id = node_old_to_new_id.get_label(old_node_id);
-        const size_t embedding_neighbor_id =
-            node_old_to_new_id.get_label(non_repeated_path.get_node_id_at_position(1));
-        const size_t embedding_first_edge_id = edge_old_to_new_id.get_label(old_first_edge_id);
-        const size_t embedding_last_edge_id = edge_old_to_new_id.get_label(old_last_edge_id);
-
-        return (
-            embedding
-                .next_in_adjacency_list(
-                    embedding_node_id,
-                    embedding_neighbor_id,
-                    embedding_first_edge_id
-                )
-                .id == embedding_last_edge_id
-        );
-    }
-
-    DOMUS_ASSERT(
-        false,
-        "PlanarizedCylinder::is_consistent: should have not reached this part of code."
-    );
-    return true;
-}
-
-// note that once we compute the PlanarizedCylinder, even if the procedure succedes, once obtained
-// it might not be ready as it is to be used to emebed pieces inside the real cylinder. that is
-// because the obtained rotation scheme of the PlanarizedCylinder might be such that stuff would
-// acually end up being placed outside of it in the real cylinder (stuff with attachments in the
-// non-repeated chains, in particular). before actually using the PlanarCylinder, we must check
-// whether its embedding is consistent with the real cylinder we're working with. if it is not, then
-// we have to reverse some vertices' circular orders, and then it will be good.
-
-// to do this we check all of the at most 2 biconnected components in the planarized cylinder that
-// contains edges from the non-repeated paths of the face. these components must contain at least
-// one of the two endpoints of the repeated path of the cylinder. we simply need to check if that
-// particular vertex has the same rotation scheme of the complete_graph_embedding. in case it does
-// that particular involved biconnected component is consistent and nothing needs to be done.
-// otherwise we have to reverse all circular orders of the vertex involved in that biconnected
-// component.
-void PlanarizedCylinder::adjust_rotation_scheme(const Face& face) {
-    auto biconnected_components = BiconnectedComponents::compute(graph);
-    for (size_t i = 0; i < biconnected_components.get_components().size(); i++) {
-        const Graph& component = biconnected_components.get_components()[i];
-        const auto& component_edge_labels = biconnected_components.get_edge_labels_of_component(i);
-
-        // check if it contains at least one edge from one of the two non repeated paths
-        const Path* non_repeated_path =
-            non_repeated_path_in_component(component, face, component_edge_labels);
-
-        if (non_repeated_path == nullptr)
-            continue; // this biconnected component does not contain any non-repeated path
-
-        if (is_consistent(
-                component,
-                biconnected_components.get_node_labels_of_component(i),
-                *non_repeated_path
-            ))
-            continue;
-
-        const auto& component_node_labels = biconnected_components.get_node_labels_of_component(i);
-        for (size_t node_id : component.get_nodes_ids()) {
-            const size_t cylinder_node_id = component_node_labels.get_label(node_id);
-            embedding.reverse_circular_order(cylinder_node_id);
+std::string PlanarizedCylinder::to_string() const {
+    std::string result = "PlanarizedCylinder:\n";
+    for (const size_t node_id : graph.get_nodes_ids()) {
+        const size_t old_node_id = node_new_to_old_id.get_label(node_id);
+        result += std::format("{} [ ", old_node_id);
+        for (const auto edge : embedding.get_edges(node_id)) {
+            const size_t old_neighbor_id = node_new_to_old_id.get_label(edge.neighbor_id);
+            result += std::format("{} ", old_neighbor_id);
         }
+        result += "]\n";
     }
+    return result;
 }
 
 } // namespace domus::torus
