@@ -45,8 +45,11 @@ std::vector<ObstructionResult> find_minimal_obstructions(const std::vector<graph
 void save_all_results(
     const std::vector<graph::Graph>& graphs,
     const std::vector<ObstructionResult>& results,
-    const std::filesystem::path& obstructions_directory,
-    bool check_correctness
+    const std::filesystem::path& obstructions_directory
+);
+
+void check_all_results(
+    const std::vector<graph::Graph>& graphs, const std::vector<ObstructionResult>& results
 );
 
 } // namespace domus::torus::test

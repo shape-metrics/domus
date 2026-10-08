@@ -95,7 +95,10 @@ int main(int argc, char* argv[]) {
 
     const auto result = torus::test::find_minimal_obstructions(*graphs);
 
-    torus::test::save_all_results(*graphs, result, obstructions_directory, check_correctness);
+    torus::test::save_all_results(*graphs, result, obstructions_directory);
+
+    if (check_correctness)
+        torus::test::check_all_results(*graphs, result);
 
     return 0;
 }
