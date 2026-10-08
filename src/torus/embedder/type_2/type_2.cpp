@@ -237,12 +237,12 @@ class Type2Solver {
 
         const NodesPositions& nodes_positions(*adjacencies);
 
-        const Conflicts conflicts(*adjacencies);
-
         auto embeddings_handler =
             EmbeddingsHandler::build(nodes_positions, *adjacencies, embedding);
         if (!embeddings_handler.has_value())
             return false;
+
+        const Conflicts conflicts(*adjacencies);
 
         Type2Solver solver(
             embedding,

@@ -140,6 +140,8 @@ void CachedOrdinaryEmbedding::add_nodes_and_edges_from_face() {
     }
 }
 
+size_t CachedOrdinaryEmbedding::get_embedded_face_index() const { return m_embedded_face_index; }
+
 void CachedOrdinaryEmbedding::add_nodes_and_edges_from_piece() {
     for (const size_t bridge_node_id : m_piece->get_bridge().get_nodes_ids()) {
         const size_t old_node_id = m_piece->get_new_id_to_old_id().get_label(bridge_node_id);

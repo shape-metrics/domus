@@ -308,62 +308,79 @@ void save_all_results(
     std::filesystem::create_directory(non_biconnected);
     std::filesystem::create_directory(uncomputed);
 
-    for (size_t i = 0; i < results.size(); i++) {
-        std::filesystem::path path;
-        if (std::holds_alternative<GraphType::MinimalNonToroidal>(results[i])) {
-            path = minimals / (std::to_string(i) + ".txt");
-            if (check_correctness && domus::torus::test::is_toroidal_ground_truth(graphs[i])) {
-                std::print("Error: {} labeled minimal non-toroidal but is toroidal\n", i);
-                path = uncomputed / (std::to_string(i) + ".txt");
-            }
-            loader::save_graph_to_file(graphs[i], path).value();
-            continue;
-        }
-        if (std::holds_alternative<GraphType::NonToroidal>(results[i])) {
-            path = non_toroidals / (std::to_string(i) + ".txt");
-            if (check_correctness && domus::torus::test::is_toroidal_ground_truth(graphs[i])) {
-                std::print("Error: {} labeled non-toroidal but is toroidal\n", i);
-                path = uncomputed / (std::to_string(i) + ".txt");
-            }
-            loader::save_graph_to_file(graphs[i], path).value();
-            continue;
-        }
-        if (std::holds_alternative<GraphType::Planar>(results[i])) {
-            const auto& embedding = std::get<GraphType::Planar>(results[i]).embedding;
-            path = planars / (std::to_string(i) + ".txt");
-            if (!check_correctness || compute_embedding_genus(embedding) == 0)
-                loader::save_embedding_to_file(embedding, path).value();
-            else {
-                std::print("Error: {} labeled planar but is not\n", i);
-                path = uncomputed / (std::to_string(i) + ".txt");
+    std::atomic<size_t> current_idx{0};
+
+    auto worker = [&]() {
+        while (true) {
+            const size_t i = current_idx.fetch_add(1, std::memory_order_relaxed);
+            if (i >= results.size())
+                break;
+            std::filesystem::path path;
+            if (std::holds_alternative<GraphType::MinimalNonToroidal>(results[i])) {
+                path = minimals / (std::to_string(i) + ".txt");
+                if (check_correctness && domus::torus::test::is_toroidal_ground_truth(graphs[i])) {
+                    std::print("Error: {} labeled minimal non-toroidal but is toroidal\n", i);
+                    path = uncomputed / (std::to_string(i) + ".txt");
+                }
                 loader::save_graph_to_file(graphs[i], path).value();
+                continue;
             }
-            continue;
-        }
-        if (std::holds_alternative<GraphType::Toroidal>(results[i])) {
-            const auto& embedding = std::get<GraphType::Toroidal>(results[i]).embedding;
-            path = toroidals / (std::to_string(i) + ".txt");
-            if (!check_correctness || compute_embedding_genus(embedding) == 1)
-                loader::save_embedding_to_file(embedding, path).value();
-            else {
-                std::print("Error: {} labeled toroidal but is not\n", i);
-                path = uncomputed / (std::to_string(i) + ".txt");
+            if (std::holds_alternative<GraphType::NonToroidal>(results[i])) {
+                path = non_toroidals / (std::to_string(i) + ".txt");
+                if (check_correctness && domus::torus::test::is_toroidal_ground_truth(graphs[i])) {
+                    std::print("Error: {} labeled non-toroidal but is toroidal\n", i);
+                    path = uncomputed / (std::to_string(i) + ".txt");
+                }
                 loader::save_graph_to_file(graphs[i], path).value();
+                continue;
             }
-            continue;
+            if (std::holds_alternative<GraphType::Planar>(results[i])) {
+                const auto& embedding = std::get<GraphType::Planar>(results[i]).embedding;
+                path = planars / (std::to_string(i) + ".txt");
+                if (!check_correctness || compute_embedding_genus(embedding) == 0)
+                    loader::save_embedding_to_file(embedding, path).value();
+                else {
+                    std::print("Error: {} labeled planar but is not\n", i);
+                    path = uncomputed / (std::to_string(i) + ".txt");
+                    loader::save_graph_to_file(graphs[i], path).value();
+                }
+                continue;
+            }
+            if (std::holds_alternative<GraphType::Toroidal>(results[i])) {
+                const auto& embedding = std::get<GraphType::Toroidal>(results[i]).embedding;
+                path = toroidals / (std::to_string(i) + ".txt");
+                if (!check_correctness || compute_embedding_genus(embedding) == 1)
+                    loader::save_embedding_to_file(embedding, path).value();
+                else {
+                    std::print("Error: {} labeled toroidal but is not\n", i);
+                    path = uncomputed / (std::to_string(i) + ".txt");
+                    loader::save_graph_to_file(graphs[i], path).value();
+                }
+                continue;
+            }
+            if (std::holds_alternative<GraphType::NonBiconnected>(results[i])) {
+                path = non_biconnected / (std::to_string(i) + ".txt");
+                loader::save_graph_to_file(graphs[i], path).value();
+                continue;
+            }
+            if (std::holds_alternative<GraphType::Uncomputed>(results[i])) {
+                path = uncomputed / (std::to_string(i) + ".txt");
+                std::print("Error: {} is uncomputed\n", i);
+                loader::save_graph_to_file(graphs[i], path).value();
+                continue;
+            }
         }
-        if (std::holds_alternative<GraphType::NonBiconnected>(results[i])) {
-            path = non_biconnected / (std::to_string(i) + ".txt");
-            loader::save_graph_to_file(graphs[i], path).value();
-            continue;
-        }
-        if (std::holds_alternative<GraphType::Uncomputed>(results[i])) {
-            path = uncomputed / (std::to_string(i) + ".txt");
-            std::print("Error: {} is uncomputed\n", i);
-            loader::save_graph_to_file(graphs[i], path).value();
-            continue;
-        }
-    }
+    };
+
+    const unsigned int num_threads = std::max(1u, std::thread::hardware_concurrency());
+
+    std::vector<std::jthread> threads;
+    threads.reserve(num_threads);
+    for (unsigned int i = 0; i < num_threads; ++i)
+        threads.emplace_back(worker);
+    for (auto& t : threads)
+        if (t.joinable())
+            t.join();
 }
 
 } // namespace domus::torus::test

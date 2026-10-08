@@ -10,13 +10,11 @@ namespace domus::torus {
 
 class EmbeddingsHandler {
     std::vector<PlanarizedCylinder> m_cylinder_embeddings;
-    std::vector<std::vector<std::optional<CachedOrdinaryEmbedding>>> m_cached_ordinary_embeddings;
+    std::vector<std::vector<CachedOrdinaryEmbedding>> m_cached_ordinary_embeddings;
 
     EmbeddingsHandler() = default;
 
-    void add_cached_embedding(
-        CachedOrdinaryEmbedding&& embedding, size_t piece_index, size_t face_index
-    );
+    void add_cached_embedding(CachedOrdinaryEmbedding&& embedding, size_t piece_index);
 
   public:
     static std::optional<EmbeddingsHandler> build(

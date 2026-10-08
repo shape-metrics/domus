@@ -48,6 +48,7 @@ class CachedOrdinaryEmbedding {
         size_t face_id,
         const NodesPositions& nodes_positions
     ) const;
+    size_t get_embedded_face_index() const;
     std::string to_string() const;
     void print() const;
 };
