@@ -110,6 +110,8 @@ void PlanarizedCylinder::add_piece(const Bridge& bridge) {
     }
 }
 
+size_t PlanarizedCylinder::get_face_index() const { return m_face_index; }
+
 const Graph& PlanarizedCylinder::get_graph() const { return m_graph; }
 
 const NodesLabels<size_t>& PlanarizedCylinder::get_node_new_to_old_id() const {

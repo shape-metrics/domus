@@ -87,16 +87,15 @@ int main(int argc, char* argv[]) {
         check_correctness = parse_bool(positional_args[2]);
     }
 
-    auto graphs_result = graph::loader::load_graphs_from_asc_file(dataset);
-    if (!graphs_result.has_value()) {
+    auto graphs = graph::loader::load_graphs_from_asc_file(dataset);
+    if (!graphs.has_value()) {
         std::println(stderr, "Error: Failed to load dataset from {}", dataset.string());
         return 1;
     }
-    auto graphs = graphs_result.value();
 
-    const auto result = torus::test::find_minimal_obstructions(graphs);
+    const auto result = torus::test::find_minimal_obstructions(*graphs);
 
-    torus::test::save_all_results(graphs, result, obstructions_directory, check_correctness);
+    torus::test::save_all_results(*graphs, result, obstructions_directory, check_correctness);
 
     return 0;
 }

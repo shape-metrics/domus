@@ -194,9 +194,9 @@ std::optional<CachedOrdinaryEmbedding> CachedOrdinaryEmbedding::cache_ordinary_e
 
 bool CachedOrdinaryEmbedding::is_inside_face() const {
     auto [new_center_id, new_prev_id, new_next_id] = m_is_inside_circular_order.value();
-    size_t edge_id = m_ordinary_plus_face.get_edge_id(new_prev_id, new_center_id);
-    return m_embedding.next_in_adjacency_list(new_center_id, new_prev_id, edge_id).neighbor_id ==
-           new_next_id;
+    size_t edge_id = m_ordinary_plus_face.get_edge_id(new_center_id, new_next_id);
+    return m_embedding.next_in_adjacency_list(new_center_id, new_next_id, edge_id).neighbor_id ==
+           new_prev_id;
 }
 
 void CachedOrdinaryEmbedding::insert_into_face(

@@ -1,6 +1,8 @@
 #include "cacher.hpp"
 
 #include "adjacencies.hpp"
+#include "domus/core/debug.hpp"
+#include "domus/core/graph/embedding.hpp"
 
 namespace domus::torus {
 
@@ -49,11 +51,16 @@ std::optional<EmbeddingsHandler> EmbeddingsHandler::build(
             }
             DOMUS_ASSERT(
                 [&]() {
-                    Embedding copy = m_embedding;
-                    embedding->insert_into_face(copy, m_faces[face_index]);
-                    return (compute_embedding_genus(copy) == 1);
+                    graph::Embedding copy = partial;
+                    embedding->insert_into_face(
+                        copy,
+                        adjacencies.get_faces()[face_index],
+                        face_index,
+                        nodes_positions
+                    );
+                    return (graph::compute_embedding_genus(copy) == 1);
                 }(),
-                "Adjacencies::compute_cache_embeddings: inserting the cached embedding in the "
+                "EmbeddingsHandler::build: inserting the cached embedding in the "
                 "total embedding changed the genus."
             );
             handler.add_cached_embedding(std::move(*embedding), piece_index, face_index);
@@ -62,10 +69,32 @@ std::optional<EmbeddingsHandler> EmbeddingsHandler::build(
     return handler;
 }
 
+const std::vector<PlanarizedCylinder>& EmbeddingsHandler::get_cylinder_embeddings() const {
+    return m_cylinder_embeddings;
+}
+
 void EmbeddingsHandler::add_cached_embedding(
     CachedOrdinaryEmbedding&& embedding, size_t piece_index, size_t face_index
 ) {
-    // TODO
+    if (m_cached_ordinary_embeddings.size() <= piece_index)
+        m_cached_ordinary_embeddings.resize(piece_index + 1);
+    if (m_cached_ordinary_embeddings[piece_index].size() <= face_index)
+        m_cached_ordinary_embeddings[piece_index].resize(face_index + 1);
+    m_cached_ordinary_embeddings[piece_index][face_index] = std::move(embedding);
+}
+
+const CachedOrdinaryEmbedding&
+EmbeddingsHandler::get_cached_embedding(size_t piece_index, size_t face_index) const {
+    DOMUS_ASSERT(
+        piece_index < m_cached_ordinary_embeddings.size() &&
+            face_index < m_cached_ordinary_embeddings[piece_index].size() &&
+            m_cached_ordinary_embeddings[piece_index][face_index].has_value(),
+        "EmbeddingsHandler::get_cached_embedding: did not find cached embedding for piece {} and "
+        "face {}",
+        piece_index,
+        face_index
+    );
+    return m_cached_ordinary_embeddings[piece_index][face_index].value();
 }
 
 } // namespace domus::torus

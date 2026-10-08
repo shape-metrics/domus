@@ -114,6 +114,7 @@ set(COMMON_SRCS
     src/torus/embedder/type_2/type_2.cpp
     src/torus/embedder/type_2/tools/conflicts.cpp
     src/torus/embedder/type_2/tools/adjacencies.cpp
+    src/torus/embedder/type_2/tools/cacher.cpp
     src/torus/embedder/type_2/tools/planarized_cylinder.cpp
     src/torus/embedder/type_2/tools/fixed_rotation_planarity.cpp
     src/torus/embedder/type_2/tools/ordinary_pieces.cpp
