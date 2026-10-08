@@ -1,4 +1,5 @@
 #include "adjacencies.hpp"
+#include "domus/core/debug.hpp"
 #include "domus/core/graph/embedding.hpp"
 #include "nodes_positions.hpp"
 
@@ -24,7 +25,6 @@ bool Adjacencies::compute_piece_to_adjacent_faces(
     const std::vector<std::vector<size_t>>& nodes_to_faces
 ) {
     m_pieces_adjacencies.reserve(m_pieces.size());
-    m_is_across_in_a_cylinder.reserve(m_pieces.size());
     m_is_ordinary.resize(m_pieces.size(), false);
     m_faces_adjacencies.resize(m_faces.size());
 
@@ -82,23 +82,14 @@ bool Adjacencies::compute_piece_to_adjacent_faces(
             }
         );
 
-        bool is_across = false;
-        if (!is_special_piece) {
-            m_is_ordinary[bridge_index] = true;
-            for (const size_t face_index : m_pieces_adjacencies.back().adjacent_faces) {
-                if (is_ordinary_piece_cutting_cylinder(bridge_index, face_index)) {
-                    is_across = true;
-                    break;
-                }
-            }
-        }
-        m_is_across_in_a_cylinder.push_back(is_across);
-
         if (is_special_piece) {
             m_faces_adjacencies[special_face_id.value()].special_pieces.push_back(bridge_index);
         } else {
+            m_is_ordinary[bridge_index] = true;
             for (const size_t face_index : m_pieces_adjacencies.back().adjacent_faces)
-                m_faces_adjacencies[face_index].ordinary_pieces.push_back(bridge_index);
+                m_faces_adjacencies[face_index].ordinary_pieces.push_back(
+                    {bridge_index, std::nullopt}
+                );
         }
     }
 
@@ -192,6 +183,7 @@ bool Adjacencies::is_ordinary_piece_cutting_cylinder(size_t p_index, size_t face
 bool Adjacencies::compute_cache_embeddings() {
     NodesPositions positions(*this);
     m_cylinder_embeddings.resize(m_faces.size());
+    m_number_of_cylinders = 0;
 
     // special faces
     for (size_t face_index = 0; face_index < m_faces.size(); ++face_index) {
@@ -215,7 +207,8 @@ bool Adjacencies::compute_cache_embeddings() {
         if (adjacency.type == PieceAdjacency::PieceType::SPECIAL)
             continue;
         const Bridge& piece = m_pieces[piece_index];
-        for (size_t face_index : get_adjacency(piece_index).adjacent_faces) {
+        const std::vector<size_t> adjacent_faces = adjacency.adjacent_faces;
+        for (size_t face_index : adjacent_faces) {
             const Face& face = m_faces[face_index];
 
             auto embedding = CachedOrdinaryEmbedding::cache_ordinary_embedding(
@@ -225,7 +218,7 @@ bool Adjacencies::compute_cache_embeddings() {
                 positions
             );
             if (!embedding.has_value()) {
-                remove_piece_adjacency(piece_index, face_index);
+                remove_ordinary_piece_adjacency(piece_index, face_index);
                 if (get_adjacency(piece_index).adjacent_faces.empty())
                     return false;
                 continue;
@@ -244,6 +237,31 @@ bool Adjacencies::compute_cache_embeddings() {
         }
     }
     return true;
+}
+
+void Adjacencies::remove_ordinary_piece_adjacency(size_t piece_index, size_t face_index) {
+    std::erase(m_pieces_adjacencies[piece_index].adjacent_faces, face_index);
+
+    // remove from ordinary_pieces
+    auto it = std::find_if(
+        m_faces_adjacencies[face_index].ordinary_pieces.begin(),
+        m_faces_adjacencies[face_index].ordinary_pieces.end(),
+        [&](const auto& ordinary) { return ordinary.first == piece_index; }
+    );
+    if (it != m_faces_adjacencies[face_index].ordinary_pieces.end())
+        m_faces_adjacencies[face_index].ordinary_pieces.erase(it);
+}
+
+void Adjacencies::add_cached_embedding(
+    CachedOrdinaryEmbedding&& embedding, size_t piece_index, size_t face_index
+) {
+    for (auto& ordinary : m_faces_adjacencies[face_index].ordinary_pieces) {
+        if (ordinary.first == piece_index) {
+            ordinary.second = embedding;
+            return;
+        }
+    }
+    DOMUS_ASSERT(false, "Adjacencies::add_cached_embedding: did not find ordinary piece adjacency");
 }
 
 Adjacencies::Adjacencies(
@@ -282,12 +300,39 @@ const std::vector<size_t>& Adjacencies::special_pieces_in_face(size_t face_index
     return m_faces_adjacencies[face_index].special_pieces;
 }
 
-const std::vector<size_t>& Adjacencies::ordinary_pieces_in_face(size_t face_index) const {
-    return m_faces_adjacencies[face_index].ordinary_pieces;
+const std::vector<size_t> Adjacencies::ordinary_pieces_in_face(size_t face_index) const {
+    std::vector<size_t> pieces;
+    for (auto& [index, embedding] : m_faces_adjacencies[face_index].ordinary_pieces)
+        pieces.push_back(index);
+    return pieces;
 }
 
 const std::vector<size_t>& Adjacencies::all_ordinary_pieces() const { return m_ordinary_pieces; }
 
 bool Adjacencies::is_ordinary_piece(size_t piece_index) const { return m_is_ordinary[piece_index]; }
+
+const CachedOrdinaryEmbedding&
+Adjacencies::get_cached_embedding(size_t piece_index, size_t face_index) const {
+    for (auto& [index, embedding] : m_faces_adjacencies[face_index].ordinary_pieces)
+        if (piece_index == index)
+            return embedding.value();
+    DOMUS_ASSERT(false, "Adjacencies::get_cached_embedding: did not find cached embedding");
+}
+
+const PlanarizedCylinder& Adjacencies::get_embedded_cylinder(size_t face_index) const {
+    DOMUS_ASSERT(
+        face_index < m_cylinder_embeddings.size(),
+        "Adjacencies::get_embedded_cylinder: invalid face_index {}",
+        face_index
+    );
+    DOMUS_ASSERT(
+        m_cylinder_embeddings[face_index].has_value(),
+        "Adjacencies::get_embedded_cylinder: no embedded cylinder for face {}",
+        face_index
+    );
+    return *m_cylinder_embeddings[face_index];
+}
+
+size_t Adjacencies::get_number_of_cylinders() const { return m_number_of_cylinders; }
 
 } // namespace domus::torus

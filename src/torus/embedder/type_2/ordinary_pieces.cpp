@@ -1,7 +1,10 @@
 #include "ordinary_pieces.hpp"
 
+#include <format>
+#include <print>
+
 #include "domus/core/debug.hpp"
-#include "domus/planarity/auslander_parter.hpp"
+#include "domus/ogdf_utils.hpp"
 
 #include "../../bridge.hpp"
 #include "../../faces.hpp"
@@ -129,7 +132,7 @@ std::optional<CachedOrdinaryEmbedding> CachedOrdinaryEmbedding::cache_ordinary_e
     cached.add_nodes_and_edges(face);
     cached.add_nodes_and_edges(bridge);
 
-    auto result = planarity::compute_planar_embedding(cached.m_ordinary_plus_face);
+    auto result = ogdf_utils::compute_planar_embedding(cached.m_ordinary_plus_face);
     if (!result.has_value())
         return std::nullopt;
 

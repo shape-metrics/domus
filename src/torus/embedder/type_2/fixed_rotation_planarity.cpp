@@ -326,6 +326,9 @@ std::optional<Embedding> planar_with_fixed_rotations(
 
     const size_t n = G.get_number_of_nodes();
     Adj adj(n);
+    for (size_t w = 0; w < n; ++w)
+        for (size_t neighbor : G.get_neighbors(w))
+            adj[w].push_back(neighbor);
 
     DOMUS_ASSERT(
         algorithms::is_graph_subcubic(G),
@@ -333,12 +336,10 @@ std::optional<Embedding> planar_with_fixed_rotations(
     );
 
     auto check_rotation = [&](size_t w, std::span<const size_t> rot) {
-        const size_t deg = G.get_degree_of_node(w);
         DOMUS_ASSERT(
-            rot.size() == deg,
+            rot.size() == G.get_degree_of_node(w),
             "planar_with_fixed_rotations: rotation must list all incident edges"
         );
-
         DOMUS_ASSERT(
             [&]() {
                 for (size_t neighbor : G.get_neighbors(w))
@@ -348,7 +349,6 @@ std::optional<Embedding> planar_with_fixed_rotations(
             }(),
             "planar_with_fixed_rotations: rotation must list the neighbours of vertex"
         );
-
         DOMUS_ASSERT(
             [&]() {
                 for (size_t i = 0; i < rot.size(); ++i) {

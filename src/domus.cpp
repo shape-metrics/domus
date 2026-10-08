@@ -1,70 +1,102 @@
 #include <filesystem>
-#include <string>
+#include <print>
+#include <string_view>
+#include <vector>
 
 #include "domus/core/graph/file_loader.hpp"
 #include "domus/torus/test.hpp"
 
 using namespace domus;
-using namespace domus::graph;
-using namespace domus::torus;
 
-namespace GraphType = domus::torus::test::GraphType;
+namespace {
+
+void print_usage(std::string_view prog_name) {
+    std::println(stderr, "Usage: {} <dataset> <obstructions_directory> [OPTIONS]", prog_name);
+    std::println(stderr, "\nPositional arguments:");
+    std::println(stderr, "  <dataset>                 Path to dataset file (.asc)");
+    std::println(stderr, "  <obstructions_directory>  Output directory for obstructions");
+    std::println(stderr, "  [check_correctness]       Optional boolean (true/false, 1/0)");
+    std::println(stderr, "\nOptions:");
+    std::println(stderr, "  -c, --check-correctness   Enable correctness check");
+    std::println(stderr, "  --no-check-correctness    Disable correctness check (default)");
+    std::println(stderr, "  -h, --help                Show this help message");
+}
+
+bool parse_bool(std::string_view val, bool default_val = false) {
+    if (val == "1" || val == "true" || val == "TRUE" || val == "yes" || val == "YES" ||
+        val == "on" || val == "ON" || val == "t" || val == "y") {
+        return true;
+    }
+    if (val == "0" || val == "false" || val == "FALSE" || val == "no" || val == "NO" ||
+        val == "off" || val == "OFF" || val == "f" || val == "n") {
+        return false;
+    }
+    std::println(
+        stderr,
+        "Warning: Unrecognized boolean value '{}', defaulting to {}.",
+        val,
+        default_val
+    );
+    return default_val;
+}
+
+} // namespace
 
 int main(int argc, char* argv[]) {
-    if (argc < 3)
-        return 0;
+    if (argc < 2) {
+        print_usage(argv[0]);
+        return 1;
+    }
 
-    std::filesystem::path dataset = argv[1];
-    std::filesystem::path obstructions_directory = argv[2];
+    std::vector<std::string_view> positional_args;
+    bool check_correctness = false;
+    bool flag_specified = false;
 
-    auto graphs = loader::load_graphs_from_asc_file(dataset).value();
-    graphs = {graphs[3451]};
+    for (int i = 1; i < argc; ++i) {
+        std::string_view arg = argv[i];
+        if (arg == "-h" || arg == "--help") {
+            print_usage(argv[0]);
+            return 0;
+        } else if (arg == "-c" || arg == "--check-correctness" || arg == "--check") {
+            check_correctness = true;
+            flag_specified = true;
+        } else if (arg == "--no-check-correctness" || arg == "--no-check") {
+            check_correctness = false;
+            flag_specified = true;
+        } else if (arg.starts_with("--check-correctness=")) {
+            check_correctness = parse_bool(arg.substr(20));
+            flag_specified = true;
+        } else if (arg.starts_with("--check=")) {
+            check_correctness = parse_bool(arg.substr(8));
+            flag_specified = true;
+        } else {
+            positional_args.push_back(arg);
+        }
+    }
+
+    if (positional_args.size() < 2) {
+        std::println(stderr, "Error: Missing required positional arguments.");
+        print_usage(argv[0]);
+        return 1;
+    }
+
+    std::filesystem::path dataset = positional_args[0];
+    std::filesystem::path obstructions_directory = positional_args[1];
+
+    if (!flag_specified && positional_args.size() >= 3) {
+        check_correctness = parse_bool(positional_args[2]);
+    }
+
+    auto graphs_result = graph::loader::load_graphs_from_asc_file(dataset);
+    if (!graphs_result.has_value()) {
+        std::println(stderr, "Error: Failed to load dataset from {}", dataset.string());
+        return 1;
+    }
+    auto graphs = graphs_result.value();
 
     const auto result = torus::test::find_minimal_obstructions(graphs);
 
-    if (std::filesystem::exists(obstructions_directory))
-        std::filesystem::remove_all(obstructions_directory);
-    std::filesystem::create_directory(obstructions_directory);
-    std::filesystem::path non_toroidals = obstructions_directory / "non-toroidal";
-    std::filesystem::create_directory(non_toroidals);
-    std::filesystem::path minimals = obstructions_directory / "minimal";
-    std::filesystem::create_directory(minimals);
-    std::filesystem::path planars = obstructions_directory / "planar";
-    std::filesystem::create_directory(planars);
-    std::filesystem::path toroidals = obstructions_directory / "toroidal";
-    std::filesystem::create_directory(toroidals);
-    std::filesystem::path non_biconnected = obstructions_directory / "non-biconnected";
-    std::filesystem::create_directory(non_biconnected);
-    std::filesystem::path uncomputed = obstructions_directory / "uncomputed";
-    std::filesystem::create_directory(uncomputed);
-
-    for (size_t i = 0; i < result.size(); i++) {
-        std::filesystem::path path;
-        if (std::holds_alternative<GraphType::MinimalNonToroidal>(result[i])) {
-            path = minimals / (std::to_string(i) + ".txt");
-            if (domus::torus::test::is_toroidal_ground_truth(graphs[i]))
-                std::print("Error: {} labeled minimal non-toroidal but is toroidal\n", i);
-        } else if (std::holds_alternative<GraphType::NonToroidal>(result[i])) {
-            path = non_toroidals / (std::to_string(i) + ".txt");
-            if (domus::torus::test::is_toroidal_ground_truth(graphs[i]))
-                std::print("Error: {} labeled non-toroidal but is toroidal\n", i);
-        } else if (std::holds_alternative<GraphType::Planar>(result[i])) {
-            const auto embedding = std::get<GraphType::Planar>(result[i]).embedding;
-            path = planars / (std::to_string(i) + ".txt");
-            loader::save_embedding_to_file(embedding, path).value();
-            continue;
-        } else if (std::holds_alternative<GraphType::Toroidal>(result[i])) {
-            const auto embedding = std::get<GraphType::Toroidal>(result[i]).embedding;
-            path = toroidals / (std::to_string(i) + ".txt");
-            loader::save_embedding_to_file(embedding, path).value();
-            continue;
-        } else if (std::holds_alternative<GraphType::NonBiconnected>(result[i])) {
-            path = obstructions_directory / "non-biconnected" / (std::to_string(i) + ".txt");
-        } else if (std::holds_alternative<GraphType::Uncomputed>(result[i])) {
-            path = obstructions_directory / "uncomputed" / (std::to_string(i) + ".txt");
-        }
-        loader::save_graph_to_file(graphs[i], path).value();
-    }
+    torus::test::save_all_results(graphs, result, obstructions_directory, check_correctness);
 
     return 0;
 }

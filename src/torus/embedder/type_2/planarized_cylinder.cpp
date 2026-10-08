@@ -1,5 +1,7 @@
 #include "planarized_cylinder.hpp"
 
+#include <format>
+
 #include "domus/core/debug.hpp"
 
 #include "../../faces.hpp"

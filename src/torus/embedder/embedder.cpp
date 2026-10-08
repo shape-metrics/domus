@@ -11,7 +11,6 @@
 #include "domus/core/graph/path.hpp"
 #include "domus/core/utils.hpp"
 #include "domus/ogdf_utils.hpp"
-#include "domus/planarity/auslander_parter.hpp"
 
 #include "../faces.hpp"
 #include "type_2/type_2.hpp"
@@ -226,7 +225,7 @@ bool is_toroidal(const Graph& graph) {
         if (B.get_number_of_edges() <= 2)
             continue;
 
-        if (!planarity::is_graph_planar(B)) {
+        if (!ogdf_utils::is_graph_planar(B)) {
             non_planar_blocks_count++;
             if (non_planar_blocks_count > 1)
                 return false;

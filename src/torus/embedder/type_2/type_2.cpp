@@ -175,17 +175,13 @@ class Type2Solver {
     // any embeddability of ordinary pieces is guaranteed to work, since we tested this in
     // advance. hence why this function is void
     void embed_ordinary_pieces(const PiecesAssignment& assignment) {
-        std::println("dajelo");
-        m_embedding.print();
         for (size_t ordinary_piece_index : m_adjacencies.all_ordinary_pieces()) {
             size_t assigned_face_index = std::get<size_t>(assignment[ordinary_piece_index]);
 
             const CachedOrdinaryEmbedding& cached_embedding =
                 m_adjacencies.get_cached_embedding(ordinary_piece_index, assigned_face_index);
-            const Face& assigned_face = m_faces[assigned_face_index];
-            assigned_face.print();
-            cached_embedding.print();
             cached_embedding.insert_into_embedding(m_embedding);
+
             DOMUS_ASSERT(
                 compute_embedding_genus(m_embedding) == 1,
                 "Type2Solver::embed_ordinary_pieces: found embedding should have genus 1 but it "

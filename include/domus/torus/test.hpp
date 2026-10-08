@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <vector>
 
 #include "domus/core/graph/embedding.hpp"
@@ -40,5 +41,12 @@ using ObstructionResult = std::variant<
     GraphType::Uncomputed>;
 
 std::vector<ObstructionResult> find_minimal_obstructions(const std::vector<graph::Graph>& graphs);
+
+void save_all_results(
+    const std::vector<graph::Graph>& graphs,
+    const std::vector<ObstructionResult>& results,
+    const std::filesystem::path& obstructions_directory,
+    bool check_correctness
+);
 
 } // namespace domus::torus::test
