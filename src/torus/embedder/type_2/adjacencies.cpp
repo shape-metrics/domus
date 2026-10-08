@@ -1,4 +1,6 @@
 #include "adjacencies.hpp"
+#include "domus/core/graph/embedding.hpp"
+#include "nodes_positions.hpp"
 
 #include <algorithm>
 
@@ -187,18 +189,82 @@ bool Adjacencies::is_ordinary_piece_cutting_cylinder(size_t p_index, size_t face
     return false;
 }
 
+bool Adjacencies::compute_cache_embeddings() {
+    NodesPositions positions(*this);
+    m_cylinder_embeddings.resize(m_faces.size());
+
+    // special faces
+    for (size_t face_index = 0; face_index < m_faces.size(); ++face_index) {
+        const Face& face = m_faces[face_index];
+        if (face.type() == FaceType::TYPE_1)
+            continue;
+        m_number_of_cylinders++;
+        std::vector<const Bridge*> special_pieces;
+        for (size_t piece_index : special_pieces_in_face(face_index))
+            special_pieces.push_back(&m_pieces[piece_index]);
+        auto cylinder =
+            PlanarizedCylinder::build(face_index, m_faces, m_embedding, {}, special_pieces);
+        if (!cylinder.has_value())
+            return false;
+        m_cylinder_embeddings[face_index] = std::move(cylinder);
+    }
+
+    // ordinary pieces
+    for (size_t piece_index = 0; piece_index < m_pieces.size(); piece_index++) {
+        const PieceAdjacency& adjacency = get_adjacency(piece_index);
+        if (adjacency.type == PieceAdjacency::PieceType::SPECIAL)
+            continue;
+        const Bridge& piece = m_pieces[piece_index];
+        for (size_t face_index : get_adjacency(piece_index).adjacent_faces) {
+            const Face& face = m_faces[face_index];
+
+            auto embedding = CachedOrdinaryEmbedding::cache_ordinary_embedding(
+                face_index,
+                face,
+                piece,
+                positions
+            );
+            if (!embedding.has_value()) {
+                remove_piece_adjacency(piece_index, face_index);
+                if (get_adjacency(piece_index).adjacent_faces.empty())
+                    return false;
+                continue;
+            }
+            DOMUS_ASSERT(
+                [&]() {
+                    Embedding copy = m_embedding;
+                    embedding->insert_into_embedding(copy);
+                    return (compute_embedding_genus(copy) == 1);
+                }(),
+                "Adjacencies::compute_cache_embeddings: inserting the cached embedding in the "
+                "total "
+                "embedding changed the genus."
+            );
+            add_cached_embedding(std::move(*embedding), piece_index, face_index);
+        }
+    }
+    return true;
+}
+
 Adjacencies::Adjacencies(
-    const std::vector<Bridge>& pieces, const std::vector<Face>& faces, const graph::Graph& graph
+    const std::vector<Bridge>& pieces,
+    const std::vector<Face>& faces,
+    const graph::Graph& graph,
+    const graph::Embedding& embedding
 )
-    : m_pieces(pieces), m_faces(faces), m_graph(graph) {}
+    : m_pieces(pieces), m_faces(faces), m_graph(graph), m_embedding(embedding) {}
 
 std::optional<Adjacencies> Adjacencies::build_adjacencies(
-    const std::vector<Bridge>& pieces, const std::vector<Face>& faces, const graph::Graph& graph
+    const std::vector<Bridge>& pieces,
+    const std::vector<Face>& faces,
+    const graph::Graph& graph,
+    const graph::Embedding& embedding
 ) {
-    Adjacencies adjacencies(pieces, faces, graph);
+    Adjacencies adjacencies(pieces, faces, graph, embedding);
     adjacencies.compute_cylinders_boundary_components();
     if (adjacencies.compute_piece_to_adjacent_faces(adjacencies.compute_nodes_to_faces()))
-        return adjacencies;
+        if (adjacencies.compute_cache_embeddings())
+            return adjacencies;
     return std::nullopt;
 }
 

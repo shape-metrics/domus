@@ -4,9 +4,8 @@
 
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include "adjacencies.hpp"
-
 namespace domus::torus {
+class Adjacencies;
 
 // this class aims to provide an utility that is able to quickly (O(1) time) retrieve the position
 // of NON repeated nodes in the faces. ONLY FOR NON REPEATED NODES.

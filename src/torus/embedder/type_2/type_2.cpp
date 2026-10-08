@@ -25,15 +25,10 @@ class Type2Solver {
     const std::vector<Bridge>& m_pieces;
     const Adjacencies& m_adjacencies;
     const Conflicts& m_conflicts;
-    const NodesPositions m_nodes_positions;
 
-    size_t m_number_of_cylinders = 0;
     std::vector<CylinderType> m_cylinders_type_current_guess;
 
     std::vector<std::vector<int>> m_piece_face_to_variable;
-
-    std::vector<std::optional<PlanarizedCylinder>> m_cylinder_embeddings;
-    std::vector<std::optional<CachedOrdinaryEmbedding>> m_cached_ordinary_piece_embedding;
 
     Type2Solver(
         Embedding& embedding,
@@ -43,62 +38,9 @@ class Type2Solver {
         const Conflicts& conflicts
     )
         : m_embedding(embedding), m_faces(faces), m_pieces(pieces), m_adjacencies(adjacencies),
-          m_conflicts(conflicts), m_nodes_positions(adjacencies) {}
+          m_conflicts(conflicts) {
 
-    InitializationOutcome init() {
-        if (m_pieces.size() == 0)
-            return InitializationOutcome::NOTHING_TO_DO;
-
-        m_cylinder_embeddings.resize(m_faces.size());
-        for (size_t face_index = 0; face_index < m_faces.size(); ++face_index) {
-            const Face& face = m_faces[face_index];
-            if (face.type() == FaceType::TYPE_1)
-                continue;
-            m_number_of_cylinders++;
-            auto cylinder = PlanarizedCylinder::build(face_index, m_adjacencies, m_embedding);
-            if (!cylinder.has_value())
-                return InitializationOutcome::NO_SOLUTION;
-            m_cylinder_embeddings[face_index] = std::move(cylinder);
-        }
-
-        m_cylinders_type_current_guess.resize(m_number_of_cylinders);
-        m_cached_ordinary_piece_embedding.resize(m_pieces.size());
-
-        for (size_t piece_index = 0; piece_index < m_pieces.size(); piece_index++) {
-            const auto& adjacency = m_adjacencies.get_adjacency(piece_index);
-            if (adjacency.type == PieceAdjacency::PieceType::SPECIAL)
-                continue;
-
-            size_t face_index =
-                m_adjacencies.get_adjacency(piece_index)
-                    .adjacent_faces[0]; // any face is good since if it is adjacent to
-                                        // any other face then the circular order of the
-                                        // attachment would only be flipped in that face
-            const Bridge& bridge = m_pieces[piece_index];
-            const Face& face = m_faces[face_index];
-
-            m_cached_ordinary_piece_embedding[piece_index] =
-                CachedOrdinaryEmbedding::cache_ordinary_embedding(
-                    face_index,
-                    face,
-                    bridge,
-                    m_nodes_positions
-                );
-            if (!m_cached_ordinary_piece_embedding[piece_index].has_value())
-                return InitializationOutcome::NO_SOLUTION;
-            DOMUS_ASSERT(
-                [&]() {
-                    Embedding copy = m_embedding;
-                    m_cached_ordinary_piece_embedding[piece_index]
-                        ->insert_into_embedding(face_index, face, copy);
-                    return (compute_embedding_genus(copy) == 1);
-                }(),
-                "InitializationOutcome init: inserting the cached embedding in the total embedding "
-                "changed the genus."
-            );
-        }
-
-        return InitializationOutcome::DONE;
+        m_cylinders_type_current_guess.resize(adjacencies.get_number_of_cylinders());
     }
 
     // we have not tested yet if the special pieces can be embedded in a one-sided way inside
@@ -130,14 +72,14 @@ class Type2Solver {
             if (m_cylinders_type_current_guess[found_cylinders++] == CylinderType::TWO_SIDED)
                 continue;
 
-            const auto& special_pieces = m_adjacencies.special_pieces_in_face(face_index);
-            if (special_pieces.empty())
+            const auto& special_pieces_indexes = m_adjacencies.special_pieces_in_face(face_index);
+            if (special_pieces_indexes.empty())
                 continue; // No special pieces to embed in this cylinder.
 
             // This cylinder is ONE_SIDED.
             // Check whether that cylinder actually received an ordinary piece which is across in
             // the cylinder.
-            std::vector<size_t> across_pieces;
+            std::vector<const Bridge*> across_pieces;
             for (size_t ord_piece_index : m_adjacencies.ordinary_pieces_in_face(face_index)) {
                 DOMUS_ASSERT(
                     std::holds_alternative<size_t>(assignment[ord_piece_index]),
@@ -146,7 +88,7 @@ class Type2Solver {
                 );
                 if (std::get<size_t>(assignment[ord_piece_index]) == face_index &&
                     m_adjacencies.is_ordinary_piece_cutting_cylinder(ord_piece_index, face_index)) {
-                    across_pieces.push_back(ord_piece_index);
+                    across_pieces.push_back(&m_pieces[ord_piece_index]);
                 }
             }
 
@@ -163,11 +105,17 @@ class Type2Solver {
                 // Construct a PlanarizedCylinder putting all special pieces and across pieces
                 // inside.
                 // TODO probably even just one across piece is enough
+
+                std::vector<const Bridge*> special_pieces;
+                for (size_t piece_index : special_pieces_indexes)
+                    special_pieces.push_back(&m_pieces[piece_index]);
+
                 auto cylinder = PlanarizedCylinder::build(
                     face_index,
-                    m_adjacencies,
+                    m_faces,
                     m_embedding,
-                    across_pieces
+                    across_pieces,
+                    special_pieces
                 );
                 if (!cylinder.has_value())
                     return false;
@@ -214,7 +162,8 @@ class Type2Solver {
             if (special_pieces.empty())
                 continue;
 
-            m_cylinder_embeddings[face_index]->merge_into_embedding(m_adjacencies, m_embedding);
+            m_adjacencies.get_embedded_cylinder(face_index)
+                .merge_into_embedding(m_adjacencies, m_embedding);
         }
         DOMUS_ASSERT(
             compute_embedding_genus(m_embedding) == 1,
@@ -226,12 +175,17 @@ class Type2Solver {
     // any embeddability of ordinary pieces is guaranteed to work, since we tested this in
     // advance. hence why this function is void
     void embed_ordinary_pieces(const PiecesAssignment& assignment) {
+        std::println("dajelo");
+        m_embedding.print();
         for (size_t ordinary_piece_index : m_adjacencies.all_ordinary_pieces()) {
-            CachedOrdinaryEmbedding& cached_embedding =
-                *m_cached_ordinary_piece_embedding[ordinary_piece_index];
             size_t assigned_face_index = std::get<size_t>(assignment[ordinary_piece_index]);
+
+            const CachedOrdinaryEmbedding& cached_embedding =
+                m_adjacencies.get_cached_embedding(ordinary_piece_index, assigned_face_index);
             const Face& assigned_face = m_faces[assigned_face_index];
-            cached_embedding.insert_into_embedding(assigned_face_index, assigned_face, m_embedding);
+            assigned_face.print();
+            cached_embedding.print();
+            cached_embedding.insert_into_embedding(m_embedding);
             DOMUS_ASSERT(
                 compute_embedding_genus(m_embedding) == 1,
                 "Type2Solver::embed_ordinary_pieces: found embedding should have genus 1 but it "
@@ -242,7 +196,7 @@ class Type2Solver {
     }
 
     bool solve(size_t done_guesses_of_cylinders) {
-        if (done_guesses_of_cylinders == m_number_of_cylinders) {
+        if (done_guesses_of_cylinders == m_adjacencies.get_number_of_cylinders()) {
             DOMUS_ASSERT(
                 compute_embedding_genus(m_embedding) == 1,
                 "Type2Solver::solve: initial embedding should have genus 1"
@@ -271,21 +225,14 @@ class Type2Solver {
         std::vector<Bridge> pieces = Bridge::compute(graph, embedding);
         if (pieces.size() == 0)
             return true;
-        const auto adjacencies = Adjacencies::build_adjacencies(pieces, faces, graph);
-        if (!adjacencies.has_value()) {
+        const auto adjacencies = Adjacencies::build_adjacencies(pieces, faces, graph, embedding);
+        if (!adjacencies.has_value())
             return false;
-        }
+
         const Conflicts conflicts(*adjacencies);
 
         Type2Solver solver(embedding, faces, pieces, *adjacencies, conflicts);
-        switch (solver.init()) {
-        case InitializationOutcome::NO_SOLUTION:
-            return false;
-        case InitializationOutcome::NOTHING_TO_DO:
-            return true;
-        case InitializationOutcome::DONE:
-            return solver.solve(0);
-        }
+        return solver.solve(0);
     }
 };
 

@@ -17,7 +17,8 @@ int main(int argc, char* argv[]) {
     std::filesystem::path dataset = argv[1];
     std::filesystem::path obstructions_directory = argv[2];
 
-    const auto graphs = loader::load_graphs_from_asc_file(dataset).value();
+    auto graphs = loader::load_graphs_from_asc_file(dataset).value();
+    graphs = {graphs[3451]};
 
     const auto result = torus::test::find_minimal_obstructions(graphs);
 

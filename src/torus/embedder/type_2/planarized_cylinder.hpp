@@ -4,13 +4,15 @@
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
 
-#include "adjacencies.hpp"
+#include "../../bridge.hpp"
+#include "../../faces.hpp"
 
 namespace domus::graph {
 class Embedding;
 }
 
 namespace domus::torus {
+class Adjacencies;
 
 struct CircularOrder {
     size_t center_id;
@@ -19,24 +21,23 @@ struct CircularOrder {
 };
 
 class PlanarizedCylinder {
-    size_t face_index;
-    graph::Graph graph;
-    graph::Embedding embedding;
-    graph::utilities::NodesLabels<size_t> node_new_to_old_id;
-    graph::utilities::NodesLabels<size_t> node_old_to_new_id;
-    graph::utilities::EdgesLabels<size_t> edge_new_to_old_id;
-    graph::utilities::EdgesLabels<size_t> edge_old_to_new_id;
+    size_t m_face_index;
+    graph::Graph m_graph;
+    graph::Embedding m_embedding;
+    graph::utilities::NodesLabels<size_t> m_node_new_to_old_id;
+    graph::utilities::NodesLabels<size_t> m_node_old_to_new_id;
+    graph::utilities::EdgesLabels<size_t> m_edge_new_to_old_id;
+    graph::utilities::EdgesLabels<size_t> m_edge_old_to_new_id;
 
     void add_piece(const Bridge& bridge);
 
   public:
-    static std::optional<PlanarizedCylinder>
-    build(size_t face_index, const Adjacencies& adjacencies, const graph::Embedding& partial);
     static std::optional<PlanarizedCylinder> build(
         size_t face_index,
-        const Adjacencies& adjacencies,
+        const std::vector<Face>& faces,
         const graph::Embedding& partial,
-        const std::vector<size_t>& across_ordinary_pieces
+        const std::vector<const Bridge*>& across_ordinary_pieces,
+        const std::vector<const Bridge*>& special_pieces
     );
 
     const graph::Graph& get_graph() const;
