@@ -2,15 +2,15 @@
 
 #include "domus/core/debug.hpp"
 #include "domus/core/graph/embedding.hpp"
+#include "domus/torus/bridge.hpp"
+#include "domus/torus/faces.hpp"
 
-#include "../../bridge.hpp"
-#include "../../faces.hpp"
-#include "../utils.hpp"
-#include "adjacencies.hpp"
-#include "conflicts.hpp"
-#include "nodes_positions.hpp"
-#include "ordinary_pieces.hpp"
-#include "planarized_cylinder.hpp"
+#include "tools/adjacencies.hpp"
+#include "tools/cacher.hpp"
+#include "tools/conflicts.hpp"
+#include "tools/nodes_positions.hpp"
+#include "tools/ordinary_pieces.hpp"
+#include "tools/planarized_cylinder.hpp"
 
 namespace domus::torus {
 using namespace domus::graph;
@@ -25,6 +25,8 @@ class Type2Solver {
     const std::vector<Bridge>& m_pieces;
     const Adjacencies& m_adjacencies;
     const Conflicts& m_conflicts;
+    const EmbeddingsHandler& m_handler;
+    const NodesPositions& m_nodes_positions;
 
     std::vector<CylinderType> m_cylinders_type_current_guess;
 
@@ -35,12 +37,14 @@ class Type2Solver {
         const std::vector<Face>& faces,
         const std::vector<Bridge>& pieces,
         const Adjacencies& adjacencies,
-        const Conflicts& conflicts
+        const Conflicts& conflicts,
+        const EmbeddingsHandler& handler,
+        const NodesPositions& nodes_positions
     )
         : m_embedding(embedding), m_faces(faces), m_pieces(pieces), m_adjacencies(adjacencies),
-          m_conflicts(conflicts) {
+          m_conflicts(conflicts), m_handler(handler), m_nodes_positions(nodes_positions) {
 
-        m_cylinders_type_current_guess.resize(adjacencies.get_number_of_cylinders());
+        m_cylinders_type_current_guess.resize(handler.get_cylinder_embeddings().size());
     }
 
     // we have not tested yet if the special pieces can be embedded in a one-sided way inside
@@ -65,6 +69,7 @@ class Type2Solver {
         std::vector<PlanarizedCylinder> cylinders_to_embed;
 
         size_t found_cylinders = 0;
+        // TODO change iteration on just cylinders
         for (size_t face_index = 0; face_index < m_adjacencies.get_faces().size(); face_index++) {
             const Face& face = m_adjacencies.get_faces()[face_index];
             if (face.type() == FaceType::TYPE_1)
@@ -150,20 +155,19 @@ class Type2Solver {
     // any embeddability without constraints of special pieces in a cylinder is guaranteed to
     // work, since we tested this in advance. hence why this function is void
     void embed_special_pieces_two_sided_cylinder() const {
-        size_t found_cylinders = 0;
-        for (size_t face_index = 0; face_index < m_adjacencies.get_faces().size(); face_index++) {
-            const Face& face = m_adjacencies.get_faces()[face_index];
-            if (face.type() == FaceType::TYPE_1)
-                continue;
-            if (m_cylinders_type_current_guess[found_cylinders++] == CylinderType::ONE_SIDED)
+        size_t number_of_cylinders = m_handler.get_cylinder_embeddings().size();
+        for (size_t i = 0; i < number_of_cylinders; i++) {
+            if (m_cylinders_type_current_guess[i] == CylinderType::ONE_SIDED)
                 continue;
 
-            const auto& special_pieces = m_adjacencies.special_pieces_in_face(face_index);
+            const auto& cylinder_embedding = m_handler.get_cylinder_embeddings()[i];
+            const auto& special_pieces =
+                m_adjacencies.special_pieces_in_face(cylinder_embedding.get_face_index());
+
             if (special_pieces.empty())
                 continue;
 
-            m_adjacencies.get_embedded_cylinder(face_index)
-                .merge_into_embedding(m_adjacencies, m_embedding);
+            cylinder_embedding.merge_into_embedding(m_adjacencies, m_embedding);
         }
         DOMUS_ASSERT(
             compute_embedding_genus(m_embedding) == 1,
@@ -179,8 +183,13 @@ class Type2Solver {
             size_t assigned_face_index = std::get<size_t>(assignment[ordinary_piece_index]);
 
             const CachedOrdinaryEmbedding& cached_embedding =
-                m_adjacencies.get_cached_embedding(ordinary_piece_index, assigned_face_index);
-            cached_embedding.insert_into_embedding(m_embedding);
+                m_handler.get_cached_embedding(ordinary_piece_index, assigned_face_index);
+            cached_embedding.insert_into_face(
+                m_embedding,
+                m_faces[assigned_face_index],
+                assigned_face_index,
+                m_nodes_positions
+            );
 
             DOMUS_ASSERT(
                 compute_embedding_genus(m_embedding) == 1,
@@ -192,7 +201,7 @@ class Type2Solver {
     }
 
     bool solve(size_t done_guesses_of_cylinders) {
-        if (done_guesses_of_cylinders == m_adjacencies.get_number_of_cylinders()) {
+        if (done_guesses_of_cylinders == m_handler.get_cylinder_embeddings().size()) {
             DOMUS_ASSERT(
                 compute_embedding_genus(m_embedding) == 1,
                 "Type2Solver::solve: initial embedding should have genus 1"
@@ -221,19 +230,34 @@ class Type2Solver {
         std::vector<Bridge> pieces = Bridge::compute(graph, embedding);
         if (pieces.size() == 0)
             return true;
-        const auto adjacencies = Adjacencies::build_adjacencies(pieces, faces, graph, embedding);
+
+        auto adjacencies = Adjacencies::build_adjacencies(pieces, faces, graph, embedding);
         if (!adjacencies.has_value())
             return false;
 
+        const NodesPositions& nodes_positions(*adjacencies);
+
         const Conflicts conflicts(*adjacencies);
 
-        Type2Solver solver(embedding, faces, pieces, *adjacencies, conflicts);
+        auto embeddings_handler =
+            EmbeddingsHandler::build(nodes_positions, *adjacencies, embedding);
+        if (!embeddings_handler.has_value())
+            return false;
+
+        Type2Solver solver(
+            embedding,
+            faces,
+            pieces,
+            *adjacencies,
+            conflicts,
+            *embeddings_handler,
+            nodes_positions
+        );
         return solver.solve(0);
     }
 };
 
 bool handle_type_2(Graph& graph, Embedding& embedding, const std::vector<Face>& faces) {
-    add_log_final_configuration(faces);
     return Type2Solver::solve_type_2(graph, embedding, faces);
 }
 

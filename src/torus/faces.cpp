@@ -1,4 +1,4 @@
-#include "faces.hpp"
+#include "domus/torus/faces.hpp"
 
 #include <algorithm>
 #include <format>

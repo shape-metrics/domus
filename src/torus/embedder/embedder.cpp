@@ -11,8 +11,8 @@
 #include "domus/core/graph/path.hpp"
 #include "domus/core/utils.hpp"
 #include "domus/ogdf_utils.hpp"
+#include "domus/torus/faces.hpp"
 
-#include "../faces.hpp"
 #include "type_2/type_2.hpp"
 #include "type_3.hpp"
 

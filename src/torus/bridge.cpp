@@ -1,4 +1,4 @@
-#include "bridge.hpp"
+#include "domus/torus/bridge.hpp"
 
 #include "domus/core/debug.hpp"
 #include "domus/core/graph/embedding.hpp"
@@ -25,6 +25,8 @@ const NodesLabels<size_t>& Bridge::get_new_id_to_old_id() const {
 }
 
 bool Bridge::is_attachment(const size_t node_id) const { return m_is_attachment.has_node(node_id); }
+
+bool Bridge::is_chord() const { return m_bridge.get_sub_graph().get_number_of_nodes() == 2; }
 
 const EdgesLabels<size_t>& Bridge::get_new_edge_id_to_old_id() const {
     return m_bridge.get_sub_graph_edges_labels();

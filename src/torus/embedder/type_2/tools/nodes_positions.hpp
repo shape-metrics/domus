@@ -18,8 +18,7 @@ class Adjacencies;
 // done for all the pieces, resulting in much waste.
 // what we can do, instead of building the graph G = (piece UNION face), we build
 // G = (piece UNION contracted face), where contracted face is a cycle in which partecipate only the
-// attachments of the particular piece, plus a separation node between consecutive ones (to avoid
-// possible multiple edges in the graph). this way the size of G is O(k), where k is the number of
+// attachments of the particular piece, this way the size of G is O(k), where k is the number of
 // nodes in the piece. to make this process efficient, we build and use this class
 class NodesPositions {
     struct FacePosition {

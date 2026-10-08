@@ -15,8 +15,7 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/ogdf_utils.hpp"
 #include "domus/torus/embedder.hpp"
-
-#include "faces.hpp"
+#include "domus/torus/faces.hpp"
 
 namespace domus::torus::test {
 using namespace graph;
@@ -294,17 +293,19 @@ void save_all_results(
     if (std::filesystem::exists(obstructions_directory))
         std::filesystem::remove_all(obstructions_directory);
     std::filesystem::create_directory(obstructions_directory);
-    std::filesystem::path non_toroidals = obstructions_directory / NON_TOROIDAL;
+
+    const std::filesystem::path non_toroidals = obstructions_directory / NON_TOROIDAL;
+    const std::filesystem::path minimals = obstructions_directory / MINIMAL;
+    const std::filesystem::path planars = obstructions_directory / PLANAR;
+    const std::filesystem::path toroidals = obstructions_directory / TOROIDAL;
+    const std::filesystem::path non_biconnected = obstructions_directory / NON_BICONNECTED;
+    const std::filesystem::path uncomputed = obstructions_directory / UNCOMPUTED;
+
     std::filesystem::create_directory(non_toroidals);
-    std::filesystem::path minimals = obstructions_directory / MINIMAL;
     std::filesystem::create_directory(minimals);
-    std::filesystem::path planars = obstructions_directory / PLANAR;
     std::filesystem::create_directory(planars);
-    std::filesystem::path toroidals = obstructions_directory / TOROIDAL;
     std::filesystem::create_directory(toroidals);
-    std::filesystem::path non_biconnected = obstructions_directory / NON_BICONNECTED;
     std::filesystem::create_directory(non_biconnected);
-    std::filesystem::path uncomputed = obstructions_directory / UNCOMPUTED;
     std::filesystem::create_directory(uncomputed);
 
     for (size_t i = 0; i < results.size(); i++) {
@@ -338,7 +339,8 @@ void save_all_results(
                 loader::save_graph_to_file(graphs[i], path).value();
             }
             continue;
-        } else if (std::holds_alternative<GraphType::Toroidal>(results[i])) {
+        }
+        if (std::holds_alternative<GraphType::Toroidal>(results[i])) {
             const auto& embedding = std::get<GraphType::Toroidal>(results[i]).embedding;
             path = toroidals / (std::to_string(i) + ".txt");
             if (!check_correctness || compute_embedding_genus(embedding) == 1)

@@ -3,8 +3,8 @@
 #include <format>
 
 #include "domus/core/debug.hpp"
+#include "domus/torus/faces.hpp"
 
-#include "../../faces.hpp"
 #include "adjacencies.hpp"
 #include "fixed_rotation_planarity.hpp"
 

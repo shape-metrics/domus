@@ -3,9 +3,8 @@
 #include "domus/core/graph/embedding.hpp"
 #include "domus/core/graph/graph.hpp"
 #include "domus/core/graph/graph_utilities.hpp"
-
-#include "../../bridge.hpp"
-#include "../../faces.hpp"
+#include "domus/torus/bridge.hpp"
+#include "domus/torus/faces.hpp"
 
 namespace domus::graph {
 class Embedding;
@@ -40,6 +39,7 @@ class PlanarizedCylinder {
         const std::vector<const Bridge*>& special_pieces
     );
 
+    size_t get_face_index() const;
     const graph::Graph& get_graph() const;
     const graph::Embedding& get_embedding() const;
     const graph::utilities::NodesLabels<size_t>& get_node_new_to_old_id() const;

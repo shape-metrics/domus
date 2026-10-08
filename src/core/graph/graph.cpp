@@ -69,6 +69,15 @@ bool Graph::has_edge(size_t from_id, size_t to_id) const {
     });
 }
 
+size_t Graph::get_edge_id(size_t from_id, size_t to_id) const {
+    DOMUS_ASSERT(has_node(from_id) && has_node(to_id), "Graph::get_edge: node does not exist");
+    auto it = std::ranges::find_if(m_out_adjacency_list[from_id], [&](const size_t edge_id) {
+        return m_edges[edge_id]->edge.to_id == to_id;
+    });
+    DOMUS_ASSERT(it != m_out_adjacency_list[from_id].end(), "Graph::get_edge: edge not found");
+    return *it;
+}
+
 bool Graph::are_neighbors(size_t node_1_id, size_t node_2_id) const {
     return has_edge(node_1_id, node_2_id) || has_edge(node_2_id, node_1_id);
 }

@@ -8,9 +8,9 @@
 #include "domus/core/graph/graphs_algorithms.hpp"
 #include "domus/core/graph/path.hpp"
 #include "domus/core/utils.hpp"
+#include "domus/torus/bridge.hpp"
+#include "domus/torus/faces.hpp"
 
-#include "../bridge.hpp"
-#include "../faces.hpp"
 #include "type_2/type_2.hpp"
 
 namespace domus::torus {

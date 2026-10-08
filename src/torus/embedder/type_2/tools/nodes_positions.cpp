@@ -1,9 +1,10 @@
 #include "nodes_positions.hpp"
 
-#include "../../bridge.hpp"
-#include "../../faces.hpp"
-#include "adjacencies.hpp"
 #include "domus/core/debug.hpp"
+#include "domus/torus/bridge.hpp"
+#include "domus/torus/faces.hpp"
+
+#include "adjacencies.hpp"
 
 namespace domus::torus {
 

@@ -51,6 +51,7 @@ class Graph {
     bool has_node(size_t node_id) const;
     bool has_edge_id(size_t edge_id) const;
     bool has_edge(size_t from_id, size_t to_id) const;
+    size_t get_edge_id(size_t from_id, size_t to_id) const;
     bool are_neighbors(size_t node_1_id, size_t node_2_id) const;
     Edge get_edge(size_t edge_id) const;
 
